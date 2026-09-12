@@ -130,8 +130,9 @@ namespace VoxelCraft.Core
 
             var interaction = playerGo.AddComponent<BlockInteraction>();
             interaction.viewCamera = mainCamera;
-            interaction.world = worldRoot;
             interaction.playerBody = playerGo.transform;
+            // NOTE: interaction.world is assigned AFTER worldRoot exists (line below) -
+            // wiring order matters, a null world silently disables all interaction.
 
             var blockAudio = playerGo.AddComponent<Player.BlockAudio>();
             blockAudio.interaction = interaction;
@@ -151,6 +152,7 @@ namespace VoxelCraft.Core
             worldRoot = worldGo.AddComponent<WorldRoot>();
             worldRoot.Init(seed, viewRadius, atlas, solidMaterial, waterMaterial, playerGo.transform);
             playerMotor.world = worldRoot;
+            interaction.world = worldRoot; // FIX: assigned only once the world actually exists
 
             // Build spawn area synchronously so the player never falls through.
             worldRoot.PrewarmAround(playerGo.transform.position);
@@ -171,6 +173,23 @@ namespace VoxelCraft.Core
             var spawner = worldGo.AddComponent<Creatures.CreatureSpawner>();
             spawner.world = worldRoot;
             spawner.player = playerGo.transform;
+
+            // Day/night cycle + weather, wired into the interaction (clock tool).
+            var envGo = new GameObject("Environment");
+            var dayNight = envGo.AddComponent<Environment.DayNightCycle>();
+            dayNight.Setup(mainCamera, sun);
+            var weather = envGo.AddComponent<Environment.WeatherSystem>();
+            weather.Setup(playerGo.transform, worldRoot);
+            dayNight.weather = weather;
+            interaction.dayNight = dayNight;
+
+            // World-space item drops (context for spawning + pickup target).
+            Items.ItemDrops.world = worldRoot;
+            Items.ItemDrops.player = playerGo.transform;
+            Items.ItemDrops.iconOf = t => atlas.icons.TryGetValue(t, out var icon) ? icon : null;
+
+            hud.dayNight = dayNight;
+            hud.weather = weather;
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

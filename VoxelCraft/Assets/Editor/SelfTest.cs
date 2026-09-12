@@ -4,6 +4,7 @@ using UnityEngine;
 using VoxelCraft.Art;
 using VoxelCraft.Core;
 using VoxelCraft.Gen;
+using VoxelCraft.Items;
 using VoxelCraft.Player;
 using VoxelCraft.World;
 
@@ -438,6 +439,104 @@ namespace VoxelCraft.Editor
             int rigParts = rigGo.GetComponentsInChildren<Transform>(true).Length;
             UnityEngine.Object.DestroyImmediate(rigGo);
             Eval("m7d.player_model", rigParts >= 10, $"{rigParts} transforms in player model (inactive included)");
+
+            // ----- M8: tools, inventory, drops, tree-aware surface -----
+            bool handSoft = ToolRules.BreakRule(ToolType.Hand, BlockType.Dirt).allowed;
+            bool handStone = ToolRules.BreakRule(ToolType.Hand, BlockType.Stone).allowed;
+            bool pickStone = ToolRules.BreakRule(ToolType.Pickaxe, BlockType.Stone).allowed;
+            bool swordStone = ToolRules.BreakRule(ToolType.Sword, BlockType.Stone).allowed;
+            float axeWood = ToolRules.BreakRule(ToolType.Axe, BlockType.Log).interval;
+            bool handWoodOk = ToolRules.BreakRule(ToolType.Hand, BlockType.Log).allowed;
+            float handWoodTime = ToolRules.BreakRule(ToolType.Hand, BlockType.Log).interval;
+            bool clockBreaks = ToolRules.BreakRule(ToolType.Clock, BlockType.Dirt).allowed;
+            bool pickBedrock = ToolRules.BreakRule(ToolType.Pickaxe, BlockType.Bedrock).allowed;
+            Eval("m8.tool_rules",
+                handSoft && !handStone && pickStone && !swordStone && handWoodOk && axeWood <= 0.25f &&
+                handWoodTime >= 0.6f && !clockBreaks && !pickBedrock,
+                "hand=soft+slow-wood, pick=stone-only, sword=not-stone, clock harmless, bedrock immortal");
+
+            Inventory.Reset();
+            Inventory.Add(Inventory.DropFor(BlockType.Grass));
+            Inventory.Add(Inventory.DropFor(BlockType.Grass));
+            Inventory.Add(Inventory.DropFor(BlockType.Stone));
+            bool invA = Inventory.Get(BlockType.Dirt) == 2 && Inventory.Get(BlockType.Cobble) == 1;
+            Inventory.Add(Inventory.DropFor(BlockType.Leaves));
+            bool invB = Inventory.Get(BlockType.Leaves) == 0;
+            bool consumeOk = Inventory.TryConsume(BlockType.Dirt) && Inventory.Get(BlockType.Dirt) == 1;
+            bool consumeEmpty = !Inventory.TryConsume(BlockType.Snow);
+            Inventory.creative = true;
+            bool creativePlace = Inventory.TryConsume(BlockType.Ice) && Inventory.Get(BlockType.Ice) == 0;
+            Inventory.Reset();
+            Eval("m8.inventory", invA && invB && consumeOk && consumeEmpty && creativePlace,
+                "drops (grass->dirt, stone->cobble, leaves->none), consume gating, creative bypass");
+
+            ItemDrops.world = null; // editor-safe: null context is tolerated
+            ItemDrops.player = null;
+            ItemDrops.iconOf = null;
+            ItemDrops.ClearAll();
+            ItemDrops.Spawn(BlockType.Dirt, Vector3.zero);
+            ItemDrops.Spawn(BlockType.Leaves, Vector3.zero); // drop-table filtering lives in BlockInteraction, Spawn only skips Air
+            ItemDrops.Spawn(BlockType.Air, Vector3.zero);     // skipped
+            ItemDrops.SpawnMeat(Vector3.zero, 2);
+            int spawned = ItemDrops.LiveCount;
+            bool dropsOk = spawned == 4; // dirt + leaves + 2 meat
+            ItemDrops.ClearAll();
+            bool dropsCleared = ItemDrops.LiveCount == 0;
+            Eval("m8.item_drops", dropsOk && dropsCleared,
+                $"spawned={spawned} (air skipped), cleared={dropsCleared}");
+
+            simR.SetBlock(3, 72, 3, BlockType.Leaves, null);
+            simR.SetBlock(3, 71, 3, BlockType.Log, null);
+            int shRaw = simR.SurfaceHeight(3, 3);
+            int shTree = simR.SurfaceHeight(3, 3, true);
+            Eval("m8.surface_trees", shRaw == 72 && shTree < 71 && shTree >= 0,
+                $"raw={shRaw}, ignoring trees={shTree}");
+
+            // ----- M8b: farming -----
+            bool wheatFlag = Items.Crops.IsWheat(BlockType.Wheat2) && !Items.Crops.IsWheat(BlockType.Dirt);
+            bool mature = Items.Crops.IsMature(BlockType.Wheat3) && !Items.Crops.IsMature(BlockType.Wheat2);
+            bool soil = Items.Crops.IsSoil(BlockType.Grass) && Items.Crops.IsSoil(BlockType.Dirt) &&
+                        !Items.Crops.IsSoil(BlockType.Stone);
+            Inventory.Reset();
+            Items.Crops.Harvest(BlockType.Wheat3); // mature: 1-2 carrots + 1 seed
+            bool harvestOk = Inventory.carrots >= 1 && Inventory.seeds >= 1;
+            Items.Crops.Harvest(BlockType.Wheat1); // immature: seed only
+            bool harvestImmature = Inventory.carrots <= 3 && Inventory.seeds >= 2;
+            bool seedsGate = !Inventory.TryConsumeSeeds(99) && Inventory.seeds >= 0;
+            Eval("m8b.crops", wheatFlag && mature && soil && harvestOk && harvestImmature && seedsGate,
+                $"mature={harvestOk} immature-seed={harvestImmature} seed-gate={seedsGate}");
+
+            // ----- M9: real skins -----
+            var pigSkin = CreatureTextureFactory.GetSkinMaterial("pig_skin");
+            var cowSkin = CreatureTextureFactory.GetSkinMaterial("cow_skin");
+            var sheepSkin = CreatureTextureFactory.GetSkinMaterial("sheep_skin");
+            var chickenSkin = CreatureTextureFactory.GetSkinMaterial("chicken_skin");
+            var playerSkin = CreatureTextureFactory.GetSkinMaterial("player_skin");
+            bool skinsOk = pigSkin != null && cowSkin != null && sheepSkin != null &&
+                           chickenSkin != null && playerSkin != null;
+            Eval("m9.skin_sheets", skinsOk,
+                $"pig={(pigSkin != null)} cow={(cowSkin != null)} sheep={(sheepSkin != null)} " +
+                $"chicken={(chickenSkin != null)} player={(playerSkin != null)}");
+
+            var skinTex = playerSkin != null ? playerSkin.mainTexture as Texture2D : null;
+            bool missingGone = CreatureTextureFactory.GetSkinMaterial("no_such_skin") == null;
+            Eval("m9.skin_layout", skinTex != null && skinTex.width == 64 && skinTex.height == 32 && missingGone,
+                $"player sheet {skinTex?.width}x{skinTex?.height}, absent skins return null");
+
+            var skinnedPigGo = new GameObject("SkinPigTest");
+            var skinnedPig = skinnedPigGo.AddComponent<Creatures.BlockyAnimal>();
+            skinnedPig.species = "pig";
+            skinnedPig.BuildModel();
+            int skinnedPigParts = skinnedPigGo.GetComponentsInChildren<Transform>(true).Length;
+            UnityEngine.Object.DestroyImmediate(skinnedPigGo);
+            Eval("m9.animal_skinned", skinnedPigParts >= 12, $"{skinnedPigParts} transforms in pig model");
+
+            var skinnedRigGo = new GameObject("SkinRigTest");
+            var skinnedRig = skinnedRigGo.AddComponent<Player.ThirdPersonRig>();
+            skinnedRig.BuildModel();
+            int skinnedRigParts = skinnedRigGo.GetComponentsInChildren<Transform>(true).Length;
+            UnityEngine.Object.DestroyImmediate(skinnedRigGo);
+            Eval("m9.player_skinned", skinnedRigParts >= 12, $"{skinnedRigParts} transforms in player model (inactive included)");
 
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");

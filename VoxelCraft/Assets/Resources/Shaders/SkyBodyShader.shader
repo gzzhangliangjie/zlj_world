@@ -1,8 +1,11 @@
-Shader "Voxel/Water"
+Shader "Voxel/SkyBody"
 {
+    // Sun/moon disc: unlit, alpha-blended, fog- and night-dimming-free
+    // so the bodies stay bright against the darkened sky.
     Properties
     {
-        _MainTex ("Atlas", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "white" {}
+        _Color ("Tint", Color) = (1, 1, 1, 1)
     }
     SubShader
     {
@@ -17,23 +20,18 @@ Shader "Voxel/Water"
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
-            float4 _VoxelFogRange;
-            half4 _VoxelFogColor;
-            half _VoxelDayBrightness;
+            half4 _Color;
 
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
-                fixed4 color : COLOR;
             };
 
             struct v2f
             {
                 float4 pos : SV_POSITION;
                 half2 uv : TEXCOORD0;
-                fixed4 color : COLOR;
-                half fog : TEXCOORD1;
             };
 
             v2f vert (appdata v)
@@ -41,22 +39,12 @@ Shader "Voxel/Water"
                 v2f o;
                 o.pos = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
-                o.color = v.color;
-                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                float dist = distance(worldPos, _WorldSpaceCameraPos);
-                float range = max(_VoxelFogRange.y - _VoxelFogRange.x, 0.001);
-                o.fog = saturate((dist - _VoxelFogRange.x) / range);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 c = tex2D(_MainTex, i.uv);
-                c.rgb *= i.color.rgb;
-                c.rgb *= _VoxelDayBrightness;          // day/night dimming before fog
-                c.a = min(c.a, i.color.a);             // vertex alpha tunes transparency
-                c.rgb = lerp(c.rgb, _VoxelFogColor.rgb, i.fog);
-                return c;
+                return tex2D(_MainTex, i.uv) * _Color;
             }
             ENDCG
         }

@@ -55,7 +55,7 @@ namespace VoxelCraft.Creatures
                 float dist = Random.Range(spawnMinDistance, spawnMaxDistance);
                 int wx = Mathf.FloorToInt(player.position.x + Mathf.Cos(angle) * dist);
                 int wz = Mathf.FloorToInt(player.position.z + Mathf.Sin(angle) * dist);
-                int ground = world.sim.SurfaceHeight(wx, wz);
+                int ground = world.sim.SurfaceHeight(wx, wz, ignoreTrees: true);
                 if (ground < VoxelMath.SeaLevel + 1 || ground > TerrainGenerator.SnowLine - 2)
                 {
                     continue;
@@ -69,6 +69,7 @@ namespace VoxelCraft.Creatures
                 go.transform.position = new Vector3(wx + 0.5f, ground + 1.02f, wz + 0.5f);
                 var animal = go.AddComponent<BlockyAnimal>();
                 animal.world = world;
+                animal.playerRef = player;
                 animal.species = Species[Random.Range(0, Species.Length)];
                 animal.BuildModel();
                 animals.Add(animal);

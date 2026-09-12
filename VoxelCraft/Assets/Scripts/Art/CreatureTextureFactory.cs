@@ -11,6 +11,43 @@ namespace VoxelCraft.Art
     public static class CreatureTextureFactory
     {
         private static readonly Dictionary<string, Material> cache = new Dictionary<string, Material>();
+        private static readonly Dictionary<string, Material> skinCache = new Dictionary<string, Material>();
+
+        /// <summary>
+        /// Loads a full Minecraft-format skin sheet (64x32, PNG bytes) from
+        /// Resources/Textures/&lt;name&gt;.png.bytes and returns an unlit material.
+        /// Returns null when the file is absent (callers fall back to procedural).
+        /// </summary>
+        public static Material GetSkinMaterial(string skinName)
+        {
+            if (skinCache.TryGetValue(skinName, out var cached))
+            {
+                return cached;
+            }
+            var asset = Resources.Load<TextAsset>("Textures/" + skinName + ".png");
+            if (asset == null || asset.bytes == null || asset.bytes.Length == 0)
+            {
+                skinCache[skinName] = null;
+                return null;
+            }
+            var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+            if (!tex.LoadImage(asset.bytes, false))
+            {
+                skinCache[skinName] = null;
+                return null;
+            }
+            tex.filterMode = FilterMode.Point;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.Apply(false, false);
+            var shader = Resources.Load<Shader>("Shaders/UnlitTextureShader");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Texture"); // editor-only fallback
+            }
+            var mat = new Material(shader) { mainTexture = tex };
+            skinCache[skinName] = mat;
+            return mat;
+        }
 
         public static Material Get(string species, string part)
         {

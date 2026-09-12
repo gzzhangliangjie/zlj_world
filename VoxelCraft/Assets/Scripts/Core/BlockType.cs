@@ -26,5 +26,9 @@ namespace VoxelCraft.Core
         Obsidian = 20,
         MossyCobble = 21,
         StoneBrick = 22,
+        Wheat0 = 23,
+        Wheat1 = 24,
+        Wheat2 = 25,
+        Wheat3 = 26,
     }
 }

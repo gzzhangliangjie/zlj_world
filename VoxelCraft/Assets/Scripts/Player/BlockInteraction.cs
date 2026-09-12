@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using VoxelCraft.Core;
+using VoxelCraft.Items;
 using VoxelCraft.World;
 
 namespace VoxelCraft.Player
@@ -15,6 +16,7 @@ namespace VoxelCraft.Player
         public Camera viewCamera;
         public WorldRoot world;
         public Transform playerBody;
+        public VoxelCraft.Environment.DayNightCycle dayNight;
 
         public BlockType[][] hotbarPages =
         {
@@ -31,6 +33,11 @@ namespace VoxelCraft.Player
         };
         public int activePage;
         public int selectedIndex;
+        public ToolType currentTool = ToolType.Hand;
+
+        /// <summary>Transient hint shown by the HUD when an action was refused.</summary>
+        public string denyHint;
+        private float denyHintUntil;
 
         /// <summary>Raised with the block type right before it is destroyed.</summary>
         public event System.Action<BlockType> OnBreak;
@@ -101,25 +108,148 @@ namespace VoxelCraft.Player
                 return;
             }
 
-            if (Input.GetMouseButton(0) && Time.time >= nextBreakTime)
+            // Clock tool: hold LMB to fast-forward time, R to jump between
+            // dawn / noon / dusk / midnight.
+            if (currentTool == ToolType.Clock && dayNight != null)
             {
-                var target = world.sim.GetBlock(hit.x, hit.y, hit.z);
-                if (!BlockDatabase.Get(target).unbreakable)
+                if (Input.GetMouseButton(0))
                 {
-                    OnBreak?.Invoke(target);
-                    world.SetBlockAndApply(hit, BlockType.Air);
-                    nextBreakTime = Time.time + breakInterval;
+                    dayNight.timeOfDay = (dayNight.timeOfDay + Time.deltaTime * 0.16f) % 1f;
+                }
+                if (Input.GetKeyDown(KeyCode.R))
+                {
+                    float[] anchors = { 0.02f, 0.25f, 0.48f, 0.75f };
+                    float target = anchors[0];
+                    foreach (float anchor in anchors)
+                    {
+                        if (anchor > dayNight.timeOfDay + 0.02f)
+                        {
+                            target = anchor;
+                            break;
+                        }
+                    }
+                    dayNight.timeOfDay = target;
+                    ShowDeny("Time jumped to " + dayNight.ClockText);
                 }
             }
 
-            if (Input.GetMouseButtonDown(1))
+            // Sword: attack creatures first (physics ray against animal colliders),
+            // fall through to block breaking rules when no creature is targeted.
+            bool creatureAttacked = false;
+            if (currentTool == ToolType.Sword && Input.GetMouseButton(0) && Time.time >= nextBreakTime)
+            {
+                var creatureHits = Physics.RaycastAll(
+                    new Ray(viewCamera.transform.position, viewCamera.transform.forward), 3.8f);
+                float nearest = float.PositiveInfinity;
+                Creatures.BlockyAnimal target = null;
+                foreach (var h in creatureHits)
+                {
+                    var animal = h.collider != null ? h.collider.GetComponentInParent<Creatures.BlockyAnimal>() : null;
+                    if (animal != null && !animal.dead && h.distance < nearest)
+                    {
+                        nearest = h.distance;
+                        target = animal;
+                    }
+                }
+                if (target != null)
+                {
+                    target.TakeHit(viewCamera.transform.forward, ToolType.Sword);
+                    nextBreakTime = Time.time + 0.45f;
+                    creatureAttacked = true;
+                }
+            }
+
+            bool cropHandled = false;
+            if (!creatureAttacked && currentTool != ToolType.Clock && Input.GetMouseButton(0) && Time.time >= nextBreakTime)
+            {
+                var target = world.sim.GetBlock(hit.x, hit.y, hit.z);
+
+                // Wheat harvest: pickaxe-only, yields carrots + seeds.
+                if (Items.Crops.IsWheat(target))
+                {
+                    cropHandled = true;
+                    if (currentTool == ToolType.Pickaxe)
+                    {
+                        Items.Crops.Harvest(target);
+                        Items.Crops.Forget(hit);
+                        world.SetBlockAndApply(hit, BlockType.Air);
+                        nextBreakTime = Time.time + 0.15f;
+                    }
+                    else
+                    {
+                        ShowDeny("Harvest wheat with the PICKAXE (press T)");
+                        nextBreakTime = Time.time + 0.25f;
+                    }
+                }
+                else
+                {
+                    var (allowed, interval) = ToolRules.BreakRule(currentTool, target);
+                    if (allowed)
+                    {
+                        OnBreak?.Invoke(target);
+                        ItemDrops.Spawn(Inventory.DropFor(target),
+                            new Vector3(hit.x + 0.5f, hit.y + 0.5f, hit.z + 0.5f));
+                        if (target == BlockType.Grass && Random.value < Items.Crops.SeedChanceFromGrass)
+                        {
+                            Inventory.AddSeeds(1);
+                        }
+                        world.SetBlockAndApply(hit, BlockType.Air);
+                        nextBreakTime = Time.time + interval;
+                    }
+                    else
+                    {
+                        ShowDeny(BlockDatabase.Get(target).unbreakable
+                            ? "Bedrock cannot be broken"
+                            : "This block needs a PICKAXE (press T)");
+                        nextBreakTime = Time.time + 0.25f;
+                    }
+                }
+            }
+
+            if (!cropHandled && Input.GetMouseButtonDown(1))
             {
                 var current = world.sim.GetBlock(place.x, place.y, place.z);
                 if ((current == BlockType.Air || current == BlockType.Water) && !OverlapsPlayer(place))
                 {
-                    world.SetBlockAndApply(place, SelectedBlock);
-                    OnPlace?.Invoke(SelectedBlock);
+                    if (Inventory.TryConsume(SelectedBlock))
+                    {
+                        world.SetBlockAndApply(place, SelectedBlock);
+                        OnPlace?.Invoke(SelectedBlock);
+                    }
+                    else
+                    {
+                        ShowDeny("No " + BlockDatabase.Get(SelectedBlock).name + " left - break blocks to collect (G = creative)");
+                    }
                 }
+            }
+
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                currentTool = (ToolType)(((int)currentTool + 1) % 5);
+            }
+
+            // Q: plant seeds on the targeted soil block (crop grows above it).
+            if (Input.GetKeyDown(KeyCode.Q) && Inventory.seeds > 0)
+            {
+                var soil = world.sim.GetBlock(hit.x, hit.y, hit.z);
+                var above = new Vector3Int(hit.x, hit.y + 1, hit.z);
+                if (Items.Crops.IsSoil(soil) && world.sim.GetBlock(above.x, above.y, above.z) == BlockType.Air)
+                {
+                    if (Inventory.TryConsumeSeeds(1))
+                    {
+                        world.SetBlockAndApply(above, BlockType.Wheat0);
+                        Items.Crops.Track(above);
+                    }
+                }
+                else
+                {
+                    ShowDeny("Seeds need grass or dirt with open sky above");
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.G))
+            {
+                Inventory.creative = !Inventory.creative;
+                ShowDeny(Inventory.creative ? "Creative mode ON (infinite blocks)" : "Creative mode OFF");
             }
 
             if (Input.GetKeyDown(KeyCode.Tab))
@@ -145,6 +275,15 @@ namespace VoxelCraft.Player
                 selectedIndex = (selectedIndex - 1 + hotbar.Length) % hotbar.Length;
             }
         }
+
+        private void ShowDeny(string message)
+        {
+            denyHint = message;
+            denyHintUntil = Time.time + 2.2f;
+        }
+
+        /// <summary>HUD reads this; null when the hint expired.</summary>
+        public string ActiveDeny => Time.time < denyHintUntil ? denyHint : null;
 
         private bool OverlapsPlayer(Vector3Int voxel)
         {

@@ -35,8 +35,9 @@ namespace VoxelCraft.World
 
         private static Rect[] BuildTileRects(TextureFactory.AtlasResult atlas)
         {
-            var rects = new Rect[24];
-            for (int i = 0; i < 24; i++)
+            int count = TextureFactory.AtlasCols * TextureFactory.AtlasRows;
+            var rects = new Rect[count];
+            for (int i = 0; i < count; i++)
             {
                 rects[i] = atlas.TileRect((TileId)i);
             }
@@ -87,6 +88,8 @@ namespace VoxelCraft.World
             }
         }
 
+        private float cropTimer;
+
         private void Update()
         {
             if (sim == null || viewer == null)
@@ -105,6 +108,17 @@ namespace VoxelCraft.World
             for (int i = 0; i < unloaded.Count; i++)
             {
                 TearDown(unloaded[i]);
+            }
+
+            // Crop growth clock (1 Hz): advance stages + replay crops lost to chunk regeneration.
+            cropTimer -= Time.deltaTime;
+            if (cropTimer <= 0f)
+            {
+                cropTimer = 1f;
+                foreach (var edit in Items.Crops.Tick(sim))
+                {
+                    SetBlockAndApply(edit.pos, edit.block);
+                }
             }
         }
 

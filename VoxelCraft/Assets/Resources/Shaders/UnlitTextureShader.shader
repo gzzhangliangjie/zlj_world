@@ -20,6 +20,7 @@ Shader "Voxel/UnlitTexture"
             sampler2D _MainTex;
             float4 _VoxelFogRange;
             half4 _VoxelFogColor;
+            half _VoxelDayBrightness;
 
             struct appdata
             {
@@ -49,6 +50,7 @@ Shader "Voxel/UnlitTexture"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 c = tex2D(_MainTex, i.uv);
+                c.rgb *= _VoxelDayBrightness;          // creatures dim at night too
                 c.rgb = lerp(c.rgb, _VoxelFogColor.rgb, i.fog);
                 return fixed4(c.rgb, 1.0);
             }

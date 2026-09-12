@@ -327,8 +327,12 @@ namespace VoxelCraft.World
             return false;
         }
 
-        /// <summary>Y of the highest solid non-liquid block in a column, or -1 if unknown.</summary>
-        public int SurfaceHeight(int wx, int wz)
+        /// <summary>
+        /// Y of the highest solid non-liquid block in a column, or -1 if unknown.
+        /// With ignoreTrees, leaves/logs are skipped so creatures anchor to terrain
+        /// instead of standing on canopies (fixes "animals teleport onto trees").
+        /// </summary>
+        public int SurfaceHeight(int wx, int wz, bool ignoreTrees = false)
         {
             var chunk = GetChunk(VoxelMath.ChunkCoord(wx), VoxelMath.ChunkCoord(wz));
             if (chunk == null || !chunk.dataReady)
@@ -340,10 +344,15 @@ namespace VoxelCraft.World
             for (int y = VoxelMath.ChunkHeight - 1; y >= 0; y--)
             {
                 var b = chunk.GetLocal(lx, y, lz);
-                if (b != BlockType.Air && !BlockDatabase.IsLiquid(b))
+                if (b == BlockType.Air || BlockDatabase.IsLiquid(b))
                 {
-                    return y;
+                    continue;
                 }
+                if (ignoreTrees && (b == BlockType.Leaves || b == BlockType.Log))
+                {
+                    continue;
+                }
+                return y;
             }
             return -1;
         }

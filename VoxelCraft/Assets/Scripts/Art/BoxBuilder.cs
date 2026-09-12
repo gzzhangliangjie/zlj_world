@@ -25,5 +25,89 @@ namespace VoxelCraft.Art
             renderer.receiveShadows = false;
             return go;
         }
+
+        /// <summary>
+        /// Minecraft-style skinned box: a mesh whose six faces map to per-face UV
+        /// rectangles (texture pixels) of the supplied material. Face order:
+        /// +X, -X, +Y, -Y, +Z, -Z; each Vector4 = (u, v, w, h) with v from TOP.
+        /// </summary>
+        public static GameObject SkinnedBox(Transform parent, string name, Vector3 localPosition, Vector3 size,
+            Material material, Vector4[] faceUvPx, int texW, int texH)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+
+            var verts = new Vector3[24];
+            var uvs = new Vector2[24];
+            var indices = new int[36];
+
+            Vector3[][] corners =
+            {
+                new[] { new Vector3(1,0,1), new Vector3(1,0,0), new Vector3(1,1,0), new Vector3(1,1,1) }, // +X
+                new[] { new Vector3(0,0,0), new Vector3(0,0,1), new Vector3(0,1,1), new Vector3(0,1,0) }, // -X
+                new[] { new Vector3(0,1,1), new Vector3(1,1,1), new Vector3(1,1,0), new Vector3(0,1,0) }, // +Y
+                new[] { new Vector3(0,0,0), new Vector3(1,0,0), new Vector3(1,0,1), new Vector3(0,0,1) }, // -Y
+                new[] { new Vector3(0,0,1), new Vector3(1,0,1), new Vector3(1,1,1), new Vector3(0,1,1) }, // +Z
+                new[] { new Vector3(1,0,0), new Vector3(0,0,0), new Vector3(0,1,0), new Vector3(1,1,0) }, // -Z
+            };
+            Vector2[] cornerUv = { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
+
+            const float inset = 0.25f;
+            for (int f = 0; f < 6; f++)
+            {
+                var r = faceUvPx[f];
+                float u0 = (r.x + inset) / texW;
+                float u1 = (r.x + r.z - inset) / texW;
+                float v1 = 1f - (r.y + inset) / texH;
+                float v0 = 1f - (r.y + r.w - inset) / texH;
+                for (int c = 0; c < 4; c++)
+                {
+                    int vi = f * 4 + c;
+                    verts[vi] = corners[f][c];
+                    uvs[vi] = new Vector2(
+                        Mathf.Lerp(u0, u1, cornerUv[c].x),
+                        Mathf.Lerp(v0, v1, cornerUv[c].y));
+                }
+                int b = f * 4;
+                int o = f * 6;
+                indices[o] = b; indices[o + 1] = b + 1; indices[o + 2] = b + 2;
+                indices[o + 3] = b; indices[o + 4] = b + 2; indices[o + 5] = b + 3;
+            }
+
+            var mesh = new Mesh { name = name + "_mesh" };
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = indices;
+            mesh.RecalculateBounds();
+
+            var filter = go.AddComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return go;
+        }
+
+        /// <summary>
+        /// Standard Minecraft box net: returns 6 UV rects for a W x H x D box whose
+        /// net starts at pixel (u, v). Order: +X, -X, +Y, -Y, +Z, -Z.
+        /// </summary>
+        public static Vector4[] McNet(int u, int v, int W, int H, int D)
+        {
+            return new Vector4[]
+            {
+                new Vector4(u, v + D, D, H),                 // +X right side
+                new Vector4(u + D + W, v + D, D, H),         // -X left side
+                new Vector4(u + D, v, W, D),                 // +Y top
+                new Vector4(u + D + W, v, W, D),             // -Y bottom
+                new Vector4(u + D, v + D, W, H),             // +Z front
+                new Vector4(u + 2 * D + W, v + D, W, H),     // -Z back
+            };
+        }
     }
 }

@@ -15,7 +15,7 @@ namespace VoxelCraft.Art
     {
         public const int TileSize = 16;
         public const int AtlasCols = 6;
-        public const int AtlasRows = 4;
+        public const int AtlasRows = 5;
 
         /// <summary>Canonical tile file names, parallel to the TileId enum.</summary>
         private static readonly string[] TileNames =
@@ -24,6 +24,7 @@ namespace VoxelCraft.Art
             "log_top", "leaves", "water", "plank", "cobble", "glass",
             "snow", "brick", "bedrock", "coal_ore", "iron_ore", "gold_ore",
             "diamond_ore", "gravel", "ice", "obsidian", "mossy", "stone_brick",
+            "wheat0", "wheat1", "wheat2", "wheat3",
         };
 
         public sealed class AtlasResult
@@ -218,9 +219,42 @@ namespace VoxelCraft.Art
                 case TileId.Obsidian: Speckle(px, rng, 34, 26, 48, 16); break;
                 case TileId.MossyCobble: Cobble(px, rng, 110, 118, 96); break;
                 case TileId.StoneBrick: Bricks(px, rng, 122, 122, 122, 100, 100, 100); break;
+                case TileId.Wheat0: WheatStage(px, rng, 0); break;
+                case TileId.Wheat1: WheatStage(px, rng, 1); break;
+                case TileId.Wheat2: WheatStage(px, rng, 2); break;
+                case TileId.Wheat3: WheatStage(px, rng, 3); break;
             }
 
             return px;
+        }
+
+        private static void WheatStage(Color32[] px, System.Random rng, int stage)
+        {
+            for (int i = 0; i < px.Length; i++)
+            {
+                px[i] = new Color32(0, 0, 0, 0); // transparent background
+            }
+            // stage 0: sparse short sprouts, stage 3: dense tall golden stalks
+            int columns = stage == 0 ? 4 : stage == 1 ? 5 : 6;
+            int maxH = 3 + stage * 3;                       // 3..12 rows tall
+            byte stemR = (byte)(90 + stage * 40);
+            byte stemG = (byte)(170 - stage * 15);
+            byte stemB = (byte)(60 + stage * 10);
+            for (int cIdx = 0; cIdx < columns; cIdx++)
+            {
+                int x = 2 + cIdx * (16 - 3) / columns + rng.Next(0, 2);
+                int h = maxH - rng.Next(0, 3);
+                for (int y = 15; y > 15 - h && y >= 0; y--)
+                {
+                    px[y * 16 + Mathf.Clamp(x, 0, 15)] = new Color32(stemR, stemG, stemB, 255);
+                }
+                // grain heads on mature stages
+                if (stage >= 2 && h > 6)
+                {
+                    px[(15 - h + 1) * 16 + Mathf.Clamp(x, 0, 15)] = new Color32(228, 190, 90, 255);
+                    px[(15 - h) * 16 + Mathf.Clamp(x + 1, 0, 15)] = new Color32(228, 190, 90, 255);
+                }
+            }
         }
 
         private static void Speckle(Color32[] px, System.Random rng, int r, int g, int b, int spread)

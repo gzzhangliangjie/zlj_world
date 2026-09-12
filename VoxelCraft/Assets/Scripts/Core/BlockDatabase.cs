@@ -29,6 +29,10 @@ namespace VoxelCraft.Core
         Obsidian = 21,
         MossyCobble = 22,
         StoneBrick = 23,
+        Wheat0 = 24,
+        Wheat1 = 25,
+        Wheat2 = 26,
+        Wheat3 = 27,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>
@@ -64,7 +68,7 @@ namespace VoxelCraft.Core
 
         static BlockDatabase()
         {
-            defs = new BlockDef[23];
+            defs = new BlockDef[27];
 
             defs[(int)BlockType.Air] = new BlockDef
             {
@@ -218,6 +222,27 @@ namespace VoxelCraft.Core
                 placeable = true, unbreakable = false,
                 top = TileId.StoneBrick, side = TileId.StoneBrick, bottom = TileId.StoneBrick, soundGroup = "stone",
             };
+
+            TileId wheatTile(BlockType t)
+            {
+                switch (t)
+                {
+                    case BlockType.Wheat0: return TileId.Wheat0;
+                    case BlockType.Wheat1: return TileId.Wheat1;
+                    case BlockType.Wheat2: return TileId.Wheat2;
+                    default: return TileId.Wheat3;
+                }
+            }
+            foreach (BlockType wheat in new[] { BlockType.Wheat0, BlockType.Wheat1, BlockType.Wheat2, BlockType.Wheat3 })
+            {
+                defs[(int)wheat] = new BlockDef
+                {
+                    name = "Wheat (" + wheat.ToString().Substring(5) + ")",
+                    opaque = false, solid = false, liquid = false,
+                    placeable = false, unbreakable = false,
+                    top = wheatTile(wheat), side = wheatTile(wheat), bottom = wheatTile(wheat), soundGroup = "grass",
+                };
+            }
         }
     }
 }
