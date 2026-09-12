@@ -1,0 +1,22 @@
+# Normalize text files; keep binary assets byte-exact.
+* text=auto
+
+# Unity YAML as text (diff-friendly)
+*.unity text
+*.asset text
+*.prefab text
+*.meta text
+*.shader text
+*.mat text
+
+# Binaries
+*.png binary
+*.jpg binary
+*.ico binary
+*.ogg binary
+*.wav binary
+*.bytes binary
+*.exe binary
+*.zip binary
+*.unityweb binary
+*.wasm binary

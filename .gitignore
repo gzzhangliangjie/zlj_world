@@ -1,0 +1,7 @@
+# ---- staging & transient (never upload) ----
+_external/
+_logs/
+
+# ---- OS ----
+Thumbs.db
+.DS_Store

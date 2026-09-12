@@ -1,0 +1,32 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.pdb
+*.mdb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unity crash reports
+sysinfo.txt
+*.stackdump
+
+# Exported builds
+/Build/
+/Export/
