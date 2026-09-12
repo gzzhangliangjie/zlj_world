@@ -1,0 +1,42 @@
+name: Publish WebGL to GitHub Pages
+
+# Auto-publishes the web build whenever committed WebGL output changes on main,
+# or manually from the Actions tab (Run workflow button).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'VoxelCraft/Builds/WebGL/**'
+      - '.github/workflows/publish-webgl.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: VoxelCraft/Builds/WebGL
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

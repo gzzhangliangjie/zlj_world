@@ -354,5 +354,15 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 - 单线程 WASM 性能约为原生 1/2~1/3：8ms 预算制天然适配（帧内做不完就顺延下一帧），
   低配建议 `viewRadius=5`；`targetFrameRate` 在 WebGL 由 RAF 驱动，设置无副作用。
 
+### 17.5 自动发布流水线（GitHub Actions）
+- 触发：main 分支推送且 `VoxelCraft/Builds/WebGL/**` 有变更（或 Actions 页手动触发）；
+  `.github/workflows/publish-webgl.yml` 用 `configure-pages → upload-pages-artifact → deploy-pages`
+  官方 Action 链部署，产物部署**不走 Jekyll**（无需 .nojekyll）。
+- 页面源设置为 `build_type=workflow`（API: `POST /repos/{o}/{r}/pages`）；
+- 本地一键命令 `Tools/publish-webgl.ps1`：Unity 批构建（校验 `WEBGL BUILD OK`）→
+  `git add Builds/WebGL` → 提交推送（token 取 `GITHUB_TOKEN` 环境变量，8 次重试抗网络波动）；
+- 因此 **WebGL 构建产物入库**（`.gitignore` 中 `Builds/*` 全忽略、仅 `!Builds/WebGL/` 放行，
+  约 9.5MB/次，历史会累积——介意时可改用 Actions 构建或定期 squash）。
+
 ---
-*文档版本：1.1（新增 §17 WebGL 发布）。代码行数 3502+/24+ 文件；回归 30/30 PASS。*
+*文档版本：1.2（§17 增补自动发布流水线）。代码 3502 行/24 文件；回归 30/30 PASS。*

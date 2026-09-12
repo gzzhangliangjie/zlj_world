@@ -3,6 +3,9 @@
 一个完全离线、零外部包依赖的体素沙盒游戏：区块化大世界流式加载、第一人称移动、
 方块破坏与建造、真实免费材质与音效、方块化动物与第三人称角色。
 
+> 🎮 **在线试玩（网页版）**：https://gzzhangliangjie.github.io/zlj_world/
+> （GitHub Actions 自动部署：main 分支推送构建产物后约 1~2 分钟更新）
+
 ## 快速开始
 
 1. 安装 **Unity 2022.3.57f1c2**（含中国版）via Unity Hub；
@@ -113,7 +116,17 @@ DDA 射线（轴向/斜向/穿水/射程）、音效分组、矿物生成、模�
 
 本项目支持一键导出为**浏览器直接游玩**的 WebGL 版本（Chrome / Edge / Firefox 推荐）。
 
-### 一键构建（命令行，无需打开编辑器）
+### 自动发布（推荐：改代码 → 网页自动更新）
+
+```powershell
+powershell -File Tools\publish-webgl.ps1        # 一条命令：构建→提交→推送
+```
+
+推送后 GitHub Actions（`.github/workflows/publish-webgl.yml`）自动把
+`VoxelCraft/Builds/WebGL` 部署到 Pages，**约 1~2 分钟**后 https://gzzhangliangjie.github.io/zlj_world/ 生效。
+也可在仓库 **Actions** 页面手动点 Run workflow 重发。
+
+### 手动一键构建（不发布，仅出包）
 
 ```powershell
 & "D:\Unity\2022.3.57f1c2\Editor\Unity.exe" -batchmode -quit `
