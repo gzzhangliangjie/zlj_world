@@ -48,7 +48,7 @@ Canonical tile names: `grass_top, grass_side, dirt, stone, sand, log_side, log_t
 
 - **Add a block type:** extend BlockType enum → add BlockDatabase row (tiles, opaque, solid) → atlas slot in TextureFactory tile table → (if placeable) hotbar entry in BlockInteraction. World gen integration only if terrain should produce it.
 - **Retune world:** Game component fields (seed, viewRadius) or TerrainGenerator constants; never scatter magic numbers outside these two.
-- **Verify anything:** use the `unity-batchmode` skill (compile + SelfTest). SelfTest must stay green before reporting a milestone complete.
+- **Verify anything:** use the `unity-cli` skill - `Tools\vx.cmd ci` (fast MSBuild compile + full Unity SelfTest, verdict parsed from logs). SelfTest must stay green before reporting a milestone complete. Raw batchmode reference: `unity-batchmode` skill.
 
 ## Staged external assets (outside the Unity project)
 

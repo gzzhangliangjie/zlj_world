@@ -105,6 +105,22 @@ Assets/Editor/SelfTest.cs   离线自动化回归（31 个用例）
 设计要点：场景零手工配置（运行时自举）；世界模拟与 Unity 对象分离（WorldSim 纯 C# 可离线测试）；
 贴图以 `.png.bytes` 走 TextAsset+LoadImage，不依赖导入器设置。
 
+## 开发工作流：Unity-CLI（推荐）
+
+`Tools\unity-cli.ps1`（快捷方式 `Tools\vx.cmd`）把下面所有 batchmode 命令封装成一条命令：
+自动排队等锁、并发冲突重试、解析日志给 PASS/FAIL 结论、日志统一进 `_logs\`。
+
+```powershell
+Tools\vx.cmd status          # 环境快照：进程/锁/许可证/csproj 漂移/最近构建
+Tools\vx.cmd compile-fast    # ~20s 语法检查（MSBuild 编译 Unity 生成的 csproj，不启动 Unity）
+Tools\vx.cmd ci              # 发布闸门：compile-fast + Unity 全量 SelfTest，全绿才许交付
+Tools\vx.cmd build webgl     # 仅出包；build win 同理；publish = 构建+提交+推送
+Tools\vx.cmd log             # 解析 _logs 最新日志，给结论
+```
+
+> `compile-fast` 发现"新增 .cs 未登记进 csproj"会警告，`ci` 会自动升级为 Unity 全量编译。
+> 完整命令参考与流程优化说明见 `Docs/UNITY_CLI.md`。
+
 ## 自动化自测（无人值守）
 
 ```powershell

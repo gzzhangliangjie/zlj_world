@@ -119,6 +119,8 @@ llm-pi-ai:
 - MC 常把 -Y 底面留空(鸡头底全透明)→ 自测 `NetHasPixels` 对底面(索引 3)豁免像素检查,仍查越界;
 - **共面即闪(z-fighting)**:盒子相接处两边面落在同一数学平面(深度完全相等)→ 该区域永久闪烁,看起来像"贴图错乱"。规则:**相接盒子必须重叠沉入对方 ≥10mm,绝不齐平**。已修:动物四腿顶面沉入躯干 12mm、鸡喙背面沉入头部 18mm、玩家手臂内侧面沉入躯干 12mm(肩点 x=0.362)、四肢 Z 宽 24cm(躯干 25cm)、玩家头 X 宽 48cm(躯干 50cm)。摆新盒子时逐对检查 6 个面;
 - `Unity.exe &` 调用偶发**启动器先行退出(exit 0)而子编辑器还在跑**:批处理任务"完成"但日志只有 13KB 停在启动期时,先 `Get-Process Unity` 轮询等子进程退出再读日志;
+- 💣 **批模式秒退 exit 140063 且完全不写 -logFile(2026-09-14 双重实锤)**:两个成因——①**DSH 文件沙箱策略过紧**:workspace-write 下 Unity 启动期写被拒,8/8 连败;切 danger-full-access 后同一命令 **9 秒**跑完全量 SelfTest(热 Library 时批模式可秒级完成);②实例竞争(另一会话 ~70s/轮连跑 MobReplicator 时撞锁)。规范:140063 无日志**先看当前沙箱/文件策略**,再确认"无 Unity 进程 + 无 `Temp\UnityLockfile`";重试加抖动退避。已封装进 `Tools/unity-cli.ps1`(自动排队+重试+日志判定),优先用它别手敲;
+- 💣 **PS `Start-Process -PassThru` 的 ExitCode 可能为空**(2026-09-14 实锤):spawn 后必须立即 `$null = $p.Handle` 拿句柄,否则进程退出后 `.ExitCode` 读回空值,成功会被判成失败;
 - **版本号 `Game.BuildId`**(如 2026-09-13d)显示在 HUD 右下角——GitHub Pages 对 index.html 也有 ≤10 分钟缓存,玩家报"改了没生效"先让其 Ctrl+F5 并核对角落 build 号。
 - `publish-webgl.ps1` 里**所有 git 命令段都要降 EAP=Continue**(git 的 LF/CRLF warning 走 stderr,PS5.1 在 EAP=Stop 下会把它变成终止错误;调用方若再套 `2>&1` 更必炸)。commit+push 已拆成段内局部降级,新增 git 步骤记得照做。
 
