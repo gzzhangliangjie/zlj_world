@@ -108,6 +108,7 @@ llm-pi-ai:
 
 ### 踩坑备忘(全部真实踩过)
 
+- 💣 **挂在其他 SkinnedBox 下的子盒子(喙/猪鼻)必须做父缩放补偿**(2026-09-13e 修复):SkinnedBox 会设 `localScale = size`,子盒继承父(头)缩放后体积被压成薄片(喙缩到 1cm 厚"消失"),且 **localPosition 也会被父缩放缩水**(喙 z 偏移 0.107×0.1875=2cm → 整个埋进头里"看不到")。统一用 `BlockyAnimal.AddSkinnedChild`:localPosition 和 localScale 都除以 `parent.lossyScale`,这样传入的位置/尺寸就是世界米数;
 - 💣 **`BoxBuilder.SkinnedBox` 曾漏写 `localScale = size`(2026-09-13d 修复)**:所有 SkinnedBox 部件(动物全身、玩家模型、手持方块)渲染成 **1×1×1 米立方体**——这就是玩家连续报"鸡腿变粗方块/猪牛身体太短/没有翅膀/贴图错乱+闪烁/脸糊/只一只眼"的总根因:①几何比例全毁;②巨盒互相穿插→大面积共面 z-fight;③ UV 拉伸到 1m 脸上自然糊。**给 mesh 顶点做单位立方体+transform.localScale 缩放时,顶点必须居中(`corners - 0.5`)再 scale,否则锚点在角上**。修尺寸类 bug 前先查 `SkinnedBox`/`Box` 是否真的应用了 size;
 - **批模式离屏渲染验证流程(强烈推荐,2026-09-13 建立)**:`Assets/Editor/ModelSnapshot.cs` 在 `-batchmode`(带图形,勿加 -nographics)里造出真实动物/玩家模型,手动 `Shader.SetGlobalFloat("_VoxelDayBrightness",1f)`(否则 unlit 皮肤渲染全黑)+`_VoxelFogRange=(100,300)`,`cam.Render()` 到 RenderTexture→ReadPixels→PNG 存 `_logs/`,再用读图工具**亲眼看**。推理十轮不如看图一张——本次"贴图错乱"连续几轮没修好,就是直到出快照才看见真凶;
 - 注意:`Renderer.bounds`/`mesh.bounds` 在批模式快照里可能返回无意义值(单位立方体),别拿它当几何证据;模型 invisible 可能是设计行为(玩家 `ThirdPersonRig:108` 第一人称默认 `modelRoot.SetActive(false)`),快照时需手动激活;
