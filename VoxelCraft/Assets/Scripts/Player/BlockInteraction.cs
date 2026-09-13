@@ -223,10 +223,8 @@ namespace VoxelCraft.Player
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.T))
-            {
-                currentTool = (ToolType)(((int)currentTool + 1) % 5);
-            }
+            // NOTE: T (tool bag) is owned by the Hud - it must work while the
+            // cursor is released, which this Update no longer handles then.
 
             // Q: plant seeds on the targeted soil block (crop grows above it).
             if (Input.GetKeyDown(KeyCode.Q) && Inventory.seeds > 0)

@@ -34,31 +34,46 @@ namespace VoxelCraft.Creatures
 
         public bool IsWalking => walking;
 
-        // Standard MC quadruped net offsets (64x32 sheets from VoxeLibre mobs_mc).
-        private static readonly Vector4[] PigBodyNet =
+        /// <summary>
+        /// Standard Minecraft 64x32 skin nets for a species (VoxeLibre mobs_mc
+        /// sheets). Bodies are MC-rotated boxes (long axis vertical in the
+        /// texture), so they use QuadrupedBodyNet + QuadrupedBodyRots; heads and
+        /// legs are plain upright boxes. Exposed for the SelfTest net validation.
+        /// </summary>
+        public static void GetSpeciesNets(string kind, out Vector4[] body, out int[] bodyRot,
+            out Vector4[] head, out Vector4[] leg)
         {
-            new Vector4(28, 16, 8, 16), new Vector4(46, 16, 8, 16),
-            new Vector4(36, 8, 10, 8), new Vector4(46, 8, 10, 8),
-            new Vector4(36, 16, 10, 8), new Vector4(54, 16, 10, 8),
-        };
-        private static readonly Vector4[] CowBodyNet =
-        {
-            new Vector4(18, 14, 10, 18), new Vector4(40, 14, 10, 18),
-            new Vector4(28, 4, 12, 10), new Vector4(40, 4, 12, 10),
-            new Vector4(28, 14, 12, 18), new Vector4(50, 14, 12, 18),
-        };
-        private static readonly Vector4[] SheepBodyNet =
-        {
-            new Vector4(28, 14, 6, 16), new Vector4(42, 14, 6, 16),
-            new Vector4(36, 8, 8, 6), new Vector4(44, 8, 8, 6),
-            new Vector4(36, 14, 8, 16), new Vector4(50, 14, 8, 16),
-        };
+            switch (kind)
+            {
+                case "cow":
+                    body = BoxBuilder.QuadrupedBodyNet(18, 4, 12, 18, 10);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 6);
+                    leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
+                    break;
+                case "sheep":
+                    body = BoxBuilder.QuadrupedBodyNet(28, 8, 8, 16, 6);
+                    head = BoxBuilder.McNet(2, 2, 6, 6, 6);
+                    leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
+                    break;
+                case "chicken":
+                    body = BoxBuilder.QuadrupedBodyNet(0, 8, 6, 8, 6);
+                    head = BoxBuilder.McNet(0, 0, 4, 6, 3);
+                    leg = BoxBuilder.McNet(26, 0, 3, 5, 3);
+                    break;
+                default: // pig
+                    body = BoxBuilder.QuadrupedBodyNet(28, 8, 10, 16, 8);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(0, 16, 4, 6, 4);
+                    break;
+            }
+            bodyRot = BoxBuilder.QuadrupedBodyRots;
+        }
 
         /// <summary>Builds the box model. Call once after species is assigned.</summary>
         public void BuildModel()
         {
-            GetDims(species, out Vector3 bodySize, out float legH, out float headSize);
-            float totalHeight = legH + bodySize.y + headSize * 0.5f;
+            GetDims(species, out Vector3 bodySize, out float legH, out Vector3 headBox, out float legThick);
+            float totalHeight = legH + bodySize.y + headBox.y * 0.5f;
 
             var skin = CreatureTextureFactory.GetSkinMaterial(species + "_skin");
             bodyRoot = new GameObject("Body").transform;
@@ -67,20 +82,21 @@ namespace VoxelCraft.Creatures
             if (skin != null)
             {
                 // Real MC-format skin: standard quadruped nets.
-                Vector4[] bodyNet = species switch
-                {
-                    "cow" => CowBodyNet,
-                    "sheep" => SheepBodyNet,
-                    _ => PigBodyNet,
-                };
-                var headNet = BoxBuilder.McNet(0, 0, 8, 8, 6);
-                var legNet = BoxBuilder.McNet(0, 16, 4, 12, 4);
+                GetSpeciesNets(species, out var bodyNet, out var bodyRot, out var headNet, out var legNet);
 
                 BoxBuilder.SkinnedBox(bodyRoot, "Body", new Vector3(0f, legH + bodySize.y * 0.5f, 0f), bodySize,
-                    skin, bodyNet, 64, 32);
+                    skin, bodyNet, 64, 32, bodyRot);
                 head = BoxBuilder.SkinnedBox(bodyRoot, "Head",
-                    new Vector3(0f, legH + bodySize.y + headSize * 0.4f, bodySize.z * 0.5f + headSize * 0.45f),
-                    Vector3.one * headSize, skin, headNet, 64, 32).transform;
+                    new Vector3(0f, legH + bodySize.y + headBox.y * 0.4f, bodySize.z * 0.5f + headBox.z * 0.45f),
+                    headBox, skin, headNet, 64, 32).transform;
+
+                if (species == "chicken")
+                {
+                    // 4x3x1 px beak slab on the head front (sheet rect at 14,0).
+                    BoxBuilder.SkinnedBox(head, "Beak",
+                        new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.03125f),
+                        new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1), 64, 32);
+                }
 
                 Vector2[] hipXZ =
                 {
@@ -95,7 +111,7 @@ namespace VoxelCraft.Creatures
                     hip.SetParent(bodyRoot, false);
                     hip.localPosition = new Vector3(hipXZ[i].x, legH, hipXZ[i].y);
                     BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -legH * 0.5f, 0f),
-                        new Vector3(0.25f, legH, 0.25f), skin, legNet, 64, 32);
+                        new Vector3(legThick, legH, legThick), skin, legNet, 64, 32);
                     legs[i] = hip;
                 }
             }
@@ -105,8 +121,8 @@ namespace VoxelCraft.Creatures
                 BoxBuilder.Box(bodyRoot, "Body", new Vector3(0f, legH + bodySize.y * 0.5f, 0f), bodySize,
                     CreatureTextureFactory.Get(species, "body"));
                 head = BoxBuilder.Box(bodyRoot, "Head",
-                    new Vector3(0f, legH + bodySize.y + headSize * 0.4f, bodySize.z * 0.5f + headSize * 0.45f),
-                    Vector3.one * headSize, CreatureTextureFactory.Get(species, "face")).transform;
+                    new Vector3(0f, legH + bodySize.y + headBox.y * 0.4f, bodySize.z * 0.5f + headBox.z * 0.45f),
+                    headBox, CreatureTextureFactory.Get(species, "face")).transform;
 
                 var legMat = CreatureTextureFactory.Get(species, "leg");
                 Vector2[] hipXZ =
@@ -122,7 +138,7 @@ namespace VoxelCraft.Creatures
                     hip.SetParent(bodyRoot, false);
                     hip.localPosition = new Vector3(hipXZ[i].x, legH, hipXZ[i].y);
                     var leg = BoxBuilder.Box(hip, "Leg", new Vector3(0f, -legH * 0.5f, 0f),
-                        new Vector3(Mathf.Max(bodySize.x * 0.22f, 0.14f), legH, Mathf.Max(bodySize.z * 0.22f, 0.14f)), legMat);
+                        new Vector3(legThick, legH, legThick), legMat);
                     legs[i] = hip;
                 }
             }
@@ -139,29 +155,33 @@ namespace VoxelCraft.Creatures
             transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
         }
 
-        private static void GetDims(string kind, out Vector3 bodySize, out float legH, out float headSize)
+        private static void GetDims(string kind, out Vector3 bodySize, out float legH, out Vector3 headBox, out float legThick)
         {
             switch (kind)
             {
                 case "cow":
-                    bodySize = new Vector3(0.75f, 0.625f, 1.125f);
+                    bodySize = new Vector3(0.75f, 0.625f, 1.125f); // 12 x 10 x 18 px
                     legH = 0.75f;
-                    headSize = 0.5f;
+                    headBox = new Vector3(0.5f, 0.5f, 0.375f);     // 8 x 8 x 6 px
+                    legThick = 0.25f;
                     break;
                 case "sheep":
-                    bodySize = new Vector3(0.5f, 0.375f, 1.0f);
+                    bodySize = new Vector3(0.5f, 0.375f, 1.0f);    // 8 x 6 x 16 px
                     legH = 0.75f;
-                    headSize = 0.4f;
+                    headBox = new Vector3(0.375f, 0.375f, 0.375f); // 6 x 6 x 6 px
+                    legThick = 0.25f;
                     break;
                 case "chicken":
-                    bodySize = new Vector3(0.375f, 0.5f, 0.375f);
-                    legH = 0.3f;
-                    headSize = 0.28f;
+                    bodySize = new Vector3(0.375f, 0.375f, 0.5f);  // 6 x 6 x 8 px
+                    legH = 0.3125f;
+                    headBox = new Vector3(0.25f, 0.375f, 0.1875f); // 4 x 6 x 3 px
+                    legThick = 0.1875f;
                     break;
                 default: // pig
-                    bodySize = new Vector3(0.625f, 0.5f, 1.0f);
+                    bodySize = new Vector3(0.625f, 0.5f, 1.0f);    // 10 x 8 x 16 px
                     legH = 0.375f;
-                    headSize = 0.5f;
+                    headBox = new Vector3(0.5f, 0.5f, 0.5f);       // 8 x 8 x 8 px
+                    legThick = 0.25f;
                     break;
             }
         }

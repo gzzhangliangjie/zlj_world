@@ -24,10 +24,13 @@
 | Ctrl | 飞行下降 |
 | F | 切换飞行模式（11 m/s） |
 | V | 第一 / 第三人称切换（方块化角色） |
+| T / E | 打开 / 关闭**道具栏**（点选或按 1-5 切换工具，右侧显示背包；Esc 也可关闭） |
 | 鼠标左键（按住） | 破坏方块（0.22s 连发，音效随材质变化） |
 | 鼠标右键 | 放置当前方块（防卡入身体） |
 | 1-9 / 滚轮 | 选择热栏槽位 |
 | Tab | 热栏翻页（第 2 页：雪/砾石/冰/黑曜石/苔石/石砖/矿石） |
+| Q | 在草地/泥土上播种（对准地面） |
+| G | 切换创造模式（无限方块） |
 | Esc | 暂停面板 / 解锁鼠标 |
 
 ## 世界特性
@@ -36,7 +39,7 @@
 - **生物群系**：草原 / 山地（y≥46 积雪）/ 沙漠 / 湖泊海洋（海平面 y=30，寒带湖面结冰）/ 沙滩；
 - **地下**：煤层（y<52）、铁矿（y<42）、金矿（y<25）、钻石（y<16）、砾石团、深域黑曜石、y=0 基岩（不可破坏）；
 - **植被**：确定性橡树（跨区块无缝）、沙漠无树、雪山无树；
-- **动物**：猪 / 牛 / 羊 / 鸡 在玩家附近草地游荡（方块化模型 + 程序像素皮肤 + 代码动画）；
+- **动物**：猪 / 牛 / 羊 / 鸡 在玩家附近草地游荡（方块化模型 + MC 格式真实皮肤 + 代码动画，鸡有喙）；
 - **同种子可复现**：修改 `VoxelGameRoot → Game` 组件的 `Seed` 字段重进 Play 即换世界。
 
 ## 参数调节（Inspector 中选中 VoxelGameRoot）
@@ -63,7 +66,9 @@
   [minetest_game](https://github.com/minetest/minetest_game)，作者 celeron55 (Perttu Ahola)
   及贡献者，许可 **CC BY-SA 3.0**。
 - 完整许可文本见 `Assets/ThirdPartyNotices/`（NOTICE.md + 两份原版许可）。
-- 动物/角色皮肤、图集兜底贴图均为本项目**程序化生成**（无版权限制）。
+- 动物/角色皮肤（`*_skin.png.bytes`）：动物皮肤取自 VoxeLibre `mobs_mc`（CC0 / CC BY 3.0 / CC BY-SA 4.0），
+  角色皮肤取自 [simple_skins](https://github.com/qwertysmeerkaas/simple_skins)（MIT，作者 TenPlus1）；
+  图集兜底贴图为本项目**程序化生成**（无版权限制）。
 
 ## 换装指南（贴图三层供给）
 
@@ -93,7 +98,7 @@ Assets/Scripts/
 ├─ UI/       Hud(准星/热栏/状态/暂停面板)
 └─ Art/      TextureFactory(三层图集)  AudioLibrary(音效分组)
              CreatureTextureFactory+BoxBuilder(程序皮肤/盒体建模)
-Assets/Editor/SelfTest.cs   离线自动化回归（30 个用例）
+Assets/Editor/SelfTest.cs   离线自动化回归（31 个用例）
 ```
 
 设计要点：场景零手工配置（运行时自举）；世界模拟与 Unity 对象分离（WorldSim 纯 C# 可离线测试）；
@@ -106,7 +111,7 @@ Assets/Editor/SelfTest.cs   离线自动化回归（30 个用例）
   -projectPath "<本项目路径>" `
   -executeMethod VoxelCraft.Editor.SelfTest.RunAll `
   -logFile "<日志路径>"
-# 日志中检查：SELFTEST RESULT: PASS（当前 30/30 用例）
+# 日志中检查：SELFTEST RESULT: PASS（当前 31/31 用例）
 ```
 
 覆盖：图集完整性、地形确定性、面剔除精确计数、AO、水面下沉、编辑联动、

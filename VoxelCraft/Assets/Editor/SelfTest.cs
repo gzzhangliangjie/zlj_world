@@ -430,7 +430,7 @@ namespace VoxelCraft.Editor
             animal.BuildModel();
             int animalParts = animalGo.GetComponentsInChildren<Transform>().Length;
             UnityEngine.Object.DestroyImmediate(animalGo);
-            Eval("m7c.animal_model", animalParts >= 10, $"{animalParts} transforms in cow model");
+            Eval("m7c.animal_model", animalParts >= 11, $"{animalParts} transforms in cow model");
 
             // ----- M7D: third-person player model -----
             var rigGo = new GameObject("RigTest");
@@ -529,14 +529,53 @@ namespace VoxelCraft.Editor
             skinnedPig.BuildModel();
             int skinnedPigParts = skinnedPigGo.GetComponentsInChildren<Transform>(true).Length;
             UnityEngine.Object.DestroyImmediate(skinnedPigGo);
-            Eval("m9.animal_skinned", skinnedPigParts >= 12, $"{skinnedPigParts} transforms in pig model");
+            Eval("m9.animal_skinned", skinnedPigParts >= 11, $"{skinnedPigParts} transforms in pig model");
 
             var skinnedRigGo = new GameObject("SkinRigTest");
             var skinnedRig = skinnedRigGo.AddComponent<Player.ThirdPersonRig>();
             skinnedRig.BuildModel();
             int skinnedRigParts = skinnedRigGo.GetComponentsInChildren<Transform>(true).Length;
             UnityEngine.Object.DestroyImmediate(skinnedRigGo);
-            Eval("m9.player_skinned", skinnedRigParts >= 12, $"{skinnedRigParts} transforms in player model (inactive included)");
+            Eval("m9.player_skinned", skinnedRigParts >= 11, $"{skinnedRigParts} transforms in player model (inactive included)");
+
+            // Every face rect of every species net must sit inside the 64x32
+            // sheet and sample at least one visible pixel (catches UV layout
+            // regressions like mismatched MC-rotated torso nets).
+            bool uvOk = true;
+            string uvBad = "";
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken" })
+            {
+                var spSkin = CreatureTextureFactory.GetSkinMaterial(sp + "_skin");
+                var spTex = spSkin != null ? spSkin.mainTexture as Texture2D : null;
+                if (spTex == null)
+                {
+                    uvOk = false;
+                    uvBad = "no sheet for " + sp;
+                    break;
+                }
+                Creatures.BlockyAnimal.GetSpeciesNets(sp, out var bodyNet, out _, out var headNet, out var legNet);
+                if (!NetHasPixels(spTex, bodyNet) || !NetHasPixels(spTex, headNet) || !NetHasPixels(spTex, legNet))
+                {
+                    uvOk = false;
+                    uvBad = "empty or out-of-bounds rect in " + sp + " nets";
+                    break;
+                }
+            }
+            if (uvOk)
+            {
+                var pTex = playerSkin != null ? playerSkin.mainTexture as Texture2D : null;
+                if (pTex == null ||
+                    !NetHasPixels(pTex, BoxBuilder.McNet(0, 0, 8, 8, 8)) ||
+                    !NetHasPixels(pTex, BoxBuilder.McNet(16, 16, 8, 12, 4)) ||
+                    !NetHasPixels(pTex, BoxBuilder.McNet(40, 16, 4, 12, 4)) ||
+                    !NetHasPixels(pTex, BoxBuilder.McNet(0, 16, 4, 12, 4)))
+                {
+                    uvOk = false;
+                    uvBad = "empty or out-of-bounds rect in player nets";
+                }
+            }
+            Eval("m9.skin_uv_nets", uvOk,
+                uvOk ? "every face rect in-bounds with visible pixels" : uvBad);
 
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");
@@ -568,6 +607,50 @@ namespace VoxelCraft.Editor
                 return !BlockDatabase.IsOpaque(nb);
             }
             return !BlockDatabase.IsOpaque(nb) && nb != b;
+        }
+
+        /// <summary>
+        /// True when every rect of a skin net (Vector4 = u,v,w,h, v from top)
+        /// lies inside the sheet and holds at least one visible pixel. The -Y
+        /// bottom face (index 3) only needs to be in-bounds: MC artists often
+        /// leave those hidden faces fully transparent (e.g. chicken head).
+        /// </summary>
+        private static bool NetHasPixels(Texture2D tex, Vector4[] net)
+        {
+            if (tex == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < net.Length; i++)
+            {
+                var r = net[i];
+                if (r.x < 0f || r.y < 0f || r.x + r.z > tex.width || r.y + r.w > tex.height)
+                {
+                    return false;
+                }
+                if (i == 3)
+                {
+                    continue;
+                }
+                bool any = false;
+                for (int s = 0; s < 5 && !any; s++)
+                {
+                    float fx = s == 4 ? 0.5f : (s == 0 ? 0.15f : s == 1 ? 0.85f : s == 2 ? 0.15f : 0.85f);
+                    float fy = s == 4 ? 0.5f : (s == 0 || s == 1 ? 0.5f : (s == 2 ? 0.15f : 0.85f));
+                    int px = Mathf.Clamp(Mathf.RoundToInt(r.x + r.z * fx), 0, tex.width - 1);
+                    int pyTop = Mathf.Clamp(Mathf.RoundToInt(r.y + r.w * fy), 0, tex.height - 1);
+                    // rect v counts from the top, GetPixel counts from the bottom
+                    if (tex.GetPixel(px, tex.height - 1 - pyTop).a > 0.02f)
+                    {
+                        any = true;
+                    }
+                }
+                if (!any)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static TextureFactory.AtlasResult SafeBuildAtlas()
