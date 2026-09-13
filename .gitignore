@@ -1,6 +1,12 @@
 # ---- staging & transient (never upload) ----
 _external/
 _logs/
+Vselftest_*.log
+Vtmp_*.png
+Vpatch_*.ps1
+
+# ---- local-only builds (the shipped artifact is WebGL) ----
+VoxelCraft/Builds/Windows/
 
 # ---- OS ----
 Thumbs.db
