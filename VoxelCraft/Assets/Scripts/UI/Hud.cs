@@ -405,7 +405,7 @@ namespace VoxelCraft.UI
 
             // Backpack column.
             float bx = rect.x + 344f;
-            GUI.Label(new Rect(bx, rect.y + 54f, 200f, 20f), "BACKPACK", labelStyle);
+            GUI.Label(new Rect(bx, rect.y + 54f, 210f, 20f), "BACKPACK  (click: hold)", labelStyle);
             float by = rect.y + 78f;
             if (Inventory.creative)
             {
@@ -436,7 +436,7 @@ namespace VoxelCraft.UI
                 }
                 anyItem = true;
                 game.atlas.icons.TryGetValue(kv.Key, out Texture2D icon);
-                DrawBagRow(bx, ref by, icon, BlockDatabase.Get(kv.Key).name + " x" + kv.Value);
+                DrawBagBlockRow(bx, ref by, icon, kv.Key, kv.Value);
             }
             if (!anyItem)
             {
@@ -444,7 +444,7 @@ namespace VoxelCraft.UI
             }
 
             GUI.Label(new Rect(rect.x, rect.y + rect.height - 26f, rect.width, 20f),
-                "T / E / Esc: close     Tool also shown bottom-left in game", labelStyle);
+                "T / E / Esc: close     Tool + held block are shown in game (3D)", labelStyle);
         }
 
         private void DrawBagRow(float x, ref float y, Texture2D icon, string text)
@@ -455,6 +455,45 @@ namespace VoxelCraft.UI
             }
             GUI.Label(new Rect(x + 24f, y + 1f, 190f, 18f), text, labelStyle);
             y += 22f;
+        }
+
+        /// <summary>Backpack block row; clicking equips the block to the current
+        /// hotbar slot (and to the hand, via the hand tool).</summary>
+        private void DrawBagBlockRow(float x, ref float y, Texture2D icon, BlockType type, int count)
+        {
+            var rowRect = new Rect(x - 2f, y - 1f, 194f, 21f);
+            bool selected = interaction != null && interaction.SelectedBlock == type
+                && interaction.currentTool == ToolType.Hand;
+            if (selected)
+            {
+                var prevColor = GUI.color;
+                GUI.color = new Color(1f, 0.85f, 0.4f, 0.25f);
+                GUI.Box(rowRect, GUIContent.none, boxStyle);
+                GUI.color = prevColor;
+            }
+            if (icon != null)
+            {
+                GUI.DrawTexture(new Rect(x, y, 18f, 18f), icon);
+            }
+            GUI.Label(new Rect(x + 24f, y + 1f, 168f, 18f),
+                BlockDatabase.Get(type).name + " x" + count + (selected ? "  <" : ""), labelStyle);
+            if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+            {
+                EquipBlock(type);
+            }
+            y += 22f;
+        }
+
+        /// <summary>Equips a backpack block: hand tool + current hotbar slot,
+        /// so the held-item view shows the block immediately.</summary>
+        private void EquipBlock(BlockType type)
+        {
+            if (interaction != null)
+            {
+                interaction.currentTool = ToolType.Hand;
+                interaction.hotbar[interaction.selectedIndex] = type;
+            }
+            CloseBag();
         }
 
         private void DrawPausedPanel()

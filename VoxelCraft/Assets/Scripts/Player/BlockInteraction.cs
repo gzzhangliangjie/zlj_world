@@ -88,6 +88,10 @@ namespace VoxelCraft.Player
             BuildHighlight();
         }
 
+        /// <summary>Raised whenever the player uses/swings the held item
+        /// (creature attack, block break attempt, placement).</summary>
+        public event System.Action OnUse;
+
         private void Update()
         {
             if (Cursor.lockState != CursorLockMode.Locked || viewCamera == null || world == null || world.sim == null)
@@ -156,12 +160,14 @@ namespace VoxelCraft.Player
                     target.TakeHit(viewCamera.transform.forward, ToolType.Sword);
                     nextBreakTime = Time.time + 0.45f;
                     creatureAttacked = true;
+                    OnUse?.Invoke();
                 }
             }
 
             bool cropHandled = false;
             if (!creatureAttacked && currentTool != ToolType.Clock && Input.GetMouseButton(0) && Time.time >= nextBreakTime)
             {
+                OnUse?.Invoke();
                 var target = world.sim.GetBlock(hit.x, hit.y, hit.z);
 
                 // Wheat harvest: pickaxe-only, yields carrots + seeds.
@@ -208,6 +214,7 @@ namespace VoxelCraft.Player
 
             if (!cropHandled && Input.GetMouseButtonDown(1))
             {
+                OnUse?.Invoke();
                 var current = world.sim.GetBlock(place.x, place.y, place.z);
                 if ((current == BlockType.Air || current == BlockType.Water) && !OverlapsPlayer(place))
                 {

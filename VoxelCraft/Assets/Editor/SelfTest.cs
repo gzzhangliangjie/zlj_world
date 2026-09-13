@@ -577,6 +577,63 @@ namespace VoxelCraft.Editor
             Eval("m9.skin_uv_nets", uvOk,
                 uvOk ? "every face rect in-bounds with visible pixels" : uvBad);
 
+            // ----- M10: held item models -----
+            bool heldOk = true;
+            string heldBad = "ok";
+            foreach (ToolType heldTool in System.Enum.GetValues(typeof(ToolType)))
+            {
+                var toolGo = VoxelCraft.Art.ItemModelFactory.BuildTool(heldTool);
+                var toolMf = toolGo != null ? toolGo.GetComponent<MeshFilter>() : null;
+                if (toolMf == null || toolMf.sharedMesh == null || toolMf.sharedMesh.triangles.Length == 0)
+                {
+                    heldOk = false;
+                    heldBad = "missing/empty tool model: " + heldTool;
+                    break;
+                }
+            }
+            if (heldOk)
+            {
+                foreach (string food in new[] { "meat", "seeds", "carrot" })
+                {
+                    var foodGo = VoxelCraft.Art.ItemModelFactory.BuildFood(food);
+                    var foodMf = foodGo != null ? foodGo.GetComponent<MeshFilter>() : null;
+                    if (foodMf == null || foodMf.sharedMesh == null || foodMf.sharedMesh.triangles.Length == 0)
+                    {
+                        heldOk = false;
+                        heldBad = "missing/empty food model: " + food;
+                        break;
+                    }
+                }
+            }
+            if (heldOk && atlas != null)
+            {
+                for (int t = 1; t <= 22; t++)
+                {
+                    var bt = (BlockType)t;
+                    var blockGo = VoxelCraft.Art.ItemModelFactory.BuildBlock(atlas, bt);
+                    var blockMf = blockGo != null ? blockGo.GetComponent<MeshFilter>() : null;
+                    var blockMr = blockGo != null ? blockGo.GetComponent<MeshRenderer>() : null;
+                    if (blockMf == null || blockMr == null || blockMf.sharedMesh == null ||
+                        blockMr.sharedMaterial == null || blockMr.sharedMaterial.mainTexture == null)
+                    {
+                        heldOk = false;
+                        heldBad = "missing block model: " + bt;
+                        break;
+                    }
+                }
+            }
+            Eval("m10.item_models", heldOk,
+                heldOk ? "tool/food/block held models all have meshes" : heldBad);
+
+            // Held item view builds its anchors even without references.
+            var heldGo = new GameObject("SelfTestHeldView");
+            var heldView = heldGo.AddComponent<VoxelCraft.Player.HeldItemView>();
+            heldView.Build();
+            bool anchorsOk = heldView.AnchorsReady;
+            UnityEngine.Object.DestroyImmediate(heldGo);
+            Eval("m10.held_view", anchorsOk,
+                anchorsOk ? "anchors created without refs" : "anchor build failed");
+
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");
 

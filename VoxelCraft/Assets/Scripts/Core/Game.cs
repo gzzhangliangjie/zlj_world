@@ -169,6 +169,15 @@ namespace VoxelCraft.Core
             rig.camera = mainCamera;
             rig.BuildModel();
 
+            // Held item: 3D tool/block model in the camera's view + on the TP hand.
+            var held = playerGo.AddComponent<Player.HeldItemView>();
+            held.interaction = interaction;
+            held.viewCamera = mainCamera;
+            held.rig = rig;
+            held.atlas = atlas;
+            held.Build();
+            interaction.OnUse += held.Swing;
+
             // Blocky animal population around the player.
             var spawner = worldGo.AddComponent<Creatures.CreatureSpawner>();
             spawner.world = worldRoot;

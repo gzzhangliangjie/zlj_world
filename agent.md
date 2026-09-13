@@ -114,3 +114,11 @@ llm-pi-ai:
 
 - 改任何网格后必须跑 `SelfTest.RunAll`(`m9.skin_uv_nets` 逐矩形越界+像素校验),40 用例全绿才算完成;流程见技能 `unity-batchmode`。
 - 改网格前可离线肉眼预览:用 System.Drawing 按上表把六面从皮肤裁剪→按 rot 旋转→拼 T 型展开图查看(2026-09-13 验证时用过,临时脚本已删,照此思路重写即可)。
+
+### 手持道具 3D 模型(m10)
+
+- 工具/食物 = **24×24 图标 alpha 挤出**:front+back 双面 + 透明邻边的侧壁,单 Mesh 单 DrawCall(`ItemModelFactory.BuildFlat`);1 像素=0.02 世界单位,厚 0.04;
+- 手持方块 = `BoxBuilder.SkinnedBox` + **图集像素矩形**(BlockDef 的 side/top/bottom tile,96×80 图集坐标 `AtlasPxRect`),不是 16×16 图标——草方块才有绿顶土侧;
+- 材质统一 `Shaders/UnlitTextureShader`(Resources.Load,带昼夜变暗/雾);实例按 `tool:N`/`block:N`/`item:x` 缓存复用,Show 时在两个锚点间搬移;
+- 锚点:第一人称挂相机 `(0.44,-0.37,0.62)`,第三人称挂 `ThirdPersonRig.hand`(右臂 -0.7 处子节点,随臂摆);挥手由 `BlockInteraction.OnUse` 事件驱动;
+- 自测:`m10.item_models`(全部工具/食物/22 种方块模型有网格)+ `m10.held_view`(无引用 Build 不抛)。

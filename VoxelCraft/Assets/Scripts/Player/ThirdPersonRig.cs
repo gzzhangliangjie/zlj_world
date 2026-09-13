@@ -15,6 +15,9 @@ namespace VoxelCraft.Player
         public KeyCode toggleKey = KeyCode.V;
         public float thirdPersonDistance = 3.4f;
 
+        /// <summary>Right-hand attach point for the held item view.</summary>
+        public Transform hand { get; private set; }
+
         private Transform modelRoot;
         private readonly Transform[] legs = new Transform[2];
         private readonly Transform[] arms = new Transform[2];
@@ -86,6 +89,14 @@ namespace VoxelCraft.Player
                         CreatureTextureFactory.Get("player", "arm"));
                     arms[i] = shoulder;
                 }
+            }
+
+            // Right-hand tip: held-item anchor follows the arm swing.
+            if (arms[1] != null)
+            {
+                hand = new GameObject("Hand").transform;
+                hand.SetParent(arms[1], false);
+                hand.localPosition = new Vector3(0f, -0.7f, 0.02f);
             }
 
             modelRoot.gameObject.SetActive(false);

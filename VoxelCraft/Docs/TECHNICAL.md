@@ -215,7 +215,8 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 - **破坏**：左键按住，`breakInterval=0.22s` 连发；`unbreakable`（基岩）跳过；触发 `OnBreak(type)` 事件。
 - **放置**：右键单击；目标格须为 Air/Water 且 `!OverlapsPlayer`（CC.bounds ∩ 体素 Bounds(0.98)）；触发 `OnPlace(type)`。
 - **热栏**：2 页×9 槽（页1 经典 / 页2 雪·砾石·冰·黑曜石·苔石·石砖·煤铁金矿），`Tab` 翻页，`1-9`+滚轮选择。
-- **道具栏（T/E）**：`Hud.DrawToolBag` 全屏面板——左列 5 个工具（图标+提示，点击或 `1-5` 选用后自动关闭并回锁鼠标），右列背包（肉/种子/胡萝卜/方块计数）。打开时释放鼠标，`BlockInteraction.Update` 因光标未锁定自动暂停，不存在双重按键处理；`BlockInteraction` 内不再有 T 循环切换（由 Hud 统一拥有）。
+- **道具栏（T/E）**：`Hud.DrawToolBag` 全屏面板——左列 5 个工具（图标+提示，点击或 `1-5` 选用后自动关闭并回锁鼠标），右列背包（肉/种子/胡萝卜/方块计数；**点方块行 = 装备到手中**：切回手工具并写当前热栏槽）。打开时释放鼠标，`BlockInteraction.Update` 因光标未锁定自动暂停，不存在双重按键处理；`BlockInteraction` 内不再有 T 循环切换（由 Hud 统一拥有）。
+- **手持道具模型**：`ItemModelFactory`（工具/食物=24×24 图标 alpha 挤出实体网格；方块=图集顶/侧/底真实贴图小立方体）+ `HeldItemView`（第一人称锚在相机 (0.44,-0.37,0.62)，第三人称锚在右臂 Hand 子节点；`BlockInteraction.OnUse` 驱动挥手，速度驱动走路摆动，V 键视图模式自动跟随）。
 - ⚠ 组件时序：`playerBody` 在 AddComponent 之后才赋值 → `Controller` 属性**惰性解析**，不要在 Awake 缓存。
 
 ## 10. 音频系统
