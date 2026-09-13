@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -21,15 +21,15 @@ namespace VoxelCraft.Editor
         const string OutDir = @"D:\zlj world\_logs";
         const string SkinDir = @"D:\zlj world\VoxelCraft\Assets\Resources\Textures";
 
-        static float yaw = 225f, pitch = 30f;
+        static float yaw = 135f, pitch = 30f; // MC wiki renders face LEFT -> mirrored vs yaw 225
 
         // ---------------- spec model ----------------
         public class MobBox
         {
-            public string id; public Vector3 size; public Vector3 pos; public int tu, tv;
-            public MobBox(string id, float sx, float sy, float sz, float x, float y, float z, int tu, int tv)
+            public string id; public string role; public Vector3 size; public Vector3 pos; public int tu, tv;
+            public MobBox(string id, string role, float sx, float sy, float sz, float x, float y, float z, int tu, int tv)
             {
-                this.id = id; size = new Vector3(sx, sy, sz); pos = new Vector3(x, y, z); this.tu = tu; this.tv = tv;
+                this.id = id; this.role = role; size = new Vector3(sx, sy, sz); pos = new Vector3(x, y, z); this.tu = tu; this.tv = tv;
             }
         }
 
@@ -43,64 +43,65 @@ namespace VoxelCraft.Editor
         public static MobSpec SpecChicken()
         {
             var s = new MobSpec("chicken");
-            s.boxes.Add(new MobBox("body", 6, 6, 8, 0, 8, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", 4, 6, 3, 0, 13.4f, 5.35f, 28, 0));
-            s.boxes.Add(new MobBox("beak", 4, 3, 1, 0, 12.3f, 7.05f, 28, 9));
-            s.boxes.Add(new MobBox("wattle", 2, 2, 2, 0, 9.5f, 6.7f, 40, 9));
-            s.boxes.Add(new MobBox("wing0", 1, 4, 6, -3.52f, 9, 0, 46, 0));
-            s.boxes.Add(new MobBox("wing1", 1, 4, 6, 3.52f, 9, 0, 46, 0));
-            s.boxes.Add(new MobBox("leg0", 2, 5, 2, -1, 2.69f, 0, 50, 16));
-            s.boxes.Add(new MobBox("leg1", 2, 5, 2, 1, 2.69f, 0, 50, 16));
-            s.boxes.Add(new MobBox("foot0", 3, 1, 2, -1, 0.5f, 1.5f, 52, 26));
-            s.boxes.Add(new MobBox("foot1", 3, 1, 2, 1, 0.5f, 1.5f, 52, 26));
+            s.boxes.Add(new MobBox("body", "body", 6, 6, 8, 0, 8, 0, 0, 8));
+            s.boxes.Add(new MobBox("head", "head", 4, 6, 3, 0, 13.4f, 5.35f, 28, 0));
+            s.boxes.Add(new MobBox("beak", "beak", 4, 3, 1, 0, 12.3f, 7.05f, 28, 9));
+            s.boxes.Add(new MobBox("wattle", "wattle", 2, 2, 2, 0, 9.5f, 6.7f, 40, 9));
+            s.boxes.Add(new MobBox("wing0", "wing", 1, 4, 6, -3.52f, 9, 0, 46, 0));
+            s.boxes.Add(new MobBox("wing1", "wing", 1, 4, 6, 3.52f, 9, 0, 46, 0));
+            s.boxes.Add(new MobBox("leg0", "leg", 2, 5, 2, -1, 2.69f, 0, 50, 16));
+            s.boxes.Add(new MobBox("leg1", "leg", 2, 5, 2, 1, 2.69f, 0, 50, 16));
+            s.boxes.Add(new MobBox("foot0", "foot", 3, 1, 2, -1, 0.5f, 1.5f, 52, 26));
+            s.boxes.Add(new MobBox("foot1", "foot", 3, 1, 2, 1, 0.5f, 1.5f, 52, 26));
             return s;
         }
 
         public static MobSpec SpecPig()
         {
             var s = new MobSpec("pig");
-            s.boxes.Add(new MobBox("body", 10, 8, 16, 0, 10, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", 8, 8, 8, 0, 17.2f, 9.8f, 32, 0));
-            s.boxes.Add(new MobBox("snout", 8, 4, 1, 0, 15.2f, 11.9f, 0, 0));
-            s.boxes.Add(new MobBox("leg0", 4, 6, 4, -3, 3.2f, 5, 40, 0));
-            s.boxes.Add(new MobBox("leg1", 4, 6, 4, 3, 3.2f, 5, 40, 0));
-            s.boxes.Add(new MobBox("leg2", 4, 6, 4, -3, 3.2f, -5, 40, 0));
-            s.boxes.Add(new MobBox("leg3", 4, 6, 4, 3, 3.2f, -5, 40, 0));
+            s.boxes.Add(new MobBox("body", "body", 10, 8, 16, 0, 10, 0, 0, 8));
+            s.boxes.Add(new MobBox("head", "head", 8, 8, 8, 0, 17.2f, 9.8f, 32, 0));
+            s.boxes.Add(new MobBox("snout", "snout", 8, 4, 1, 0, 15.2f, 11.9f, 0, 0));
+            s.boxes.Add(new MobBox("leg0", "leg", 4, 6, 4, -3, 3.2f, 5, 40, 0));
+            s.boxes.Add(new MobBox("leg1", "leg", 4, 6, 4, 3, 3.2f, 5, 40, 0));
+            s.boxes.Add(new MobBox("leg2", "leg", 4, 6, 4, -3, 3.2f, -5, 40, 0));
+            s.boxes.Add(new MobBox("leg3", "leg", 4, 6, 4, 3, 3.2f, -5, 40, 0));
             return s;
         }
 
         public static MobSpec SpecSheep()
         {
             var s = new MobSpec("sheep");
-            s.boxes.Add(new MobBox("body", 8, 6, 16, 0, 15, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", 6, 6, 6, 0, 20.4f, 10.7f, 32, 0));
-            s.boxes.Add(new MobBox("leg0", 4, 12, 4, -2.5f, 6.2f, 5, 0, 0));
-            s.boxes.Add(new MobBox("leg1", 4, 12, 4, 2.5f, 6.2f, 5, 0, 0));
-            s.boxes.Add(new MobBox("leg2", 4, 12, 4, -2.5f, 6.2f, -5, 0, 0));
-            s.boxes.Add(new MobBox("leg3", 4, 12, 4, 2.5f, 6.2f, -5, 0, 0));
+            s.boxes.Add(new MobBox("body", "body", 8, 6, 16, 0, 15, 0, 0, 8));
+            s.boxes.Add(new MobBox("head", "head", 6, 6, 6, 0, 20.4f, 10.7f, 32, 0));
+            s.boxes.Add(new MobBox("leg0", "leg", 4, 12, 4, -2.5f, 6.2f, 5, 0, 0));
+            s.boxes.Add(new MobBox("leg1", "leg", 4, 12, 4, 2.5f, 6.2f, 5, 0, 0));
+            s.boxes.Add(new MobBox("leg2", "leg", 4, 12, 4, -2.5f, 6.2f, -5, 0, 0));
+            s.boxes.Add(new MobBox("leg3", "leg", 4, 12, 4, 2.5f, 6.2f, -5, 0, 0));
             return s;
         }
 
         // ---------------- face layout ----------------
-        struct Face { public Rect rect; public Vector3 n, origin, uAxis, vAxis; }
+        struct Face { public Rect rect; public Vector3 n, origin, uAxis, vAxis; public float uw, vh; }
 
         static IEnumerable<Face> FacesOf(MobBox b)
         {
-            // Same net layout as BoxBuilder.McNet(u, v, W, H, D).
+            // Same net layout as BoxBuilder.McNet(u, v, W, H, D). uw/vh are the
+            // face's WORLD extents along uAxis/vAxis (px units).
             int u = b.tu, v = b.tv; float W = b.size.x, H = b.size.y, D = b.size.z;
             Vector3 c = b.pos, h = b.size * 0.5f;
-            yield return new Face { rect = new Rect(u, v + D, D, H), n = new Vector3(1, 0, 0), origin = c + new Vector3(h.x, h.y, h.z), uAxis = new Vector3(0, 0, -1), vAxis = new Vector3(0, -1, 0) };
-            yield return new Face { rect = new Rect(u + D + W, v + D, D, H), n = new Vector3(-1, 0, 0), origin = c + new Vector3(-h.x, h.y, -h.z), uAxis = new Vector3(0, 0, 1), vAxis = new Vector3(0, -1, 0) };
-            yield return new Face { rect = new Rect(u + D, v, W, D), n = new Vector3(0, 1, 0), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, -1) };
-            yield return new Face { rect = new Rect(u + D + W, v, W, D), n = new Vector3(0, -1, 0), origin = c + new Vector3(-h.x, -h.y, -h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, 1) };
-            yield return new Face { rect = new Rect(u + D, v + D, W, H), n = new Vector3(0, 0, 1), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, -1, 0) };
-            yield return new Face { rect = new Rect(u + 2 * D + W, v + D, W, H), n = new Vector3(0, 0, -1), origin = c + new Vector3(h.x, h.y, -h.z), uAxis = new Vector3(-1, 0, 0), vAxis = new Vector3(0, -1, 0) };
+            yield return new Face { rect = new Rect(u, v + D, D, H), n = new Vector3(1, 0, 0), origin = c + new Vector3(h.x, h.y, h.z), uAxis = new Vector3(0, 0, -1), vAxis = new Vector3(0, -1, 0), uw = D, vh = H };
+            yield return new Face { rect = new Rect(u + D + W, v + D, D, H), n = new Vector3(-1, 0, 0), origin = c + new Vector3(-h.x, h.y, -h.z), uAxis = new Vector3(0, 0, 1), vAxis = new Vector3(0, -1, 0), uw = D, vh = H };
+            yield return new Face { rect = new Rect(u + D, v, W, D), n = new Vector3(0, 1, 0), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, -1), uw = W, vh = D };
+            yield return new Face { rect = new Rect(u + D + W, v, W, D), n = new Vector3(0, -1, 0), origin = c + new Vector3(-h.x, -h.y, -h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, 1), uw = W, vh = D };
+            yield return new Face { rect = new Rect(u + D, v + D, W, H), n = new Vector3(0, 0, 1), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, -1, 0), uw = W, vh = H };
+            yield return new Face { rect = new Rect(u + 2 * D + W, v + D, W, H), n = new Vector3(0, 0, -1), origin = c + new Vector3(h.x, h.y, -h.z), uAxis = new Vector3(-1, 0, 0), vAxis = new Vector3(0, -1, 0), uw = W, vh = H };
         }
 
-        static Vector3 TexelPoint(Face f, Vector3 size, int tx, int ty, int tw, int th)
+        static Vector3 TexelPoint(Face f, int tx, int ty, int tw, int th)
         {
             float a = (tx + 0.5f) / tw, b = (ty + 0.5f) / th;
-            return f.origin + f.uAxis * (a * size.x) + f.vAxis * (b * size.y);
+            return f.origin + f.uAxis * (a * f.uw) + f.vAxis * (b * f.vh);
         }
 
         // ---------------- projection ----------------
@@ -111,6 +112,7 @@ namespace VoxelCraft.Editor
             camRot = Quaternion.Euler(pitch, yaw, 0f);
             camPos = target - camRot * Vector3.forward * 500f;
             projCenter = new Vector2(rw * 0.5f, rh * 0.5f);
+            projScale = 1f; // reset, or CalibrateCamera compounds the stale scale
         }
 
         /// <summary>
@@ -154,6 +156,7 @@ namespace VoxelCraft.Editor
             projScale = Mathf.Min(sw, sh);
             Vector2 pc = Project(center);
             projCenter += new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f) - pc;
+            Debug.Log($"REPLICA calibrate: det=({maxX - minX + 1}x{maxY - minY + 1}) proj=({pmax.x - pmin.x:F1}x{pmax.y - pmin.y:F1}) scale={projScale:F2} center=({projCenter.x:F0},{projCenter.y:F0})");
         }
 
         static Vector2 Project(Vector3 p)
@@ -169,7 +172,10 @@ namespace VoxelCraft.Editor
         }
 
         // ---------------- reference loading ----------------
-        class Ref { public Color[] px; public bool[] bg; public int w, h; public Color bgColor; }
+        // px/bg are as Unity loads them (row 0 = BOTTOM); pxTop/bgTop are
+        // TOP-DOWN copies used by the projector, sampler and silhouette fit,
+        // which all work in image coordinates (y from the top).
+        class Ref { public Color[] px, pxTop; public bool[] bg, bgTop; public int w, h; public Color bgColor; }
 
         static Ref LoadReference(string path)
         {
@@ -184,13 +190,17 @@ namespace VoxelCraft.Editor
             var stack = new Stack<int>();
             for (int x = 0; x < r.w; x++) { stack.Push(x); stack.Push((r.h - 1) * r.w + x); }
             for (int y = 0; y < r.h; y++) { stack.Push(y * r.w); stack.Push(y * r.w + r.w - 1); }
-            float tol = 0.06f;
+            float tol = 0.08f; // per channel; survives gradients/AA halos
             while (stack.Count > 0)
             {
                 int i = stack.Pop();
                 if (i < 0 || i >= r.px.Length || r.bg[i]) continue;
                 var c = r.px[i];
-                if (Mathf.Abs(c.r - r.bgColor.r) + Mathf.Abs(c.g - r.bgColor.g) + Mathf.Abs(c.b - r.bgColor.b) > tol) continue;
+                bool isBg = c.a < 0.1f ||
+                            (Mathf.Abs(c.r - r.bgColor.r) <= tol &&
+                             Mathf.Abs(c.g - r.bgColor.g) <= tol &&
+                             Mathf.Abs(c.b - r.bgColor.b) <= tol);
+                if (!isBg) continue;
                 r.bg[i] = true;
                 int x = i % r.w, y = i / r.w;
                 if (x > 0) stack.Push(i - 1);
@@ -199,6 +209,14 @@ namespace VoxelCraft.Editor
                 if (y < r.h - 1) stack.Push(i + r.w);
             }
             Object.DestroyImmediate(tex);
+            // Build top-down copies for projection-space sampling.
+            r.pxTop = new Color[r.w * r.h];
+            r.bgTop = new bool[r.w * r.h];
+            for (int y = 0; y < r.h; y++)
+            {
+                System.Array.Copy(r.px, (r.h - 1 - y) * r.w, r.pxTop, y * r.w, r.w);
+                System.Array.Copy(r.bg, (r.h - 1 - y) * r.w, r.bgTop, y * r.w, r.w);
+            }
             return r;
         }
 
@@ -209,9 +227,9 @@ namespace VoxelCraft.Editor
             float dx = fx - x0, dy = fy - y0;
             int i00 = y0 * r.w + x0, i10 = y0 * r.w + x1, i01 = y1 * r.w + x0, i11 = y1 * r.w + x1;
             float bg = 0f;
-            bg += r.bg[i00] ? 1f : 0f; bg += r.bg[i10] ? 1f : 0f; bg += r.bg[i01] ? 1f : 0f; bg += r.bg[i11] ? 1f : 0f;
-            onBg = bg >= 3f;
-            Color c = Color.Lerp(Color.Lerp(r.px[i00], r.px[i10], dx), Color.Lerp(r.px[i01], r.px[i11], dx), dy);
+            bg += r.bgTop[i00] ? 1f : 0f; bg += r.bgTop[i10] ? 1f : 0f; bg += r.bgTop[i01] ? 1f : 0f; bg += r.bgTop[i11] ? 1f : 0f;
+            onBg = bg >= 1f; // any bg tap -> reject, avoids dark/AA edge bleed
+            Color c = Color.Lerp(Color.Lerp(r.pxTop[i00], r.pxTop[i10], dx), Color.Lerp(r.pxTop[i01], r.pxTop[i11], dx), dy);
             return c;
         }
 
@@ -239,7 +257,7 @@ namespace VoxelCraft.Editor
                     for (int ty = 0; ty < th; ty++)
                         for (int tx = 0; tx < tw; tx++)
                         {
-                            var p = TexelPoint(f, b.size, tx, ty, tw, th);
+                            var p = TexelPoint(f, tx, ty, tw, th);
                             var sp = Project(p);
                             bool onBg; var c = SampleBilinear(r, sp.x, sp.y, out onBg);
                             if (!onBg) { acc += c; n++; }
@@ -262,7 +280,7 @@ namespace VoxelCraft.Editor
                             Color c = fallback;
                             if (visible)
                             {
-                                var p = TexelPoint(f, b.size, tx, ty, tw, th);
+                                var p = TexelPoint(f, tx, ty, tw, th);
                                 var sp = Project(p);
                                 bool onBg; var s = SampleBilinear(r, sp.x, sp.y, out onBg);
                                 if (!onBg) c = s;
@@ -390,7 +408,7 @@ namespace VoxelCraft.Editor
                     for (int ty = 0; ty < th; ty++)
                         for (int tx = 0; tx < tw; tx++)
                         {
-                            var p = TexelPoint(f, b.size, tx, ty, tw, th);
+                            var p = TexelPoint(f, tx, ty, tw, th);
                             var sp2 = Project(p);
                             for (int ox = 0; ox < 3; ox++)
                                 for (int oy = 0; oy < 3; oy++)
@@ -409,6 +427,166 @@ namespace VoxelCraft.Editor
             Debug.Log($"REPLICA synthetic stand-in reference -> {path}");
         }
 
+        // ---------------- silhouette fitting ----------------
+        /// <summary>Rasterizes the spec's camera-facing faces into a mask.</summary>
+        static bool[] RasterizeMask(MobSpec spec, int w, int h)
+        {
+            var m = new bool[w * h];
+            foreach (var b in spec.boxes)
+                foreach (var f in FacesOf(b))
+                {
+                    if (Vector3.Dot(f.n, camPos - f.origin) <= 0.02f) continue;
+                    // Sample density adapts to the current projection scale so
+                    // the quad fills SOLID (2px spacing, 2x2 stamps).
+                    int tw = Mathf.Max(1, (int)(f.uw * projScale / 2f));
+                    int th = Mathf.Max(1, (int)(f.vh * projScale / 2f));
+                    for (int ty = 0; ty < th; ty++)
+                        for (int tx = 0; tx < tw; tx++)
+                        {
+                            var p = TexelPoint(f, tx, ty, tw, th);
+                            var sp = Project(p);
+                            for (int ox = 0; ox < 2; ox++)
+                                for (int oy = 0; oy < 2; oy++)
+                                {
+                                    int ix = (int)sp.x + ox, iy = (int)sp.y + oy;
+                                    if (ix >= 0 && ix < w && iy >= 0 && iy < h) m[iy * w + ix] = true;
+                                }
+                        }
+                }
+            return m;
+        }
+
+        static float Iou(bool[] a, bool[] b)
+        {
+            int inter = 0, uni = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] && b[i]) inter++;
+                if (a[i] || b[i]) uni++;
+            }
+            return uni == 0 ? 0f : (float)inter / uni;
+        }
+
+        /// <summary>
+        /// Re-lays out a spec from 8 fitted parameters: body size, head size,
+        /// leg height, leg thickness. Dependent parts (head/legs/wings/beak/
+        /// wattle/snout/feet) follow their parent part by vanilla-style rules,
+        /// so one silhouette drives the whole skeleton.
+        /// </summary>
+        static void LayoutSpec(MobSpec spec, float[] p)
+        {
+            MobBox body = null, head = null;
+            float legH = p[6], legT = p[7];
+            foreach (var b in spec.boxes)
+            {
+                if (b.role == "body") { body = b; body.size = new Vector3(p[0], p[1], p[2]); }
+                if (b.role == "head") { head = b; head.size = new Vector3(p[3], p[4], p[5]); }
+                if (b.role == "leg") b.size = new Vector3(legT, b.size.y, legT);
+            }
+            if (body == null) return;
+            body.pos = new Vector3(0f, legH + body.size.y * 0.5f, 0f);
+            if (head != null)
+                head.pos = new Vector3(0f, legH + body.size.y + head.size.y * 0.4f,
+                    body.size.z * 0.5f + head.size.z * 0.45f);
+            foreach (var b in spec.boxes)
+            {
+                if (b.role == "leg") b.pos = new Vector3(b.pos.x, legH - b.size.y * 0.5f + 0.19f, b.pos.z);
+                if (b.role == "wing") b.pos = new Vector3(Mathf.Sign(b.pos.x) * (body.size.x * 0.5f + 0.52f), legH + body.size.y - 2f, 0f);
+                if (b.role == "beak") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.18f, head.size.z * 0.5f + 0.21f);
+                if (b.role == "wattle") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.5f - 0.88f, head.size.z * 0.5f - 0.16f);
+                if (b.role == "snout") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.25f, head.size.z * 0.5f + 0.22f);
+                if (b.role == "foot") b.pos = new Vector3(b.pos.x, 0.5f, b.pos.z);
+            }
+        }
+
+        static float[] ParamsOf(MobSpec spec)
+        {
+            MobBox body = null, head = null; float legH = 5f, legT = 2f; bool hasLeg = false;
+            foreach (var b in spec.boxes)
+            {
+                if (b.role == "body") body = b;
+                if (b.role == "head") head = b;
+                if (b.role == "leg" && !hasLeg) { legH = b.pos.y + b.size.y * 0.5f - 0.19f; legT = b.size.x; hasLeg = true; }
+            }
+            if (body == null || head == null) return null;
+            return new float[] { body.size.x, body.size.y, body.size.z, head.size.x, head.size.y, head.size.z, legH, legT };
+        }
+
+        static MobSpec FitSpecToSilhouette(MobSpec preset, Ref r)
+        {
+            var spec = new MobSpec(preset.name);
+            foreach (var b in preset.boxes)
+                spec.boxes.Add(new MobBox(b.id, b.role, b.size.x, b.size.y, b.size.z, b.pos.x, b.pos.y, b.pos.z, b.tu, b.tv));
+            float[] start = ParamsOf(spec);
+            if (start == null) return spec;
+
+            var mask = new bool[r.w * r.h];
+            for (int i = 0; i < mask.Length; i++) mask[i] = !r.bgTop[i];
+
+            System.Func<float[], float> score = delegate (float[] trial)
+            {
+                LayoutSpec(spec, trial);
+                CalibrateCamera(spec, r);
+                return Iou(RasterizeMask(spec, r.w, r.h), mask);
+            };
+
+            // Single-view silhouettes are front/back ambiguous: try the preset
+            // facing and its 180-degree twin, keep whichever fits better.
+            float baseYaw = yaw;
+            float[] bestP = null; float best = -1f; float bestYaw = baseYaw;
+            foreach (float cy in new[] { baseYaw, baseYaw + 180f })
+            {
+                yaw = cy;
+                float[] p = (float[])start.Clone();
+                float b0 = score(p);
+                float step = 2f;
+                for (int sweep = 0; sweep < 3; sweep++)
+                {
+                    for (int i = 0; i < p.Length; i++)
+                    {
+                        foreach (float d in new[] { step, -step, step * 0.5f, -step * 0.5f })
+                        {
+                            var trial = (float[])p.Clone();
+                            trial[i] = Mathf.Max(1f, trial[i] + d);
+                        // Vanilla prior: keep dims within 0.5x-2x of the preset
+                        trial[i] = Mathf.Clamp(trial[i], start[i] * 0.5f, start[i] * 2f);
+                            float s = score(trial);
+                            if (s > b0 + 0.0005f) { b0 = s; p = trial; }
+                        }
+                    }
+                    step *= 0.5f;
+                }
+                if (b0 > best) { best = b0; bestP = p; bestYaw = cy; }
+            }
+
+            yaw = bestYaw;
+            LayoutSpec(spec, bestP);
+            CalibrateCamera(spec, r);
+            // Snap to whole texture pixels; keep if it does not hurt the fit.
+            var snapped = (float[])bestP.Clone();
+            for (int i = 0; i < snapped.Length; i++) snapped[i] = Mathf.Max(1f, Mathf.Round(snapped[i]));
+            float sSnap = score(snapped);
+            if (sSnap >= best - 0.01f) { LayoutSpec(spec, snapped); best = sSnap; bestP = snapped; }
+            Debug.Log($"REPLICA fit '{spec.name}': yaw={yaw:F0} IoU={best:F3} body=({bestP[0]:F0},{bestP[1]:F0},{bestP[2]:F0}) head=({bestP[3]:F0},{bestP[4]:F0},{bestP[5]:F0}) legH={bestP[6]:F0} legT={bestP[7]:F0}");
+            DumpFit(spec, r);
+            return spec;
+        }
+
+        /// <summary>Writes reference/model/overlay masks for fit diagnosis.</summary>
+        static void DumpFit(MobSpec spec, Ref r)
+        {
+            var model = RasterizeMask(spec, r.w, r.h);
+            int filled = 0; foreach (var b in model) if (b) filled++;
+            Debug.Log($"REPLICA rasterize '{spec.name}': {filled}px of {r.w * r.h}");
+            var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
+            var px = new Color[r.w * r.h];
+            for (int i = 0; i < px.Length; i++)
+                px[i] = new Color(r.bgTop[i] ? 0f : 1f, model[i] ? 1f : 0f, 0f, 1f);
+            tex.SetPixels(px); tex.Apply();
+            File.WriteAllBytes(Path.Combine(OutDir, $"fit_{spec.name}_overlay.png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+        }
+
         // ---------------- batch entry ----------------
         public static void RunExperiment()
         {
@@ -423,7 +601,7 @@ namespace VoxelCraft.Editor
             string refPath = Path.Combine(RefDir, spec.name + ".png");
             if (!File.Exists(refPath)) MakeSyntheticRef(spec, refPath);
             var r = LoadReference(refPath);
-            CalibrateCamera(spec, r);
+            spec = FitSpecToSilhouette(spec, r);
             var sheet = PaintSkin(spec, r);
             SaveSheet(spec, sheet);
             RenderAndCompare(spec, sheet, r, Path.Combine(OutDir, $"replica_{spec.name}.png"));
@@ -445,3 +623,5 @@ namespace VoxelCraft.Editor
         }
     }
 }
+
+
