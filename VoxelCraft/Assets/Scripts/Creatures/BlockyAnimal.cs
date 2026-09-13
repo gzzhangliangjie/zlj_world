@@ -57,9 +57,9 @@ namespace VoxelCraft.Creatures
                     // wool rects (verified opaque by SelfTest net checks).
                     body = new Vector4[]
                     {
-                        new Vector4(48, 16, 8, 16), new Vector4(48, 16, 8, 16),
-                        new Vector4(48, 16, 8, 6),  new Vector4(48, 26, 8, 6),
-                        new Vector4(48, 16, 8, 16), new Vector4(48, 16, 8, 16),
+                        new Vector4(48, 16, 8, 14), new Vector4(48, 16, 8, 14),
+                        new Vector4(48, 16, 8, 6),  new Vector4(48, 20, 8, 6),
+                        new Vector4(48, 16, 8, 14), new Vector4(48, 16, 8, 14),
                     };
                     head = BoxBuilder.McNet(2, 2, 6, 6, 6);
                     leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
@@ -99,14 +99,24 @@ namespace VoxelCraft.Creatures
                     new Vector3(0f, legH + bodySize.y + headBox.y * 0.4f, bodySize.z * 0.5f + headBox.z * 0.45f),
                     headBox, skin, headNet, 64, 32).transform;
 
+                if (species == "pig")
+                {
+                    // Vanilla pig snout: 8x4x1 px slab on the face lower half
+                    // (mobs_mc draws it at sheet x17..24 rows16..19). Sunk 14mm
+                    // so the back face is never coplanar with the head front.
+                    AddSkinnedChild(head, "Snout",
+                        new Vector3(0f, -headBox.y * 0.25f, headBox.z * 0.5f + 0.014f),
+                        new Vector3(0.5f, 0.25f, 0.0625f), skin, BoxBuilder.McNet(16, 15, 8, 4, 1));
+                }
+
                 if (species == "chicken")
                 {
                     // 4x3x1 px beak slab on the head front (sheet rect at 14,0).
                     // Sunk 18mm into the head so the back face is never coplanar
                     // with the head front face (z-fighting).
-                    BoxBuilder.SkinnedBox(head, "Beak",
+                    AddSkinnedChild(head, "Beak",
                         new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.01325f),
-                        new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1), 64, 32);
+                        new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1));
                 }
 
                 if (species == "chicken")
@@ -119,10 +129,10 @@ namespace VoxelCraft.Creatures
                     for (int s = 0; s < 2; s++)
                     {
                         float side = s == 0 ? -1f : 1f;
-                        var wing = BoxBuilder.SkinnedBox(bodyRoot, "Wing" + s,
+                        AddSkinnedChild(bodyRoot, "Wing" + s,
                             new Vector3(side * (bodySize.x * 0.5f + 0.0325f), bodyTop - 0.125f, 0f),
-                            new Vector3(0.0625f, 0.25f, 0.375f), skin, wingNet, 64, 32);
-                        wing.transform.localRotation = Quaternion.identity;
+                            new Vector3(0.0625f, 0.25f, 0.375f), skin, wingNet);
+                        // orientation is identity either way
                     }
                 }
 
@@ -191,6 +201,24 @@ namespace VoxelCraft.Creatures
             smoothY = transform.position.y;
             targetYaw = Random.Range(0f, 360f);
             transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+        }
+
+        /// <summary>
+        /// SkinnedBox child that stays <paramref name="size"/> in world space:
+        /// SkinnedBox sets localScale = size, so a box parented to ANOTHER
+        /// skinned box (e.g. the beak on the head) would inherit the parent's
+        /// scale and shrink to a sliver. Dividing BOTH the local position and
+        /// the local scale by the parent's lossy scale cancels that out, so
+        /// <paramref name="localPos"/> and <paramref name="size"/> are world
+        /// meters relative to the parent's center.
+        /// </summary>
+        private static void AddSkinnedChild(Transform parent, string name, Vector3 localPos,
+            Vector3 size, Material skin, Vector4[] net)
+        {
+            var go = BoxBuilder.SkinnedBox(parent, name, localPos, size, skin, net, 64, 32);
+            var p = parent.lossyScale;
+            go.transform.localPosition = new Vector3(localPos.x / p.x, localPos.y / p.y, localPos.z / p.z);
+            go.transform.localScale = new Vector3(size.x / p.x, size.y / p.y, size.z / p.z);
         }
 
         private static void GetDims(string kind, out Vector3 bodySize, out float legH, out Vector3 headBox, out float legThick)

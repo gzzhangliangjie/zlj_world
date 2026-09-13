@@ -54,6 +54,8 @@ namespace VoxelCraft.Editor
 
             string dir = @"D:\zlj world\_logs";
             Directory.CreateDirectory(dir);
+            foreach (Transform kid in root.transform)
+                Debug.Log($"MODEL SLOT {kid.name}: pos=({kid.position.x:F2},{kid.position.y:F2},{kid.position.z:F2}) yaw={kid.eulerAngles.y:F0}");
             Shot(camGo, cam, new Vector3(3.1f, 1.5f, -6.5f), new Vector3(3.1f, 0.7f, 0f),
                 Path.Combine(dir, "snapshot_all_front.png"));
             Shot(camGo, cam, new Vector3(-0.6f, 2.4f, -4.6f), new Vector3(3.6f, 0.5f, 0.6f),
@@ -62,49 +64,51 @@ namespace VoxelCraft.Editor
                 Path.Combine(dir, "snapshot_chicken_close.png"));
             Shot(camGo, cam, new Vector3(6.3f, 1.15f, -3.2f), new Vector3(6.3f, 1.0f, 0f),
                 Path.Combine(dir, "snapshot_player_close.png"));
-            // Diagnostic: isolate each chicken renderer, frame it by its own
-            // bounds, and log name/mesh/bounds so sizes are data, not guesses.
-            var chickenGo = root.transform.GetChild(3).gameObject;
-            var parts = chickenGo.GetComponentsInChildren<Renderer>();
-            for (int i = 0; i < parts.Length; i++)
-            {
-                var b = parts[i].bounds;
-                var mf = parts[i].GetComponent<MeshFilter>();
-                var mb = mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds.size : Vector3.zero;
-                var lp = parts[i].transform.localPosition;
-                Debug.Log($"CHICKEN PART {i}: '{parts[i].gameObject.name}' mesh='{(mf != null && mf.sharedMesh != null ? mf.sharedMesh.name : "?")}' " +
-                          $"meshBounds=({mb.x:F3},{mb.y:F3},{mb.z:F3}) localPos=({lp.x:F3},{lp.y:F3},{lp.z:F3}) " +
-                          $"worldCenter=({b.center.x:F3},{b.center.y:F3},{b.center.z:F3}) worldSize=({b.size.x:F3},{b.size.y:F3},{b.size.z:F3})");
-            }
-            for (int k = 0; k < parts.Length; k++)
-            {
-                for (int i = 0; i < parts.Length; i++) parts[i].enabled = i == k;
-                var b = parts[k].bounds;
-                float dist = Mathf.Max(b.size.x, b.size.y, b.size.z) * 3.5f + 0.35f;
-                Shot(camGo, cam, b.center + new Vector3(0.25f, 0.1f, -dist), b.center,
-                    Path.Combine(dir, $"snapshot_chicken_part{k}_{parts[k].gameObject.name}.png"));
-            }
-            for (int i = 0; i < parts.Length; i++) parts[i].enabled = true;
+            // Close-ups with HARDCODED camera positions: renderer/mesh bounds
+            // are unreliable in batch mode, so aim at the known spawn slots.
+            // (pig x=0, cow 1.7, sheep 3.4, chicken 4.6, player 6.3; yaw 210.)
+            CloseUp(camGo, cam, 0f, 1.0f, "pig");
+            CloseUp(camGo, cam, 4.6f, 0.85f, "chicken");
+            CloseUp(camGo, cam, 3.4f, 1.0f, "sheep");
+            CloseUp(camGo, cam, 1.7f, 1.3f, "cow");
             // Player sanity: the rig hides the model in first person by design
             // (SetActive(false)); force it visible for the snapshot only.
             foreach (var t in playerGo.GetComponentsInChildren<Transform>(true)) t.gameObject.SetActive(true);
-            var playerParts = playerGo.GetComponentsInChildren<Renderer>();
-            for (int i = 0; i < playerParts.Length; i++)
-            {
-                var mf = playerParts[i].GetComponent<MeshFilter>();
-                var mb = mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds.size : Vector3.zero;
-                var wc = playerParts[i].bounds.center;
-                Debug.Log($"PLAYER PART {i}: '{playerParts[i].gameObject.name}' meshBounds=({mb.x:F3},{mb.y:F3},{mb.z:F3}) worldCenter=({wc.x:F3},{wc.y:F3},{wc.z:F3})");
-            }
             Shot(camGo, cam, new Vector3(6.3f, 1.3f, -3.6f), new Vector3(6.3f, 1.05f, 0f),
                 Path.Combine(dir, "snapshot_player_solo.png"));
             Debug.Log("MODEL SNAPSHOT OK");
+        }
+
+        private static void CloseUp(GameObject camGo, Camera cam, float x, float aimY, string name)
+        {
+            string dir = @"D:\zlj world\_logs";
+            // Face-on (animals yaw 210 -> face toward front-left) and side.
+            Shot(camGo, cam, new Vector3(x - 0.9f, aimY + 0.25f, -1.9f), new Vector3(x, aimY, 0f),
+                Path.Combine(dir, $"snapshot_{name}_front.png"));
+            Shot(camGo, cam, new Vector3(x + 1.7f, aimY + 0.3f, -1.5f), new Vector3(x, aimY, 0f),
+                Path.Combine(dir, $"snapshot_{name}_side.png"));
+        }
+
+        private static Bounds CombinedBounds(GameObject go)
+        {
+            var b = new Bounds(go.transform.position, Vector3.zero);
+            bool first = true;
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                if (first) { b = r.bounds; first = false; }
+                else b.Encapsulate(r.bounds);
+            }
+            return b;
         }
 
         private static void Shot(GameObject camGo, Camera cam, Vector3 pos, Vector3 lookAt, string path)
         {
             camGo.transform.position = pos;
             camGo.transform.LookAt(lookAt);
+            cam.Render(); // warm the matrices so the logged matrix is the render one
+            var c = cam.worldToCameraMatrix.GetColumn(3);
+            Debug.Log($"SHOT {Path.GetFileName(path)}: requested pos=({pos.x:F2},{pos.y:F2},{pos.z:F2}) " +
+                      $"matrixPos=({c.x:F2},{c.y:F2},{c.z:F2}) fwd={camGo.transform.forward}");
             int w = 1100, h = 560;
             var rt = new RenderTexture(w, h, 24);
             cam.targetTexture = rt;
