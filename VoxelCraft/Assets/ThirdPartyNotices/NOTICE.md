@@ -13,7 +13,7 @@ This project bundles free/open-licensed game assets. Attribution is given here a
 
 - **Player skin** (`player_skin.png.bytes`): from the [simple_skins](https://github.com/qwertysmeerkaas/simple_skins) mod by TenPlus1, **MIT License** (see `simple_skins-license.txt`).
 - **Animal skins** (`pig_skin`, `cow_skin`, `sheep_skin`, `chicken_skin`): from the `mobs_mc` module of [VoxeLibre](https://github.com/MineClone2/MineClone2). These textures are distributed under a mix of **CC0 / CC BY 3.0 / CC BY-SA 4.0** per the mobs_mc `LICENSE-media.md`; credits include maikerumine, TenPlus1 and other VoxeLibre contributors. Adaptations of these files are shared under the same licenses.
-- Modifications: `chicken_skin.png.bytes` has its leg net area (sheet pixels 26..38 x 0..8) filled with the sheet's own beak orange so the game's boxy leg model renders solid (the source sheet leaves those faces nearly transparent). Everything else is verbatim.
+- Modifications: `chicken_skin.png.bytes` is adapted for the game's box model: the 2x5x2 leg net area (sheet pixels 26..34 x 0..7) is filled with the sheet's own beak orange and the wing-top rect (25,13,1,6) with feather white, both because the source sheet leaves them nearly transparent (the game's boxy legs/wings would render as black holes otherwise). Everything else is verbatim.
 
 ## Sounds (Assets/Resources/Sounds/*.ogg)
 

@@ -58,7 +58,7 @@ namespace VoxelCraft.Creatures
                 case "chicken":
                     body = BoxBuilder.QuadrupedBodyNet(0, 8, 6, 8, 6);
                     head = BoxBuilder.McNet(0, 0, 4, 6, 3);
-                    leg = BoxBuilder.McNet(26, 0, 3, 5, 3);
+                    leg = BoxBuilder.McNet(26, 0, 2, 5, 2);        // 2 px thin sticks
                     break;
                 default: // pig
                     body = BoxBuilder.QuadrupedBodyNet(28, 8, 10, 16, 8);
@@ -98,6 +98,23 @@ namespace VoxelCraft.Creatures
                     BoxBuilder.SkinnedBox(head, "Beak",
                         new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.01325f),
                         new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1), 64, 32);
+                }
+
+                if (species == "chicken")
+                {
+                    // Vanilla 1x4x6 px wings flush against the body sides
+                    // (sheet rect 24,13). Their inward faces are backfaces
+                    // against the body side, so no z-fighting there.
+                    var wingNet = BoxBuilder.McNet(24, 13, 1, 4, 6);
+                    float bodyTop = legH + bodySize.y;
+                    for (int s = 0; s < 2; s++)
+                    {
+                        float side = s == 0 ? -1f : 1f;
+                        var wing = BoxBuilder.SkinnedBox(bodyRoot, "Wing" + s,
+                            new Vector3(side * (bodySize.x * 0.5f + 0.03125f), bodyTop - 0.125f, 0f),
+                            new Vector3(0.0625f, 0.25f, 0.375f), skin, wingNet, 64, 32);
+                        wing.transform.localRotation = Quaternion.identity;
+                    }
                 }
 
                 Vector2[] hipXZ =
@@ -179,7 +196,7 @@ namespace VoxelCraft.Creatures
                     bodySize = new Vector3(0.375f, 0.375f, 0.5f);  // 6 x 6 x 8 px
                     legH = 0.3125f;
                     headBox = new Vector3(0.25f, 0.375f, 0.1875f); // 4 x 6 x 3 px
-                    legThick = 0.1875f;
+                    legThick = 0.125f;                             // 2 px thin sticks
                     break;
                 default: // pig
                     bodySize = new Vector3(0.625f, 0.5f, 1.0f);    // 10 x 8 x 16 px

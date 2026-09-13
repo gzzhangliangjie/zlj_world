@@ -574,6 +574,19 @@ namespace VoxelCraft.Editor
                     uvBad = "empty or out-of-bounds rect in player nets";
                 }
             }
+            if (uvOk)
+            {
+                // Chicken wing net (1x4x6 box at sheet 24,13) - the wing-top
+                // rect is empty in the source sheet and is filled by the
+                // adaptation patch (NOTICE.md).
+                var cSkin = CreatureTextureFactory.GetSkinMaterial("chicken_skin");
+                var cTex = cSkin != null ? cSkin.mainTexture as Texture2D : null;
+                if (cTex == null || !NetHasPixels(cTex, BoxBuilder.McNet(24, 13, 1, 4, 6)))
+                {
+                    uvOk = false;
+                    uvBad = "empty or out-of-bounds rect in chicken wing net";
+                }
+            }
             Eval("m9.skin_uv_nets", uvOk,
                 uvOk ? "every face rect in-bounds with visible pixels" : uvBad);
 
