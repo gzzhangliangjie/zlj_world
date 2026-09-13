@@ -117,6 +117,11 @@ namespace VoxelCraft.Creatures
                     AddSkinnedChild(head, "Beak",
                         new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.01325f),
                         new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1));
+                    // Vanilla red wattle: 2x2x2 px box hanging below the beak
+                    // (mobs_mc draws the red at sheet ~15,2).
+                    AddSkinnedChild(head, "Wattle",
+                        new Vector3(0f, -headBox.y * 0.5f - 0.055f, headBox.z * 0.5f - 0.01f),
+                        new Vector3(0.125f, 0.125f, 0.125f), skin, BoxBuilder.McNet(15, 2, 2, 2, 2));
                 }
 
                 if (species == "chicken")
@@ -157,6 +162,14 @@ namespace VoxelCraft.Creatures
                     // coplanar with the body-bottom face (z-fighting).
                     BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -legH * 0.5f + 0.012f, 0f),
                         new Vector3(legThick, legH, legThick), skin, legNet, 64, 32);
+                    // Vanilla-style flat foot: 3x1x2 px slab at the leg bottom,
+                    // spreading forward; parented to the hip so it swings too.
+                    if (biped)
+                    {
+                        AddSkinnedChild(hip, "Foot",
+                            new Vector3(0f, -legH + 0.031f, 0.075f),
+                            new Vector3(0.1875f, 0.0625f, 0.125f), skin, legNet);
+                    }
                     legs[i] = hip;
                 }
             }

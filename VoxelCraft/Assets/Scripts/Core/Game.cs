@@ -37,7 +37,7 @@ namespace VoxelCraft.Core
     {
         /// <summary>Bumped every published change; shown in the HUD corner so
         /// a stale cached page is instantly recognizable.</summary>
-        public const string BuildId = "2026-09-13e";
+        public const string BuildId = "2026-09-13f";
 
         [Header("World")]
         public int seed = 1337;
