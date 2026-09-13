@@ -215,6 +215,7 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 - **破坏**：左键按住，`breakInterval=0.22s` 连发；`unbreakable`（基岩）跳过；触发 `OnBreak(type)` 事件。
 - **放置**：右键单击；目标格须为 Air/Water 且 `!OverlapsPlayer`（CC.bounds ∩ 体素 Bounds(0.98)）；触发 `OnPlace(type)`。
 - **热栏**：2 页×9 槽（页1 经典 / 页2 雪·砾石·冰·黑曜石·苔石·石砖·煤铁金矿），`Tab` 翻页，`1-9`+滚轮选择。
+- **道具栏（T/E）**：`Hud.DrawToolBag` 全屏面板——左列 5 个工具（图标+提示，点击或 `1-5` 选用后自动关闭并回锁鼠标），右列背包（肉/种子/胡萝卜/方块计数）。打开时释放鼠标，`BlockInteraction.Update` 因光标未锁定自动暂停，不存在双重按键处理；`BlockInteraction` 内不再有 T 循环切换（由 Hud 统一拥有）。
 - ⚠ 组件时序：`playerBody` 在 AddComponent 之后才赋值 → `Controller` 属性**惰性解析**，不要在 Awake 缓存。
 
 ## 10. 音频系统
@@ -231,14 +232,20 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 
 ### 11.1 盒体建模法（与体素世界风格统一的关键）
 - `BoxBuilder.Box`：`CreatePrimitive(Cube)` → **销毁 Collider** → 缩放到目标尺寸 → Unlit 材质（`Shader.Find("Unlit/Texture")`，失败回退 Legacy Diffuse）。
-- `CreatureTextureFactory`：按 `species:part` 缓存材质；16×16 程序像素画（底色+噪点+白斑/脸谱：双眼/猪鼻/鸡喙/刘海），Point 过滤。
+- `BoxBuilder.SkinnedBox`：24 顶点自建网格，六面各自映射皮肤矩形 `Vector4(u,v,w,h)`（v 自顶向下）；`faceRot[i]` 支持 90° 采样旋转（`RotateUvQuarter`），inset 0.25px 防串色。
+- **MC 皮肤网格规则**（`BlockyAnimal.GetSpeciesNets`，64×32 VoxeLibre mobs_mc 皮肤）：
+  - 直立盒子（头/腿/玩家全身）用 `McNet(u,v,W,H,D)`，rot 全 0；
+  - **四足躯干是 MC 存储时绕 X 轴旋转 90° 的盒子**（长轴在贴图里竖直）→ 用 `QuadrupedBodyNet`：世界顶/底面取 MC 北/南矩形，前/背面取 MC 顶/底矩形，左右侧面取 MC 东/西矩形并 rot1/rot3 旋转采样。rot 表 `{1,3,2,0,0,0}`。
+  - 物种：pig 头 8³@(0,0)、躯干 QuadNet(28,8,10,16,8)、腿 4×6×4@(0,16)；cow 头 8×8×6@(0,0)、躯干 (18,4,12,18,10)、腿 4×12×4；sheep 头 6³@(2,2)、躯干 (28,8,8,16,6)、腿 4×12×4；chicken 头 4×6×3@(0,0)+喙 4×3×1@(14,0)、躯干 (0,8,6,8,6)、腿 3×5×3@(26,0)。
+  - 每个矩形都经 `NetHasPixels` 自测校验（唯一豁免：-Y 底面，原版常留空，如鸡头底）。
+- `CreatureTextureFactory`：按 `species:part` 缓存材质；16×16 程序像素画（皮肤缺失时的兜底），Point 过滤。
 - 四肢用**髋/肩枢轴**（空物体）+ 偏移子盒实现摆动，旋转 pivot 不在盒心。
 
 ### 11.2 动物 AI（`BlockyAnimal.Update`）
 - 状态机：idle(2~5s) ↔ walk(3~7s，随机目标朝向)；朝向 `Slerp 3/s`。
 - 贴地：前进前查 `SurfaceHeight(前视格)`；`ground<SeaLevel` 或前方水 → 随机转向（避水避崖）；y=ground+1.02。
 - 动画：`phase += dt*(4+move*3)`；腿摆 `sin(phase)*0.55rad`，对角同步 `(i==0||i==3)?+1:-1`；头微摆。
-- 尺寸表：pig 0.8×0.55×1.05/leg0.36；cow 0.9×0.65×1.15/0.45；sheep 略小；chicken 0.42 系。
+- 尺寸表（`GetDims`，按 MC 像素/16 换算）：pig 身 0.625×0.5×1.0/腿 0.375；cow 身 0.75×0.625×1.125/腿 0.75；sheep 身 0.5×0.375×1.0/腿 0.75；chicken 身 0.375×0.375×0.5/腿 0.3125。
 
 ### 11.3 种群管理（`CreatureSpawner`）
 每 1s 扫描：距离>70m 销毁；数量<10 时在玩家周围 18~42m 环上试 12 次找"草地 + h∈(31,44)"生成随机物种。
@@ -264,7 +271,7 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 
 ## 13. 自动化测试基建
 
-文件：`Assets/Editor/SelfTest.cs`（30 用例）+ 技能 `unity-batchmode`
+文件：`Assets/Editor/SelfTest.cs`（40 用例）+ 技能 `unity-batchmode`
 
 ```powershell
 & "D:\Unity\2022.3.57f1c2\Editor\Unity.exe" -batchmode -quit `
@@ -304,12 +311,14 @@ tDelta= 穿越一格的 t 步长 = 1/|dir|
 - 矿物 else-if 阈值区间重叠会吞分支（黑曜石被砾石前件吞掉，靠自测 obsidian=0 暴露）。
 - 玻璃/水互邻的面规则要显式互剔，否则透明面叠加闪面。
 - 树冠跨界必须 margin 扫描 + 本块裁剪写入，否则边界树缺半边。
+- **MC 皮肤躯干网格**：四足动物躯干在皮肤里是"绕 X 旋转 90°存储"的盒子，直接把 MC 矩形当直立盒六面用必然错乱（长轴被横竖压错、顶底面错拿侧面内容）→ 必须 `QuadrupedBodyNet` + rot 表 `{1,3,2,0,0,0}`；猪头是 8×8×**8**（易误写成 6），羊头在 (2,2)（带 2px 边框填充），猪腿只有 6 像素高（H 写 12 会把两个腿面的内容竖向串到一条腿上）。
+- 皮肤里的透明像素在 Unlit 无透明 Shader 下渲染为黑色（mobs_mc 鸡腿几乎全透明）→ 用贴图自身橙色填充腿部矩形（改编已在 NOTICE 声明）。
 
 ## 16. 扩展配方
 
 **加方块**：`BlockType` 追加枚举 → `BlockDatabase` 加行（贴图槽/透明/碰撞/音组）→ `TextureFactory` 槽位表加名（或放 .bytes）→ 热栏数组加槽 → （需要自然生成才动 TerrainGenerator）。
 
-**加生物**：`CreatureTextureFactory.Paint` 加 case → `BlockyAnimal.GetDims` 加尺寸 → `CreatureSpawner.Species` 加名。
+**加生物**：`BlockyAnimal.GetSpeciesNets` 加网格（躯干用 QuadrupedBodyNet，直立件用 McNet）→ `GetDims` 加尺寸 → `CreatureTextureFactory.Paint` 加兜底 case → `CreatureSpawner.Species` 加名。
 
 **换世界风格**：整体替换 `Resources/Textures/*.png.bytes`（24 个标准名，README 有清单）。
 

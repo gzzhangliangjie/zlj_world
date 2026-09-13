@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $project = Join-Path $root "VoxelCraft"
-$log = Join-Path $root "_logs" "publish_webgl.log"
+$log = Join-Path (Join-Path $root "_logs") "publish_webgl.log"
 
 Write-Host "== [1/3] Unity WebGL build ==" -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path (Split-Path $log -Parent) | Out-Null
@@ -36,6 +36,9 @@ Write-Host "committed: $Message"
 Write-Host "== [3/3] Push (retries included) ==" -ForegroundColor Cyan
 $token = $env:GITHUB_TOKEN
 $pushed = $false
+# git writes progress to stderr; PS 5.1 + EAP=Stop would abort on it, so relax locally.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 foreach ($i in 1..8) {
     if ($token) {
         git push "https://gzzhangliangjie:$token@github.com/gzzhangliangjie/zlj_world.git" main 2>&1 | Out-Null
@@ -46,6 +49,7 @@ foreach ($i in 1..8) {
     Write-Host "push retry $i..."
     Start-Sleep -Seconds 12
 }
+$ErrorActionPreference = $prevEap
 if (-not $pushed) { throw "push failed after retries" }
 Write-Host "pushed. GitHub Actions is deploying (~1-2 min): https://github.com/gzzhangliangjie/zlj_world/actions" -ForegroundColor Green
 Write-Host "play at: https://gzzhangliangjie.github.io/zlj_world/" -ForegroundColor Green
