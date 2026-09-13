@@ -35,6 +35,10 @@ namespace VoxelCraft.Core
     /// </summary>
     public class Game : MonoBehaviour
     {
+        /// <summary>Bumped every published change; shown in the HUD corner so
+        /// a stale cached page is instantly recognizable.</summary>
+        public const string BuildId = "2026-09-13c";
+
         [Header("World")]
         public int seed = 1337;
         public int viewRadius = 7;

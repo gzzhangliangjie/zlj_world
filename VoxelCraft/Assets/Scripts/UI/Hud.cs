@@ -121,6 +121,11 @@ namespace VoxelCraft.UI
                 return;
             }
 
+            // Corner build id: lets anyone verify which build the browser is
+            // actually running (Pages caches index.html for up to 10 minutes).
+            GUI.Label(new Rect(Screen.width - 150f, Screen.height - 22f, 140f, 18f),
+                "build " + Core.Game.BuildId, labelStyle);
+
             if (bagOpen)
             {
                 DrawToolBag();

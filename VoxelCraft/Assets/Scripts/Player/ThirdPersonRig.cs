@@ -44,7 +44,9 @@ namespace VoxelCraft.Player
 
                 BoxBuilder.SkinnedBox(modelRoot, "Body", new Vector3(0f, 1.12f, 0f), new Vector3(0.5f, 0.75f, 0.25f),
                     skin, bodyNet, 64, 32);
-                BoxBuilder.SkinnedBox(modelRoot, "Head", new Vector3(0f, 1.73f, 0f), Vector3.one * 0.5f,
+                // Head is 2mm slimmer in X than the torso half plane: an exact
+                // shared side plane with the torso would z-fight on a 15mm strip.
+                BoxBuilder.SkinnedBox(modelRoot, "Head", new Vector3(0f, 1.73f, 0f), new Vector3(0.48f, 0.5f, 0.5f),
                     skin, headNet, 64, 32);
 
                 for (int i = 0; i < 2; i++)
@@ -53,14 +55,18 @@ namespace VoxelCraft.Player
                     var hip = new GameObject("Hip" + i).transform;
                     hip.SetParent(modelRoot, false);
                     hip.localPosition = new Vector3(side * 0.6f, 0.75f, 0f);
-                    BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -0.375f, 0f), new Vector3(0.25f, 0.75f, 0.25f),
+                    // Limb Z is 24cm vs the torso 25cm: their front/back planes
+                    // must never coincide (z-fight strips on the lower torso).
+                    BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -0.375f, 0f), new Vector3(0.25f, 0.75f, 0.24f),
                         skin, legNet, 64, 32);
                     legs[i] = hip;
 
+                    // Shoulder at 0.362: the arm inner face lands 12mm INSIDE the
+                    // torso (half width 0.25) instead of exactly on it.
                     var shoulder = new GameObject("Shoulder" + i).transform;
                     shoulder.SetParent(modelRoot, false);
-                    shoulder.localPosition = new Vector3(side, 1.44f, 0f);
-                    BoxBuilder.SkinnedBox(shoulder, "Arm", new Vector3(0f, -0.34f, 0f), new Vector3(0.25f, 0.72f, 0.25f),
+                    shoulder.localPosition = new Vector3(i == 0 ? -0.362f : 0.362f, 1.44f, 0f);
+                    BoxBuilder.SkinnedBox(shoulder, "Arm", new Vector3(0f, -0.34f, 0f), new Vector3(0.25f, 0.72f, 0.24f),
                         skin, armNet, 64, 32);
                     arms[i] = shoulder;
                 }

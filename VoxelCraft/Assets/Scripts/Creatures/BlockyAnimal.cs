@@ -93,8 +93,10 @@ namespace VoxelCraft.Creatures
                 if (species == "chicken")
                 {
                     // 4x3x1 px beak slab on the head front (sheet rect at 14,0).
+                    // Sunk 18mm into the head so the back face is never coplanar
+                    // with the head front face (z-fighting).
                     BoxBuilder.SkinnedBox(head, "Beak",
-                        new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.03125f),
+                        new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.01325f),
                         new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1), 64, 32);
                 }
 
@@ -110,7 +112,9 @@ namespace VoxelCraft.Creatures
                     var hip = new GameObject("Hip" + i).transform;
                     hip.SetParent(bodyRoot, false);
                     hip.localPosition = new Vector3(hipXZ[i].x, legH, hipXZ[i].y);
-                    BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -legH * 0.5f, 0f),
+                    // Top sunk 12mm into the body so the leg-top face is never
+                    // coplanar with the body-bottom face (z-fighting).
+                    BoxBuilder.SkinnedBox(hip, "Leg", new Vector3(0f, -legH * 0.5f + 0.012f, 0f),
                         new Vector3(legThick, legH, legThick), skin, legNet, 64, 32);
                     legs[i] = hip;
                 }
@@ -137,7 +141,7 @@ namespace VoxelCraft.Creatures
                     var hip = new GameObject("Hip" + i).transform;
                     hip.SetParent(bodyRoot, false);
                     hip.localPosition = new Vector3(hipXZ[i].x, legH, hipXZ[i].y);
-                    var leg = BoxBuilder.Box(hip, "Leg", new Vector3(0f, -legH * 0.5f, 0f),
+                    var leg = BoxBuilder.Box(hip, "Leg", new Vector3(0f, -legH * 0.5f + 0.012f, 0f),
                         new Vector3(legThick, legH, legThick), legMat);
                     legs[i] = hip;
                 }

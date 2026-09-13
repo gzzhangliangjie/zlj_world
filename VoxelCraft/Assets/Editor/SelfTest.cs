@@ -634,6 +634,70 @@ namespace VoxelCraft.Editor
             Eval("m10.held_view", anchorsOk,
                 anchorsOk ? "anchors created without refs" : "anchor build failed");
 
+            // ----- M11: skinned box UV sampling matches the MC net convention -----
+            // Builds real SkinnedBox meshes and reads mesh.uv back, comparing
+            // against independently hand-derived expectations (rect + inset +
+            // quarter-turn). Catches any v-flip / rotation direction regression.
+            bool uvSampleOk = true;
+            string uvSampleBad = "ok";
+            var uvMat = new Material(Shader.Find("Unlit/Texture"));
+            var headGo2 = BoxBuilder.SkinnedBox(null, "uv_head", Vector3.zero, Vector3.one,
+                uvMat, BoxBuilder.McNet(0, 0, 8, 8, 8), 64, 32);
+            var bodyGo = BoxBuilder.SkinnedBox(null, "uv_body", Vector3.zero, Vector3.one,
+                uvMat, BoxBuilder.QuadrupedBodyNet(28, 8, 10, 16, 8), 64, 32, BoxBuilder.QuadrupedBodyRots);
+            var headUv = headGo2.GetComponent<MeshFilter>().sharedMesh.uv;
+            var bodyUv = bodyGo.GetComponent<MeshFilter>().sharedMesh.uv;
+            UnityEngine.Object.DestroyImmediate(headGo2);
+            UnityEngine.Object.DestroyImmediate(bodyGo);
+            UnityEngine.Object.DestroyImmediate(uvMat);
+
+            void Expect(string what, Vector2 got, float eu, float ev)
+            {
+                if (!uvSampleOk)
+                {
+                    return;
+                }
+                if (Mathf.Abs(got.x - eu) > 1e-5f || Mathf.Abs(got.y - ev) > 1e-5f)
+                {
+                    uvSampleOk = false;
+                    uvSampleBad = $"{what}: got ({got.x:F5},{got.y:F5}) want ({eu:F5},{ev:F5})";
+                }
+            }
+
+            // Pig head (McNet, rot 0), face +Z (verts 16..19), rect (8,8,8,8).
+            // Face-local b runs UP the rect: c0=(a0,b0)=rect bottom-left,
+            // c2=(a1,b1)=rect top-right.
+            if (headUv.Length == 24)
+            {
+                Expect("head+Z c0", headUv[16], 8.25f / 64f, 1f - 15.75f / 32f);
+                Expect("head+Z c2", headUv[18], 15.75f / 64f, 1f - 8.25f / 32f);
+            }
+            else
+            {
+                uvSampleOk = false;
+                uvSampleBad = "head mesh uv count " + headUv.Length;
+            }
+
+            // Pig torso (QuadNet 28,8,10,16,8), D=8: +X rect (28,16,8,16) rot1;
+            // +Y rect (54,16,10,16) rot2; -X rect (46,16,8,16) rot3.
+            // rot1 s=(b,1-a); rot2 s=(1-a,1-b); rot3 s=(1-b,a).
+            if (uvSampleOk && bodyUv.Length == 24)
+            {
+                Expect("body+X c0 r1", bodyUv[0], 28.25f / 64f, 1f - 16.25f / 32f);
+                Expect("body+X c1 r1", bodyUv[1], 28.25f / 64f, 1f - 31.75f / 32f);
+                Expect("body+Y c0 r2", bodyUv[8], 63.75f / 64f, 1f - 16.25f / 32f);
+                Expect("body+Y c1 r2", bodyUv[9], 54.25f / 64f, 1f - 16.25f / 32f);
+                Expect("body-X c0 r3", bodyUv[4], 53.75f / 64f, 1f - 31.75f / 32f);
+                Expect("body-X c1 r3", bodyUv[5], 53.75f / 64f, 1f - 16.25f / 32f);
+            }
+            else if (uvSampleOk)
+            {
+                uvSampleOk = false;
+                uvSampleBad = "body mesh uv count " + bodyUv.Length;
+            }
+            Eval("m11.skinned_uv_sampling", uvSampleOk,
+                uvSampleOk ? "mesh.uv matches MC net + rotation convention" : uvSampleBad);
+
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");
 
