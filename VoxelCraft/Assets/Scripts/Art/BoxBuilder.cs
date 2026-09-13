@@ -40,7 +40,7 @@ namespace VoxelCraft.Art
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPosition;
             go.transform.localRotation = Quaternion.identity;
-            go.transform.localScale = Vector3.one;
+            go.transform.localScale = size;
 
             var verts = new Vector3[24];
             var uvs = new Vector2[24];
@@ -69,7 +69,10 @@ namespace VoxelCraft.Art
                 for (int c = 0; c < 4; c++)
                 {
                     int vi = f * 4 + c;
-                    verts[vi] = corners[f][c];
+                    // Center the unit cube on the local origin so localScale=size
+                    // grows the box symmetrically around localPosition (matches
+                    // the CreatePrimitive convention Box() relies on).
+                    verts[vi] = corners[f][c] - new Vector3(0.5f, 0.5f, 0.5f);
                     Vector2 s = RotateUvQuarter(rot, cornerUv[c].x, cornerUv[c].y);
                     uvs[vi] = new Vector2(
                         Mathf.Lerp(u0, u1, s.x),

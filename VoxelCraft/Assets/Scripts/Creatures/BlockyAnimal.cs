@@ -51,7 +51,16 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
                     break;
                 case "sheep":
-                    body = BoxBuilder.QuadrupedBodyNet(28, 8, 8, 16, 6);
+                    // mobs_mc sheep.png mixes the SHEARED gray body (x28..47)
+                    // with the WOOLLY white body (x48..63, bitmap rows16..31).
+                    // Our sheep is always woolly: every face samples the bright
+                    // wool rects (verified opaque by SelfTest net checks).
+                    body = new Vector4[]
+                    {
+                        new Vector4(48, 16, 8, 16), new Vector4(48, 16, 8, 16),
+                        new Vector4(48, 16, 8, 6),  new Vector4(48, 26, 8, 6),
+                        new Vector4(48, 16, 8, 16), new Vector4(48, 16, 8, 16),
+                    };
                     head = BoxBuilder.McNet(2, 2, 6, 6, 6);
                     leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
                     break;
@@ -66,7 +75,7 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 16, 4, 6, 4);
                     break;
             }
-            bodyRot = BoxBuilder.QuadrupedBodyRots;
+            bodyRot = kind == "sheep" ? new int[] { 0, 0, 0, 0, 0, 0 } : BoxBuilder.QuadrupedBodyRots;
         }
 
         /// <summary>Builds the box model. Call once after species is assigned.</summary>
@@ -111,20 +120,25 @@ namespace VoxelCraft.Creatures
                     {
                         float side = s == 0 ? -1f : 1f;
                         var wing = BoxBuilder.SkinnedBox(bodyRoot, "Wing" + s,
-                            new Vector3(side * (bodySize.x * 0.5f + 0.03125f), bodyTop - 0.125f, 0f),
+                            new Vector3(side * (bodySize.x * 0.5f + 0.0325f), bodyTop - 0.125f, 0f),
                             new Vector3(0.0625f, 0.25f, 0.375f), skin, wingNet, 64, 32);
                         wing.transform.localRotation = Quaternion.identity;
                     }
                 }
 
-                Vector2[] hipXZ =
-                {
-                    new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
-                    new Vector2(bodySize.x * 0.32f, -bodySize.z * 0.32f),
-                    new Vector2(-bodySize.x * 0.32f, bodySize.z * 0.32f),
-                    new Vector2(bodySize.x * 0.32f, bodySize.z * 0.32f),
-                };
-                for (int i = 0; i < 4; i++)
+                // Quadrupeds: 4 hips at the body corners. The chicken is a
+                // biped: 2 legs 1 px (0.0625 m) either side of center.
+                bool biped = species == "chicken";
+                Vector2[] hipXZ = biped
+                    ? new[] { new Vector2(-0.0625f, 0f), new Vector2(0.0625f, 0f) }
+                    : new[]
+                    {
+                        new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
+                        new Vector2(bodySize.x * 0.32f, -bodySize.z * 0.32f),
+                        new Vector2(-bodySize.x * 0.32f, bodySize.z * 0.32f),
+                        new Vector2(bodySize.x * 0.32f, bodySize.z * 0.32f),
+                    };
+                for (int i = 0; i < hipXZ.Length; i++)
                 {
                     var hip = new GameObject("Hip" + i).transform;
                     hip.SetParent(bodyRoot, false);
@@ -146,14 +160,17 @@ namespace VoxelCraft.Creatures
                     headBox, CreatureTextureFactory.Get(species, "face")).transform;
 
                 var legMat = CreatureTextureFactory.Get(species, "leg");
-                Vector2[] hipXZ =
-                {
-                    new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
-                    new Vector2(bodySize.x * 0.32f, -bodySize.z * 0.32f),
-                    new Vector2(-bodySize.x * 0.32f, bodySize.z * 0.32f),
-                    new Vector2(bodySize.x * 0.32f, bodySize.z * 0.32f),
-                };
-                for (int i = 0; i < 4; i++)
+                bool bipedF = species == "chicken";
+                Vector2[] hipXZ = bipedF
+                    ? new[] { new Vector2(-0.0625f, 0f), new Vector2(0.0625f, 0f) }
+                    : new[]
+                    {
+                        new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
+                        new Vector2(bodySize.x * 0.32f, -bodySize.z * 0.32f),
+                        new Vector2(-bodySize.x * 0.32f, bodySize.z * 0.32f),
+                        new Vector2(bodySize.x * 0.32f, bodySize.z * 0.32f),
+                    };
+                for (int i = 0; i < hipXZ.Length; i++)
                 {
                     var hip = new GameObject("Hip" + i).transform;
                     hip.SetParent(bodyRoot, false);
@@ -326,6 +343,7 @@ namespace VoxelCraft.Creatures
             float swing = walking && move > 0f ? Mathf.Sin(animPhase) * 0.55f : 0f;
             for (int i = 0; i < 4; i++)
             {
+                if (legs[i] == null) continue; // bipeds only fill slots 0..1
                 float sign = (i == 0 || i == 3) ? 1f : -1f;
                 legs[i].localRotation = Quaternion.Euler(swing * sign * 57.3f, 0f, 0f);
             }

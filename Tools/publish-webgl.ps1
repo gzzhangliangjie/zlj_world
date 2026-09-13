@@ -28,17 +28,20 @@ Write-Host "build OK: $((Get-Item (Join-Path $project 'Builds\WebGL\index.html')
 
 Write-Host "== [2/3] Commit build output ==" -ForegroundColor Cyan
 Set-Location $root
+# git writes line-ending/progress chatter to stderr; PS 5.1 + EAP=Stop turns
+# that into a terminating NativeCommandError (especially when the caller
+# redirects output), so keep EAP relaxed for the whole git section.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 git add "VoxelCraft/Builds/WebGL"
 if (-not $Message) { $Message = "webgl build $(Get-Date -Format 'yyyy-MM-dd HH:mm')" }
 git commit -m $Message | Out-Null
+$ErrorActionPreference = $prevEap
 Write-Host "committed: $Message"
 
 Write-Host "== [3/3] Push (retries included) ==" -ForegroundColor Cyan
 $token = $env:GITHUB_TOKEN
 $pushed = $false
-# git writes progress to stderr; PS 5.1 + EAP=Stop would abort on it, so relax locally.
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
 foreach ($i in 1..8) {
     if ($token) {
         git push "https://gzzhangliangjie:$token@github.com/gzzhangliangjie/zlj_world.git" main 2>&1 | Out-Null
