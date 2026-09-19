@@ -88,6 +88,23 @@ namespace VoxelCraft.Creatures
             bodyRoot = new GameObject("Body").transform;
             bodyRoot.SetParent(transform, false);
 
+            // Head placement per vanilla model data (bedrock-samples geometry,
+            // px/16 m, z flipped so +Z is our front). The generic formula put
+            // the pig head 5 px too high, which scrambled single-view skin
+            // recovery - head positions are vanilla-measured now:
+            //   pig:     head y 8..16 px  -> centre 0.75 m, 1 px z-gap past body
+            //   chicken: head y 9..15 px  -> centre 0.75 m, 1 px z-sink into body
+            Vector3 headPos;
+            if (species == "pig")
+                headPos = new Vector3(0f, legH + 0.125f + headBox.y * 0.5f,
+                    bodySize.z * 0.5f + headBox.z * 0.5f + 0.0625f);
+            else if (species == "chicken")
+                headPos = new Vector3(0f, legH + bodySize.y * 0.5f + 0.25f,
+                    bodySize.z * 0.5f + headBox.z * 0.5f - 0.0625f);
+            else
+                headPos = new Vector3(0f, legH + bodySize.y + headBox.y * 0.4f,
+                    bodySize.z * 0.5f + headBox.z * 0.45f);
+
             if (skin != null)
             {
                 // Real MC-format skin: standard quadruped nets.
@@ -95,18 +112,18 @@ namespace VoxelCraft.Creatures
 
                 BoxBuilder.SkinnedBox(bodyRoot, "Body", new Vector3(0f, legH + bodySize.y * 0.5f, 0f), bodySize,
                     skin, bodyNet, 64, 32, bodyRot);
-                head = BoxBuilder.SkinnedBox(bodyRoot, "Head",
-                    new Vector3(0f, legH + bodySize.y + headBox.y * 0.4f, bodySize.z * 0.5f + headBox.z * 0.45f),
+                head = BoxBuilder.SkinnedBox(bodyRoot, "Head", headPos,
                     headBox, skin, headNet, 64, 32).transform;
 
                 if (species == "pig")
                 {
-                    // Vanilla pig snout: 8x4x1 px slab on the face lower half
-                    // (mobs_mc draws it at sheet x17..24 rows16..19). Sunk 14mm
-                    // so the back face is never coplanar with the head front.
+                    // Vanilla pig snout (bedrock pig.geo.json): 4x3x1 px slab,
+                    // uv (16,16), hanging 1 px proud of the head front at the
+                    // face's lower half. Sunk 14mm so the back face is never
+                    // coplanar with the head front (z-fighting).
                     AddSkinnedChild(head, "Snout",
-                        new Vector3(0f, -headBox.y * 0.25f, headBox.z * 0.5f + 0.014f),
-                        new Vector3(0.5f, 0.25f, 0.0625f), skin, BoxBuilder.McNet(16, 15, 8, 4, 1));
+                        new Vector3(0f, -headBox.y * 0.1875f, headBox.z * 0.5f + 0.017f),
+                        new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(16, 16, 4, 3, 1));
                 }
 
                 if (species == "chicken")

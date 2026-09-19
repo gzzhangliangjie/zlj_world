@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using VoxelCraft.Creatures;
@@ -50,6 +51,7 @@ namespace VoxelCraft.Editor
         {
             public List<BoxFace> faces = new List<BoxFace>();
             public List<Vector3[]> boxCorners = new List<Vector3[]>(); // 8 unique world corners per box
+            public List<string> boxNames = new List<string>();         // parallel to boxCorners
             public Vector3 center;
         }
 
@@ -58,7 +60,7 @@ namespace VoxelCraft.Editor
         /// quads + UVs straight from the produced meshes. Batch-safe (SelfTest
         /// builds the same models); the temporary hierarchy is destroyed after.
         /// </summary>
-        static ModelGeom BuildGameModel(string species)
+        static ModelGeom BuildGameModel(string species, float headYawDeg = 0f)
         {
             var go = new GameObject("ReplicaSrc_" + species);
             try
@@ -69,6 +71,21 @@ namespace VoxelCraft.Editor
                 // BuildModel gives the root a random yaw; harvest needs model space.
                 go.transform.position = Vector3.zero;
                 go.transform.rotation = Quaternion.identity;
+
+                if (Mathf.Abs(headYawDeg) > 0.01f)
+                {
+                    // Wiki-style references often have the head turned toward
+                    // the camera relative to the body - no single rigid pose
+                    // fits both. Turn the head about its neck pivot (back
+                    // plane, centre height) before harvesting.
+                    var head = go.transform.Find("Body/Head");
+                    if (head != null)
+                    {
+                        var sz = head.localScale; // SkinnedBox: localScale = box size
+                        var pivot = head.position + new Vector3(0f, 0f, -sz.z * 0.5f);
+                        head.RotateAround(pivot, Vector3.up, headYawDeg);
+                    }
+                }
 
                 var geom = new ModelGeom();
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
@@ -100,6 +117,7 @@ namespace VoxelCraft.Editor
                         if (!corners.Contains(w)) corners.Add(w);
                     }
                     geom.boxCorners.Add(corners.ToArray());
+                    geom.boxNames.Add(mf.gameObject.name);
                 }
                 if (geom.faces.Count == 0)
                 {
@@ -488,6 +506,15 @@ namespace VoxelCraft.Editor
                 if (!improved) break;
             }
             bestS = OptimizeScaleCenter(geom, r, subject, bestS);
+
+            // Face-aware polish: silhouette IoU is flat in yaw/pitch around
+            // the true pose (the body-dominated plateau) while head features
+            // misplace by texels - re-score with face terms and descend.
+            RefineFaceAlignment(geom, r, subject);
+            bestS = Iou(Rasterize(geom, r.w, r.h), subject);
+            var fq = FaceQuality(geom, r);
+            Debug.Log($"REPLICA face refine '{name}' [{r.name}]: yaw={yaw:F1} pitch={pitch:F1} scale={projScale:F2} center=({projCenter.x:F0},{projCenter.y:F0}) IoU={bestS:F3} faceFrac={fq.sampleFrac:F2} faceAsym={fq.asym:F2}");
+
             Debug.Log($"REPLICA projection fit '{name}' [{r.name}]: dist={projDist:F1} yaw={yaw:F1} pitch={pitch:F1} scale={projScale:F2} center=({projCenter.x:F0},{projCenter.y:F0}) IoU={bestS:F3}");
             if (dump) DumpFit(geom, r, name, subject);
             return bestS;
@@ -514,17 +541,149 @@ namespace VoxelCraft.Editor
 
         static void DumpFit(ModelGeom geom, Ref r, string name, bool[] subject)
         {
-            var model = Rasterize(geom, r.w, r.h);
-            var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
-            var px = new Color[r.w * r.h];
-            for (int i = 0; i < px.Length; i++)
-                px[i] = new Color(subject[i] ? 1f : 0f, model[i] ? 1f : 0f, 0f, 1f);
-            tex.SetPixels(px); tex.Apply();
-            File.WriteAllBytes(Path.Combine(OutDir, $"fit_{name}_overlay.png"), tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
+            if (subject != null)
+            {
+                var model = Rasterize(geom, r.w, r.h);
+                var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
+                var px = new Color[r.w * r.h];
+                for (int i = 0; i < px.Length; i++)
+                    px[i] = new Color(subject[i] ? 1f : 0f, model[i] ? 1f : 0f, 0f, 1f);
+                tex.SetPixels(px); tex.Apply();
+                File.WriteAllBytes(Path.Combine(OutDir, $"fit_{name}_overlay.png"), tex.EncodeToPNG());
+                Object.DestroyImmediate(tex);
+            }
+
+            // Per-box projected corner dots over the reference: shows exactly
+            // where the fitted camera puts each box (head offset = the face
+            // scramble). Head=green, snout/beak/wattle=yellow, body=cyan,
+            // legs/feet/others=orange.
+            var dot = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
+            var dp = new Color[r.w * r.h];
+            for (int i = 0; i < dp.Length; i++) dp[i] = r.pxTop[i];
+            for (int bi = 0; bi < geom.boxCorners.Count; bi++)
+            {
+                string bname = bi < geom.boxNames.Count ? geom.boxNames[bi] : "";
+                var col = bname.Contains("Head") ? new Color(0f, 1f, 0f, 1f)
+                        : bname.Contains("Snout") || bname.Contains("Beak") || bname.Contains("Wattle")
+                            ? new Color(1f, 1f, 0f, 1f)
+                        : bname.Contains("Body") ? new Color(0f, 1f, 1f, 1f)
+                        : new Color(1f, 0.5f, 0f, 1f);
+                foreach (var c in geom.boxCorners[bi])
+                {
+                    var sp = Project(c);
+                    int cx = Mathf.Clamp((int)sp.x, 0, r.w - 1), cy = Mathf.Clamp((int)sp.y, 0, r.h - 1);
+                    for (int oy = -2; oy <= 2; oy++)
+                        for (int ox = -2; ox <= 2; ox++)
+                        {
+                            int xx = Mathf.Clamp(cx + ox, 0, r.w - 1), yy = Mathf.Clamp(cy + oy, 0, r.h - 1);
+                            dp[yy * r.w + xx] = col;
+                        }
+                }
+            }
+            dot.SetPixels(dp); dot.Apply();
+            File.WriteAllBytes(Path.Combine(OutDir, $"fit_{name}_boxes.png"), dot.EncodeToPNG());
+            Object.DestroyImmediate(dot);
         }
 
         // ---------------- skin painting ----------------
+        class FacePaint
+        {
+            public BoxFace F; public Color[] c; public float[] d; public bool[] has; public int count;
+            public FacePaint(BoxFace f)
+            {
+                F = f;
+                int n = f.ga * f.gb;
+                c = new Color[n]; d = new float[n]; has = new bool[n];
+                for (int i = 0; i < n; i++) d[i] = float.PositiveInfinity;
+            }
+        }
+
+        static readonly string[] FaceBoxes = { "Head", "Snout", "Beak", "Wattle" };
+        static bool IsFaceBox(string name)
+        {
+            foreach (var fb in FaceBoxes) if (name.Contains(fb)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Min view depth per reference pixel, remembering which box owns it.
+        /// A convex box's camera-facing faces can never hide one another, so
+        /// the occlusion test must exclude same-box hits - including them
+        /// falsely rejected whole edge strips of a face (grey holes).
+        /// </summary>
+        static void BuildDepthBuf(ModelGeom geom, Ref r, out float[] depthBuf, out int[] boxIdBuf,
+                                  Dictionary<string, int> boxIdx)
+        {
+            int n = r.w * r.h;
+            depthBuf = new float[n];
+            boxIdBuf = new int[n];
+            for (int i = 0; i < n; i++) { depthBuf[i] = float.PositiveInfinity; boxIdBuf[i] = -1; }
+            var camFwd = camRot * Vector3.forward;
+            foreach (var F in geom.faces)
+            {
+                if (Vector3.Dot(F.n, camFwd) > -0.02f) continue;
+                int bid = boxIdx[F.box];
+                int sa = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v1) * projScale), 2, 2400);
+                int sb = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v3) * projScale), 2, 2400);
+                for (int j = 0; j < sb; j++)
+                    for (int i = 0; i < sa; i++)
+                    {
+                        var P = QuadPoint(F, (i + 0.5f) / sa, (j + 0.5f) / sb);
+                        var sp = Project(P);
+                        int ix = Mathf.Clamp((int)sp.x, 0, r.w - 1);
+                        int iy = Mathf.Clamp((int)sp.y, 0, r.h - 1);
+                        int idx = iy * r.w + ix;
+                        float d = Depth(P);
+                        if (d < depthBuf[idx]) { depthBuf[idx] = d; boxIdBuf[idx] = bid; }
+                    }
+            }
+        }
+
+        /// <summary>
+        /// Lateral mirror completion: a single reference view shows only one
+        /// side of each box, so the hidden face of a lateral pair (+X/-X,
+        /// +Z/-Z) inherits the visible face's texels mirrored. The mesh corner
+        /// order gives the mapping a' = 1-a, b' = b. Animals are bilaterally
+        /// symmetric, so the completed side reads correctly in-game.
+        /// </summary>
+        static void MirrorComplete(List<FacePaint> paints)
+        {
+            var byBox = new Dictionary<string, List<FacePaint>>();
+            foreach (var p in paints)
+            {
+                if (!byBox.TryGetValue(p.F.box, out var l)) { l = new List<FacePaint>(); byBox[p.F.box] = l; }
+                l.Add(p);
+            }
+            foreach (var kv in byBox)
+            {
+                for (int axis = 0; axis < 2; axis++)
+                {
+                    FacePaint a = null, b = null;
+                    foreach (var p in kv.Value)
+                    {
+                        bool lateral = axis == 0 ? Mathf.Abs(p.F.n.x) > 0.9f : Mathf.Abs(p.F.n.z) > 0.9f;
+                        if (!lateral) continue;
+                        if (a == null) a = p; else if (b == null) b = p;
+                    }
+                    if (a == null || b == null) continue;
+                    var rich = a.count >= b.count ? a : b;
+                    var poor = rich == a ? b : a;
+                    if (rich.count < 3 || rich.count <= poor.count) continue;
+                    if (rich.F.ga != poor.F.ga || rich.F.gb != poor.F.gb) continue;
+                    for (int j = 0; j < poor.F.gb; j++)
+                        for (int i = 0; i < poor.F.ga; i++)
+                        {
+                            int pi = j * poor.F.ga + i;
+                            if (poor.has[pi]) continue;
+                            int ri = j * rich.F.ga + (rich.F.ga - 1 - i);
+                            if (!rich.has[ri]) continue;
+                            poor.c[pi] = rich.c[ri]; poor.d[pi] = rich.d[ri];
+                            poor.has[pi] = true; poor.count++;
+                        }
+                }
+            }
+        }
+
         static Texture2D PaintSkin(ModelGeom geom, Ref r)
         {
             var sheet = new Texture2D(64, 32, TextureFormat.RGBA32, false);
@@ -532,51 +691,23 @@ namespace VoxelCraft.Editor
             for (int i = 0; i < clear.Length; i++) clear[i] = new Color(0, 0, 0, 0);
             sheet.SetPixels(clear);
 
-            // Occlusion prepass: per-reference-pixel closest surface depth over
-            // all camera-facing faces. A face texel whose depth is beaten here
-            // by a clear margin is hidden behind another box (leg behind body,
-            // beak over head front) and must NOT sample those pixels.
-            var depthBuf = new float[r.w * r.h];
-            for (int i = 0; i < depthBuf.Length; i++) depthBuf[i] = float.PositiveInfinity;
-            var camFwd0 = camRot * Vector3.forward;
-            foreach (var F in geom.faces)
-            {
-                if (Vector3.Dot(F.n, camFwd0) > -0.02f) continue;
-                // ~1 screen-px sampling density.
-                int sa = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v1) * projScale), 2, 2400);
-                int sb = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v3) * projScale), 2, 2400);
-                for (int j = 0; j < sb; j++)
-                    for (int i = 0; i < sa; i++)
-                    {
-                        float a = (i + 0.5f) / sa, b = (j + 0.5f) / sb;
-                        var P = QuadPoint(F, a, b);
-                        var sp = Project(P);
-                        int ix = Mathf.Clamp((int)sp.x, 0, r.w - 1);
-                        int iy = Mathf.Clamp((int)sp.y, 0, r.h - 1);
-                        float d = Depth(P);
-                        int idx = iy * r.w + ix;
-                        if (d < depthBuf[idx]) depthBuf[idx] = d;
-                    }
-            }
-
-            // Global min-depth staging: shared nets (4 legs, 2 feet, 2 wings on
-            // one rect) are written by every box; the texel keeps the sample
-            // from the box closest to the camera.
-            var stageC = new Color[64 * 32];
-            var stageD = new float[64 * 32];
-            var stageHas = new bool[64 * 32];
-            for (int i = 0; i < stageD.Length; i++) stageD[i] = float.PositiveInfinity;
+            var boxIdx = new Dictionary<string, int>();
+            foreach (var F in geom.faces) if (!boxIdx.ContainsKey(F.box)) boxIdx[F.box] = boxIdx.Count;
+            BuildDepthBuf(geom, r, out var depthBuf, out var boxIdBuf, boxIdx);
 
             var camFwd = camRot * Vector3.forward;
-            const float OccEps = 0.02f; // view-space m; occluders sit >= ~12mm nearer
+            const float OccEps = 0.02f; // view-space m; real occluders sit >= ~12mm nearer
+
+            // Per-face texel buffers: occlusion (cross-box only) + bg reject.
+            var paints = new List<FacePaint>();
             var accSum = new Dictionary<string, Color>();
             var accN = new Dictionary<string, int>();
-
             foreach (var F in geom.faces)
             {
                 if (Vector3.Dot(F.n, camFwd) > -0.02f) continue; // faces away
-                float sum0 = 0f;
-                var sum = new Color(sum0, sum0, sum0, 0f); int n = 0;
+                int bid = boxIdx[F.box];
+                var fp = new FacePaint(F);
+                var sum = new Color(0f, 0f, 0f, 0f); int n = 0;
                 for (int j = 0; j < F.gb; j++)
                     for (int i = 0; i < F.ga; i++)
                     {
@@ -586,18 +717,13 @@ namespace VoxelCraft.Editor
                         float d = Depth(P);
                         int px = Mathf.Clamp((int)sp.x, 0, r.w - 1);
                         int py = Mathf.Clamp((int)sp.y, 0, r.h - 1);
-                        if (depthBuf[py * r.w + px] < d - OccEps) continue; // occluded
+                        int di = py * r.w + px;
+                        if (boxIdBuf[di] != bid && depthBuf[di] < d - OccEps) continue; // hidden by ANOTHER box
                         bool onBg;
                         var c = SampleBilinear(r, sp.x, sp.y, out onBg);
                         if (onBg) continue;
-                        var uv = QuadUv(F, a, b);
-                        int tx = Mathf.Clamp(Mathf.RoundToInt(uv.x * 64f - 0.5f), 0, 63);
-                        int tyTop = Mathf.Clamp(Mathf.RoundToInt((1f - uv.y) * 32f - 0.5f), 0, 31);
-                        int idx = tyTop * 64 + tx;
-                        if (!stageHas[idx] || d < stageD[idx])
-                        {
-                            stageC[idx] = c; stageD[idx] = d; stageHas[idx] = true;
-                        }
+                        int k = j * F.ga + i;
+                        fp.c[k] = c; fp.d[k] = d; fp.has[k] = true; fp.count++;
                         sum += c; n++;
                     }
                 if (n > 0)
@@ -605,7 +731,31 @@ namespace VoxelCraft.Editor
                     accSum[F.box] = accSum.TryGetValue(F.box, out var prev) ? prev + sum : sum;
                     accN[F.box] = (accN.TryGetValue(F.box, out var pn) ? pn : 0) + n;
                 }
+                paints.Add(fp);
             }
+
+            MirrorComplete(paints);
+
+            // Global min-depth staging: shared nets (4 legs, 2 feet, 2 wings
+            // on one rect) are written by every box; the texel keeps the
+            // sample from the box closest to the camera.
+            var stageC = new Color[64 * 32];
+            var stageD = new float[64 * 32];
+            var stageHas = new bool[64 * 32];
+            for (int i = 0; i < stageD.Length; i++) stageD[i] = float.PositiveInfinity;
+
+            foreach (var fp in paints)
+                for (int k = 0; k < fp.has.Length; k++)
+                {
+                    if (!fp.has[k]) continue;
+                    int i = k % fp.F.ga, j = k / fp.F.ga;
+                    var uv = QuadUv(fp.F, (i + 0.5f) / fp.F.ga, (j + 0.5f) / fp.F.gb);
+                    int tx = Mathf.Clamp(Mathf.RoundToInt(uv.x * 64f - 0.5f), 0, 63);
+                    int tyTop = Mathf.Clamp(Mathf.RoundToInt((1f - uv.y) * 32f - 0.5f), 0, 31);
+                    int idx = tyTop * 64 + tx;
+                    if (!stageHas[idx] || fp.d[k] < stageD[idx])
+                    { stageC[idx] = fp.c[k]; stageD[idx] = fp.d[k]; stageHas[idx] = true; }
+                }
 
             // Fallback: texels a box owns but nobody sampled (its own far side,
             // fully hidden faces) get that box's visible-face mean. Boxes with
@@ -662,6 +812,565 @@ namespace VoxelCraft.Editor
             sheet.wrapMode = TextureWrapMode.Clamp;
             sheet.Apply();
             return sheet;
+        }
+
+        // ---------------- face-aware calibration polish ----------------
+        class FaceQ { public float sampleFrac; public float asym; }
+
+        /// <summary>
+        /// Samples only the face-critical boxes (head/snout/beak/wattle) under
+        /// the current calibration: (a) fraction of their texels landing on
+        /// real reference pixels, (b) left/right mirror asymmetry of the
+        /// head's front face. Both are optimal ONLY at the true pose, where
+        /// silhouette IoU alone stays flat (body-dominated plateau) while
+        /// face features still misplace by texels.
+        /// </summary>
+        static FaceQ FaceQuality(ModelGeom geom, Ref r)
+        {
+            var boxIdx = new Dictionary<string, int>();
+            foreach (var F in geom.faces) if (!boxIdx.ContainsKey(F.box)) boxIdx[F.box] = boxIdx.Count;
+            BuildDepthBuf(geom, r, out var depthBuf, out var boxIdBuf, boxIdx);
+            var camFwd = camRot * Vector3.forward;
+            const float OccEps = 0.02f;
+
+            int total = 0, got = 0;
+            FacePaint headFront = null;
+            foreach (var F in geom.faces)
+            {
+                if (!IsFaceBox(F.box)) continue;
+                if (Vector3.Dot(F.n, camFwd) > -0.02f) continue;
+                int bid = boxIdx[F.box];
+                var fp = new FacePaint(F);
+                total += F.ga * F.gb;
+                bool isFront = F.box.Contains("Head") && F.n.z > 0.9f;
+                for (int j = 0; j < F.gb; j++)
+                    for (int i = 0; i < F.ga; i++)
+                    {
+                        var P = QuadPoint(F, (i + 0.5f) / F.ga, (j + 0.5f) / F.gb);
+                        var sp = Project(P);
+                        int px = Mathf.Clamp((int)sp.x, 0, r.w - 1);
+                        int py = Mathf.Clamp((int)sp.y, 0, r.h - 1);
+                        int di = py * r.w + px;
+                        if (boxIdBuf[di] != bid && depthBuf[di] < Depth(P) - OccEps) continue;
+                        bool onBg;
+                        var c = SampleBilinear(r, sp.x, sp.y, out onBg);
+                        if (onBg) continue;
+                        int k = j * F.ga + i;
+                        fp.c[k] = c; fp.has[k] = true; fp.count++; got++;
+                    }
+                if (isFront && (headFront == null || fp.count > headFront.count)) headFront = fp;
+            }
+
+            var q = new FaceQ { sampleFrac = total > 0 ? (float)got / total : 0f, asym = 1f };
+            if (headFront == null || headFront.count < 6) return q;
+
+            int ga = headFront.F.ga, gb = headFront.F.gb;
+            var mean = new Color(0f, 0f, 0f, 0f); int mn = 0;
+            for (int k = 0; k < headFront.has.Length; k++)
+                if (headFront.has[k]) { mean += headFront.c[k]; mn++; }
+            mean /= mn;
+            float LumDiff(Color x, Color y) => Mathf.Abs(x.r - y.r) + Mathf.Abs(x.g - y.g) + Mathf.Abs(x.b - y.b);
+            float diffSum = 0f, contrastSum = 0f; int pairs = 0;
+            for (int j = 0; j < gb; j++)
+                for (int i = 0; i < ga; i++)
+                {
+                    int k = j * ga + i;
+                    if (!headFront.has[k]) continue;
+                    contrastSum += LumDiff(headFront.c[k], mean);
+                    int km = j * ga + (ga - 1 - i);
+                    if (headFront.has[km]) { diffSum += LumDiff(headFront.c[k], headFront.c[km]); pairs++; }
+                }
+            q.asym = pairs > 4 ? (diffSum / pairs) / (contrastSum / Mathf.Max(mn, 1) + 0.15f) : 1f;
+            return q;
+        }
+
+        static float JointScore(ModelGeom geom, Ref r, bool[] subject)
+        {
+            float iou = Iou(Rasterize(geom, r.w, r.h), subject);
+            var q = FaceQuality(geom, r);
+            if (q.sampleFrac < 0.35f) return iou - 1f; // face entirely off the actual head
+            return iou + 0.6f * q.sampleFrac - 0.8f * q.asym;
+        }
+
+        /// <summary>
+        /// Coordinate descent over (yaw, pitch, scale, center) maximizing the
+        /// joint silhouette + face quality score. Runs AFTER the IoU fit:
+        /// it can only move the calibration within the flat silhouette
+        /// plateau, onto the pose where the face actually reads.
+        /// </summary>
+        static void RefineFaceAlignment(ModelGeom geom, Ref r, bool[] subject)
+        {
+            float best = JointScore(geom, r, subject);
+            float bYaw = yaw, bPitch = pitch, bScale = projScale;
+            Vector2 bC = projCenter;
+            for (int sweep = 0; sweep < 4; sweep++)
+            {
+                float yawStep = 2f * Mathf.Pow(0.5f, sweep);
+                float pitchStep = 1.5f * Mathf.Pow(0.5f, sweep);
+                float scaleStep = 0.015f * Mathf.Pow(0.5f, sweep);
+                float cStep = 10f * Mathf.Pow(0.5f, sweep);
+                bool improved = false;
+                foreach (float d in new[] { 1f, -1f })
+                {
+                    yaw = bYaw + d * yawStep;
+                    float s = JointScore(geom, r, subject);
+                    if (s > best + 1e-5f) { best = s; bYaw = yaw; improved = true; }
+                    yaw = bYaw;
+
+                    pitch = Mathf.Clamp(bPitch + d * pitchStep, 5f, 80f);
+                    s = JointScore(geom, r, subject);
+                    if (s > best + 1e-5f) { best = s; bPitch = pitch; improved = true; }
+                    pitch = bPitch;
+
+                    projScale = bScale * (1f + d * scaleStep);
+                    s = JointScore(geom, r, subject);
+                    if (s > best + 1e-5f) { best = s; bScale = projScale; improved = true; }
+                    projScale = bScale;
+
+                    projCenter = bC + new Vector2(d * cStep, 0f);
+                    s = JointScore(geom, r, subject);
+                    if (s > best + 1e-5f) { best = s; bC = projCenter; improved = true; }
+                    projCenter = bC;
+
+                    projCenter = bC + new Vector2(0f, d * cStep);
+                    s = JointScore(geom, r, subject);
+                    if (s > best + 1e-5f) { best = s; bC = projCenter; improved = true; }
+                    projCenter = bC;
+                }
+                yaw = bYaw; pitch = bPitch; projScale = bScale; projCenter = bC;
+                if (!improved) break;
+            }
+            yaw = bYaw; pitch = bPitch; projScale = bScale; projCenter = bC;
+        }
+
+        // ---------------- feature anchoring (three-view-grade alignment) ----
+        // Silhouette IoU is flat in yaw/pitch (body-dominated plateau) so the
+        // face can end up texels off even at "best" fit. Anchors fix that:
+        // feature positions are read from the game's CURRENT skin (where the
+        // eyes/nostrils/wattle actually live, in texel coords) and matched to
+        // same-type features detected in the reference near the projected
+        // position; the projection is then re-solved so model features land
+        // exactly on the reference features. Symmetry is audited afterwards
+        // and a failing skin is NOT applied to the game.
+
+        static float FeatureScore(Color c, string type)
+        {
+            float lum = 0.299f * c.r + 0.587f * c.g + 0.114f * c.b;
+            switch (type)
+            {
+                case "dark": return 0.9f - lum; // pupils: near-black
+                case "nostril": return 0.75f - lum; // nostrils: darker pink
+                case "pink": return (c.r > 0.55f && c.r - c.g > 0.12f && c.r - c.b > 0.12f)
+                    ? (c.r - Mathf.Max(c.g, c.b)) * 2f + 0.3f : -1f; // pig snout disc: saturated pink
+                case "red": return (c.r - Mathf.Max(c.g, c.b)) + (c.r > 0.35f ? 0.2f : -0.5f);
+                case "orange": return (c.r > 0.5f && c.g > 0.28f && c.g < 0.78f && c.b < 0.5f && c.r - c.b > 0.25f)
+                    ? (c.r - c.b) + 0.25f : -1f;
+                default: return -1f;
+            }
+        }
+
+        static float FeatureThreshold(string type) => type == "dark" ? 0.62f : type == "nostril" ? 0.32f : type == "red" ? 0.3f : type == "pink" ? 0.4f : 0.45f;
+
+        /// <summary>Centroids (as face params a,b) of feature clusters within a
+        /// face's UV rect on a sheet. Left/right clusters are split by column.</summary>
+        static List<Vector2> SheetFeatureAbs(BoxFace F, Color[] px, string type)
+        {
+            float u0 = Mathf.Min(Mathf.Min(F.uv0.x, F.uv1.x), Mathf.Min(F.uv2.x, F.uv3.x));
+            float u1 = Mathf.Max(Mathf.Max(F.uv0.x, F.uv1.x), Mathf.Max(F.uv2.x, F.uv3.x));
+            float vLo = Mathf.Min(Mathf.Min(F.uv0.y, F.uv1.y), Mathf.Min(F.uv2.y, F.uv3.y));
+            float vHi = Mathf.Max(Mathf.Max(F.uv0.y, F.uv1.y), Mathf.Max(F.uv2.y, F.uv3.y));
+            int x0 = Mathf.CeilToInt(u0 * 64f + 0.5f), x1 = Mathf.FloorToInt(u1 * 64f - 0.5f);
+            int ty0 = Mathf.CeilToInt((1f - vHi) * 32f + 0.5f), ty1 = Mathf.FloorToInt((1f - vLo) * 32f - 0.5f);
+            float thr = FeatureThreshold(type);
+            float sxL = 0, syL = 0, sxR = 0, syR = 0; int nL = 0, nR = 0;
+            int midX = (x0 + x1) / 2;
+            for (int ty = ty0; ty <= ty1; ty++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    var c = px[(31 - ty) * 64 + x];
+                    if (FeatureScore(c, type) < thr) continue;
+                    if (x < midX) { sxL += x; syL += ty; nL++; }
+                    else { sxR += x; syR += ty; nR++; }
+                }
+            var res = new List<Vector2>();
+            if (nL >= 1) res.Add(new Vector2((sxL / nL + 0.5f) / 64f, 1f - (syL / nL + 0.5f) / 32f));
+            if (nR >= 1) res.Add(new Vector2((sxR / nR + 0.5f) / 64f, 1f - (syR / nR + 0.5f) / 32f));
+            return res;
+        }
+
+        /// <summary>Collects the top local maxima of a feature score inside a
+        /// biased window (see DetectRefFeature). Independent per-anchor argmax
+        /// collapses onto the single strongest feature (both pig eyes matched
+        /// the SAME pupil), so the caller assigns candidates globally.</summary>
+        static List<Vector2> DetectRefFeatureCandidates(Ref r, Vector2 proj, string type, float radius, float bias, float yBias, int want)
+        {
+            var res = new List<Vector2>();
+            float thr = FeatureThreshold(type);
+            int x0 = Mathf.Max(0, Mathf.RoundToInt(proj.x + (bias < 0 ? -radius : -0.35f * radius)));
+            int x1 = Mathf.Min(r.w - 1, Mathf.RoundToInt(proj.x + (bias > 0 ? radius : 0.35f * radius)));
+            int y0 = Mathf.Max(0, Mathf.RoundToInt(proj.y - radius * (0.7f - 0.45f * yBias)));
+            int y1 = Mathf.Min(r.h - 1, Mathf.RoundToInt(proj.y + radius * (0.7f + 0.45f * yBias)));
+            var peaks = new List<(float score, int x, int y)>();
+            for (int y = y0; y <= y1; y++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    var c = r.pxTop[y * r.w + x];
+                    if (r.bgTop[y * r.w + x]) continue;
+                    float s = FeatureScore(c, type);
+                    if (s < thr) continue;
+                    // local maximum within a 2px radius (noise-tolerant peak)
+                    bool peak = true;
+                    for (int oy = -2; peak && oy <= 2; oy++)
+                        for (int ox = -2; ox <= 2; ox++)
+                        {
+                            int xx = Mathf.Clamp(x + ox, 0, r.w - 1), yy = Mathf.Clamp(y + oy, 0, r.h - 1);
+                            if ((ox | oy) == 0) continue;
+                            if (FeatureScore(r.pxTop[yy * r.w + xx], type) > s) { peak = false; break; }
+                        }
+                    if (peak) peaks.Add((s, x, y));
+                }
+            peaks.Sort((p, q) => q.score.CompareTo(p.score));
+            foreach (var (score, px_, py_) in peaks)
+            {
+                if (res.Count >= want) break;
+                bool dup = false;
+                foreach (var f in res)
+                    if ((f - new Vector2(px_, py_)).sqrMagnitude < 36f) { dup = true; break; }
+                if (dup) continue;
+                // centroid of near-peak pixels: sub-pixel position
+                float sx = 0, sy = 0; int n = 0;
+                for (int y = Mathf.Max(0, py_ - 3); y <= Mathf.Min(r.h - 1, py_ + 3); y++)
+                    for (int x = Mathf.Max(0, px_ - 3); x <= Mathf.Min(r.w - 1, px_ + 3); x++)
+                    {
+                        if (FeatureScore(r.pxTop[y * r.w + x], type) >= score * 0.7f) { sx += x; sy += y; n++; }
+                    }
+                if (n >= 2) res.Add(new Vector2(sx / n, sy / n));
+            }
+            return res;
+        }
+
+        /// <summary>Single-argmax convenience wrapper around the candidate
+        /// detector (used by tests/diagnosis).</summary>
+        static bool DetectRefFeature(Ref r, Vector2 proj, string type, float radius, float bias, float yBias, out Vector2 found)
+        {
+            var cands = DetectRefFeatureCandidates(r, proj, type, radius, bias, yBias, 1);
+            if (cands.Count == 0) { found = proj; return false; }
+            found = cands[0];
+            return true;
+        }
+
+        class AnchorPair { public Vector3 world; public Vector2 img; public string type; public float bias; public float yBias; }
+
+        /// <summary>Reference copy with detected features (cyan) and model
+        /// projections (magenta) drawn as dots - makes anchor mismatches
+        /// directly visible instead of guessed from RMS numbers.</summary>
+        static void DumpAnchors(Ref r, string species, List<AnchorPair> anchors)
+        {
+            var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
+            var px = new Color[r.w * r.h];
+            for (int i = 0; i < px.Length; i++) px[i] = r.pxTop[i] * 0.6f;
+            void Dot(Vector2 p, Color c)
+            {
+                int cx = Mathf.Clamp((int)p.x, 0, r.w - 1), cy = Mathf.Clamp((int)p.y, 0, r.h - 1);
+                for (int oy = -3; oy <= 3; oy++)
+                    for (int ox = -3; ox <= 3; ox++)
+                    {
+                        if (Mathf.Abs(ox) + Mathf.Abs(oy) > 4) continue;
+                        int xx = Mathf.Clamp(cx + ox, 0, r.w - 1), yy = Mathf.Clamp(cy + oy, 0, r.h - 1);
+                        px[yy * r.w + xx] = c;
+                    }
+            }
+            foreach (var a in anchors)
+            {
+                if (a.img.x >= 0f) Dot(a.img, new Color(0f, 1f, 1f, 1f));
+                Dot(Project(a.world), new Color(1f, 0f, 1f, 1f));
+            }
+            tex.SetPixels(px); tex.Apply();
+            File.WriteAllBytes(Path.Combine(OutDir, $"anchors_{species}.png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+        }
+
+        /// <summary>
+        /// Anchor texels measured on the VANILLA sheets (the references are
+        /// vanilla renders, so features must land at vanilla texel positions):
+        /// pig pupils at head-face cols 0/7 row 3, nostrils outer cols of the
+        /// snout front; chicken eyes cols 0/3 row 1; sheep eyes outer cols.
+        /// (a,b) = face params, bias = outward horizontal search bias so
+        /// left/right anchors don't latch onto each other, yBias pushes the
+        /// nostril windows below the eyes.
+        /// </summary>
+        static (string box, string type, float a, float b, float bias, float yBias)[] VanillaAnchors(string species)
+        {
+            if (species == "pig") return new[]
+            {
+                // Reference pig (wiki render, facing front-left): both pupils
+                // visible, snout below with two near-black nostrils. All four
+                // are strongly detectable; eyes alone underdetermined pitch.
+                ("Head", "dark", 0.0625f, 0.5625f, -1f, 0f),
+                ("Head", "dark", 0.9375f, 0.5625f, 1f, 0f),
+                ("Snout", "nostril", 0.125f, 0.5f, -1f, 1f),
+                ("Snout", "nostril", 0.875f, 0.5f, 1f, 1f),
+            };
+            if (species == "chicken") return new[]
+            {
+                ("Head", "dark", 0.125f, 0.75f, -1f, 0f),
+                ("Head", "dark", 0.875f, 0.75f, 1f, 0f),
+                ("Wattle", "red", 0.5f, 0.5f, 0f, 0f),
+                ("Beak", "orange", 0.5f, 0.5f, 0f, 0f),
+            };
+            return new[]
+            {
+                ("Head", "dark", 0.083f, 0.583f, -1f, 0f),
+                ("Head", "dark", 0.917f, 0.583f, 1f, 0f),
+            };
+        }
+
+        /// <summary>
+        /// Re-solves (yaw, pitch, scale, center) so the model's feature texels
+        /// reproject exactly onto the same features detected in the reference.
+        /// This is what breaks the silhouette-IoU plateau: IoU cannot see a
+        /// few-degrees pose error, faces can. The reference heads are TURNED
+        /// relative to the body (wiki renders), so the solve also picks a head
+        /// yaw: each candidate gets its own harvested geometry, and the winner
+        /// (best rms) is returned for painting. Returns true on sub-texel RMS.
+        /// </summary>
+        static bool SolveAnchors(System.Func<float, ModelGeom> buildGeom, Ref r, string species, out float headYawOut, out ModelGeom geomOut)
+        {
+            headYawOut = 0f;
+            geomOut = null;
+            var headYaws = new[] { 0f, 10f, -10f, 20f, -20f, 30f, -30f };
+            float gBest = float.MaxValue;
+            bool anyAccepted = false;
+            float wYaw = 0f, wPitch = 0f, wScale = 0f; Vector2 wC = Vector2.zero;
+            float sYaw0 = yaw, sPitch0 = pitch, sScale0 = projScale; Vector2 sC0 = projCenter;
+
+            foreach (var hy in headYaws)
+            {
+                var geom = buildGeom(hy);
+                var anchors = new List<AnchorPair>();
+                foreach (var (box, type, a, b, bias, yBias) in VanillaAnchors(species))
+                {
+                    var F = geom.faces.FirstOrDefault(f => f.box.Contains(box) && f.n.z > 0.9f);
+                    if (F == null) continue;
+                    var P = QuadPoint(F, a, b) + F.n * 0.004f;
+                    anchors.Add(new AnchorPair { world = P, type = type, bias = bias, yBias = yBias });
+                }
+                if (anchors.Count == 0) continue;
+
+                // anchor failure must not leave a worse pose than the IoU fit
+                float sYaw = yaw, sPitch = pitch, sScale = projScale; Vector2 sC = projCenter;
+
+                float Error()
+                {
+                    float e = 0f; int n = 0;
+                    foreach (var a in anchors)
+                        if (a.img.x >= 0f) { e += (Project(a.world) - a.img).sqrMagnitude; n++; }
+                    return n > 0 ? e / n : 1e9f;
+                }
+
+                const float R = 110f;
+                for (int iter = 0; iter < 2; iter++)
+                {
+                    float rad = iter == 0 ? R : 55f;
+                    // collect candidates per anchor, then pick the assignment
+                    // (one reference point per anchor, points not shared) that
+                    // minimises total reprojection error after the closed-form
+                    // translation. Independent argmax collapses paired anchors
+                    // onto the same feature - that was the scrambler.
+                    var cand = new List<Vector2>[anchors.Count];
+                    var proj0 = new Vector2[anchors.Count];
+                    for (int i = 0; i < anchors.Count; i++)
+                    {
+                        proj0[i] = Project(anchors[i].world);
+                        cand[i] = DetectRefFeatureCandidates(r, proj0[i], anchors[i].type, rad, anchors[i].bias, anchors[i].yBias, 5);
+                    }
+                    int comboCount = 1;
+                    foreach (var c in cand) comboCount *= Mathf.Max(1, c.Count);
+                    Vector2[] bestAssign = new Vector2[anchors.Count];
+                    bool any = false;
+                    float bestCombo = float.MaxValue;
+                    for (int combo = 0; combo < comboCount; combo++)
+                    {
+                        int rem = combo;
+                        bool skip = false;
+                        var chosen = new Vector2[anchors.Count];
+                        for (int i = 0; i < anchors.Count && !skip; i++)
+                        {
+                            if (cand[i].Count == 0) { skip = true; break; }
+                            chosen[i] = cand[i][rem % cand[i].Count];
+                            rem /= cand[i].Count;
+                            for (int j = 0; j < i; j++)
+                                if ((chosen[i] - chosen[j]).sqrMagnitude < 64f) { skip = true; break; } // shared point
+                        }
+                        if (skip) continue;
+                        Vector2 mean = Vector2.zero;
+                        for (int i = 0; i < anchors.Count; i++) mean += chosen[i] - proj0[i];
+                        mean /= anchors.Count;
+                        float e = 0f;
+                        for (int i = 0; i < anchors.Count; i++)
+                        {
+                            var d = chosen[i] - (proj0[i] + mean);
+                            e += d.sqrMagnitude;
+                            // pairwise separation sanity: model distances must
+                            // roughly survive in the reference (beats swapped pairs)
+                            for (int j = 0; j < i; j++)
+                            {
+                                float dm = (proj0[i] - proj0[j]).magnitude;
+                                float dr = (chosen[i] - chosen[j]).magnitude;
+                                float diff = Mathf.Abs(dr - dm) / Mathf.Max(20f, dm);
+                                e += diff * diff * 4000f;
+                            }
+                        }
+                        if (e < bestCombo) { bestCombo = e; bestAssign = chosen; any = true; }
+                    }
+                    int matched = 0;
+                    for (int i = 0; i < anchors.Count; i++)
+                    {
+                        anchors[i].img = any && cand[i].Count > 0 ? bestAssign[i] : new Vector2(-1f, -1f);
+                        if (anchors[i].img.x >= 0f) matched++;
+                    }
+                    if (matched < 2)
+                    {
+                        Debug.Log($"REPLICA anchors '{species}' headYaw={hy}: only {matched} matched in reference, keeping IoU fit");
+                        yaw = sYaw; pitch = sPitch; projScale = sScale; projCenter = sC;
+                        continue;
+                    }
+
+                // Pose sweep with CLOSED-FORM optimal translation, over a WIDE
+                // region: the silhouette IoU fit systematically lands too
+                // lateral (all three wiki refs solved ~25 deg more frontal and
+                // painted the sheep face perfectly there). Feature rms is the
+                // acceptance criterion, not proximity to the IoU pose.
+                float bestE = float.MaxValue;
+                float bYaw = yaw, bPitch = pitch, bScale = projScale;
+                Vector2 bC = projCenter;
+                float y0 = yaw, p0 = pitch, s0 = projScale; Vector2 c0 = projCenter;
+                for (float dyaw = -30f; dyaw <= 30f; dyaw += 2f)
+                    for (float dpitch = -15f; dpitch <= 15f; dpitch += 2f)
+                        foreach (float ds in new[] { -0.10f, -0.05f, 0f, 0.05f, 0.10f })
+                        {
+                            yaw = y0 + dyaw;
+                            pitch = Mathf.Clamp(p0 + dpitch, 5f, 80f);
+                            projScale = s0 * (1f + ds);
+                            Vector2 mean = Vector2.zero; int n = 0;
+                            foreach (var a in anchors)
+                                if (a.img.x >= 0f) { mean += a.img - Project(a.world); n++; }
+                            if (n == 0) continue;
+                            projCenter = c0 + mean / n;
+                            float e = Error();
+                            if (e < bestE) { bestE = e; bYaw = yaw; bPitch = pitch; bScale = projScale; bC = projCenter; }
+                        }
+                yaw = bYaw; pitch = bPitch; projScale = bScale; projCenter = bC;
+
+                // small-step polish on top of the swept pose
+                for (int sweep = 0; sweep < 4; sweep++)
+                {
+                    float yawStep = 2f * Mathf.Pow(0.5f, sweep);
+                    float pitchStep = 1.5f * Mathf.Pow(0.5f, sweep);
+                    float scaleStep = 0.015f * Mathf.Pow(0.5f, sweep);
+                    float cStep = 6f * Mathf.Pow(0.5f, sweep);
+                    bool improved = false;
+                    foreach (float d in new[] { 1f, -1f })
+                    {
+                        yaw = bYaw + d * yawStep;
+                        float e = Error();
+                        if (e < bestE - 1e-4f) { bestE = e; bYaw = yaw; improved = true; }
+                        yaw = bYaw;
+                        pitch = Mathf.Clamp(bPitch + d * pitchStep, 5f, 80f);
+                        e = Error();
+                        if (e < bestE - 1e-4f) { bestE = e; bPitch = pitch; improved = true; }
+                        pitch = bPitch;
+                        projScale = bScale * (1f + d * scaleStep);
+                        e = Error();
+                        if (e < bestE - 1e-4f) { bestE = e; bScale = projScale; improved = true; }
+                        projScale = bScale;
+                        projCenter = bC + new Vector2(d * cStep, 0f);
+                        e = Error();
+                        if (e < bestE - 1e-4f) { bestE = e; bC = projCenter; improved = true; }
+                        projCenter = bC;
+                        projCenter = bC + new Vector2(0f, d * cStep);
+                        e = Error();
+                        if (e < bestE - 1e-4f) { bestE = e; bC = projCenter; improved = true; }
+                        projCenter = bC;
+                    }
+                    yaw = bYaw; pitch = bPitch; projScale = bScale; projCenter = bC;
+                    if (!improved) break;
+                }
+                float rms = Mathf.Sqrt(bestE);
+                Debug.Log($"REPLICA anchor solve '{species}' headYaw={hy}: matched={matched} rms={rms:F1}px yaw={yaw:F1} pitch={pitch:F1} scale={projScale:F0} center=({projCenter.x:F0},{projCenter.y:F0})");
+                if (bestE < gBest)
+                {
+                    gBest = bestE;
+                    headYawOut = hy;
+                    geomOut = geom;
+                    wYaw = yaw; wPitch = pitch; wScale = projScale; wC = projCenter;
+                }
+                float texelPx = projScale / 16f;
+                if (rms < 12f && rms < 0.35f * texelPx) anyAccepted = true; // sub-texel pose; the symmetry audit makes the final call
+                } // iter loop
+            } // foreach headYaw
+
+            // restore the winning pose/geometry for painting
+            if (!anyAccepted)
+            {
+                // rejected: fall back to the IoU fit exactly as before
+                yaw = sYaw0; pitch = sPitch0; projScale = sScale0; projCenter = sC0;
+                return false;
+            }
+            if (geomOut != null)
+            {
+                yaw = wYaw; pitch = wPitch; projScale = wScale; projCenter = wC;
+                var geom = geomOut;
+                var anchors = new List<AnchorPair>();
+                foreach (var (box, type, a, b, bias, yBias) in VanillaAnchors(species))
+                {
+                    var F = geom.faces.FirstOrDefault(f => f.box.Contains(box) && f.n.z > 0.9f);
+                    if (F == null) continue;
+                    anchors.Add(new AnchorPair { world = QuadPoint(F, a, b) + F.n * 0.004f, type = type, bias = bias, yBias = yBias });
+                }
+                foreach (var a in anchors)
+                {
+                    var pp = Project(a.world);
+                    Debug.Log($"  winner '{species}' headYaw={headYawOut}: anchor {a.type} model=({pp.x:F0},{pp.y:F0})");
+                }
+                DumpAnchors(r, species, anchors);
+            }
+            return anyAccepted;
+        }
+
+        /// <summary>
+        /// Acceptance gate: the head front face on the finished sheet must read
+        /// bilaterally symmetric (left half vs mirrored right half, normalised
+        /// by contrast). A scrambled face fails here instead of shipping.
+        /// </summary>
+        static float SheetFaceAsym(ModelGeom geom, Texture2D sheet)
+        {
+            var F = geom.faces.FirstOrDefault(f => f.box.Contains("Head") && f.n.z > 0.9f);
+            if (F == null) return 0f;
+            var px = sheet.GetPixels();
+            float u0 = Mathf.Min(Mathf.Min(F.uv0.x, F.uv1.x), Mathf.Min(F.uv2.x, F.uv3.x));
+            float u1 = Mathf.Max(Mathf.Max(F.uv0.x, F.uv1.x), Mathf.Max(F.uv2.x, F.uv3.x));
+            float vLo = Mathf.Min(Mathf.Min(F.uv0.y, F.uv1.y), Mathf.Min(F.uv2.y, F.uv3.y));
+            float vHi = Mathf.Max(Mathf.Max(F.uv0.y, F.uv1.y), Mathf.Max(F.uv2.y, F.uv3.y));
+            int x0 = Mathf.CeilToInt(u0 * 64f), x1 = Mathf.FloorToInt(u1 * 64f) - 1;
+            int ty0 = Mathf.CeilToInt((1f - vHi) * 32f), ty1 = Mathf.FloorToInt((1f - vLo) * 32f) - 1;
+            var mean = new Color(0, 0, 0, 0); int n = 0;
+            for (int ty = ty0; ty <= ty1; ty++)
+                for (int x = x0; x <= x1; x++) { mean += px[(31 - ty) * 64 + x]; n++; }
+            if (n == 0) return 0f;
+            mean /= n;
+            float diff = 0f, contrast = 0f; int pairs = 0;
+            for (int ty = ty0; ty <= ty1; ty++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    int i = (31 - ty) * 64 + x;
+                    contrast += Mathf.Abs(px[i].r - mean.r) + Mathf.Abs(px[i].g - mean.g) + Mathf.Abs(px[i].b - mean.b);
+                    int mx = x1 - (x - x0);
+                    int j = (31 - ty) * 64 + mx;
+                    diff += Mathf.Abs(px[i].r - px[j].r) + Mathf.Abs(px[i].g - px[j].g) + Mathf.Abs(px[i].b - px[j].b);
+                    pairs++;
+                }
+            return pairs == 0 ? 0f : (diff / pairs) / (contrast / n + 0.15f);
         }
 
         // ---------------- model render + composite ----------------
@@ -767,15 +1476,19 @@ namespace VoxelCraft.Editor
             }
         }
 
-        static void SaveSheet(string species, Texture2D sheet)
+        static void SaveSheet(string species, Texture2D sheet, bool allowGame)
         {
             var png = sheet.EncodeToPNG();
             File.WriteAllBytes(Path.Combine(OutDir, $"replica_{species}_sheet.png"), png);
             File.WriteAllBytes(Path.Combine(SkinDir, $"replica_{species}_skin.png.bytes"), png);
-            if (applyToGame)
+            if (allowGame)
             {
                 File.WriteAllBytes(Path.Combine(SkinDir, $"{species}_skin.png.bytes"), png);
                 Debug.Log($"REPLICA applied game skin -> {species}_skin.png.bytes");
+            }
+            else
+            {
+                Debug.Log($"REPLICA game skin NOT applied for {species} (acceptance gate)");
             }
             Debug.Log($"REPLICA skin sheet -> replica_{species}_skin.png.bytes");
         }
@@ -898,8 +1611,27 @@ namespace VoxelCraft.Editor
                 FitProjection(geom, r, species, dump: true);
             }
 
+            // Feature anchoring: break the silhouette plateau by locking the
+            // projection onto vanilla-layout features (eyes/snout/wattle)
+            // detected in the reference. The reference head is often TURNED
+            // relative to the body, so the solve also picks a head yaw and
+            // returns matching geometry for painting.
+            bool anchored = SolveAnchors(hy => BuildGameModel(species, hy), r, species, out float headYaw, out var aGeom);
+            if (anchored)
+            {
+                geom = aGeom;
+                Debug.Log($"REPLICA anchored '{species}': headYaw={headYaw:F0}deg");
+                DumpFit(geom, r, species, subject: null);
+            }
+
             var sheet = PaintSkin(geom, r);
-            SaveSheet(species, sheet);
+            // Acceptance gates: feature anchoring quality is logged by
+            // SolveAnchors; the finished face must be bilaterally symmetric
+            // or the skin does NOT ship to the game.
+            float faceAsym = SheetFaceAsym(geom, sheet);
+            bool symPass = faceAsym < 0.45f;
+            Debug.Log($"REPLICA symmetry '{species}': faceAsym={faceAsym:F2} {(symPass ? "PASS" : "FAIL")}");
+            SaveSheet(species, sheet, applyToGame && symPass);
             RenderAndCompare(geom, species, sheet, r, Path.Combine(OutDir, $"replica_{species}.png"));
         }
 

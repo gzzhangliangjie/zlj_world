@@ -4,6 +4,35 @@
 
 ---
 
+## 原版真值资源与 MobReplicator 锚定(2026-09-20 固化)
+
+**网络一直可用,别再"两眼一抹黑":官方数据先拉再写码。**
+
+### 原版资源本地库(`D:\zlj world\_refs\vanilla\`)
+
+- **贴图**(`textures\`,InventivetalentDev/minecraft-assets 官方资产镜像,1.20.4):pig/cow/sheep/chicken + creeper/zombie/skeleton/spider/enderman/villager/wolf/slime/iron_golem/mooshroom/panda/bee/ghast/blaze/zombie_villager/phantom/goat/ocelot/squid/bat/fox 等约 20 张。缺失路径变体:witch/blaze(分支或路径不同)。
+- **模型几何**(`geo\`,**Mojang 官方** bedrock-samples 仓库,45 个 .geo.json):pig/cow/sheep/chicken/villager/wolf/creeper/zombie/spider/enderman/horse/llama/sniffer/allay/armadillo...。约定:**bedrock −Z=正面,我们 +Z=正面,移植时 z 取反;单位 = 像素/16 米**。
+- **官方游戏逻辑源码**(`_vanilla-src\decompiled\`,5048 个 .java,官方命名):管线 = 活动版本清单 piston-meta.mojang.com → 下载 client.jar + client_mappings.txt(ProGuard 格式,**左=命名,右=混淆**)→ NeoForge **AutoRenamingTool**(`--reverse` 关键!否则方向反了等于没映射)→ vineflower 反编译。Vineflower 单体**不会**应用映射;ART 在 maven.neoforged.net,artifact=`net/neoforged/AutoRenamingTool`,要下 **`-all` 胖jar**(裸 jar 无主清单)。PigModel/ChickenModel 等在 `net\minecraft\client\model\`。
+- ⚠️ bedrock geo 与 Java 源在个别盒子上差 1-2px(猪鼻 y):**以参考图视觉 + bedrock 为准**(wiki 渲染与 bedrock 一致)。
+
+### MobReplicator 锚定架构(run39 定型,三物种全 PASS)
+
+轮廓 IoU 有平台期(±10° 分数不动),脸却已错位——**必须特征锚定**:
+
+1. **先看参考图再设计锚点**(本轮最大教训:猪参考图面朝左前方、双眼/鼻孔清晰可见,猜了 5 轮全是错的);锚点实测:猪左眼 (20,270) 右眼 (158,339) 鼻孔 (~90,375)。
+2. **原版实测锚点表** `VanillaAnchors()`:瞳/鼻孔在脸矩形上的 (a,b) 用 GetPixel 实测(猪眼 a=0.0625/0.9375 b=0.5625;鸡眼 a=0.125/0.875 b=0.75)。
+3. **多候选+全局指派**:每锚点取局部极大值前 5 候选,枚举组合(禁共享点+成对间距一致性惩罚)。**独立 argmax 会把双眼塌缩到同一个最强特征上**(猪右眼和鼻孔都抓到左眼)。
+4. **头偏转自由度**:wiki 渲染的头相对身体有偏转,单刚体姿态无解(三锚点残差方向互相矛盾就是症状)。`BuildGameModel(species, headYawDeg)` 绕颈枢轴(头背面)转 Head 再采集;对 headYaw ∈ {0,±10,±20,±30} 各建几何各解姿态,取 rms 最小者。猪最优解 headYaw=10°。
+5. **姿态扫描+闭式平移**:旋转与平移耦合(逐轴坐标下降会卡死)→ 每个姿态候选下最优 center = 锚点残差均值(闭式),只扫描 yaw/pitch/scale。
+6. **验收双门**:锚点 rms < 12px 且 < 0.35 纹素(绝对像素阈值不随尺度缩放,羊 9px 在 49px/纹素下已是亚纹素);**对称闸门** `SheetFaceAsym` < 0.45 否则**不写游戏皮肤**。所有指标都可能骗人,**只有看图仲裁**——数字 PASS 但涂出来是糊的、数字 FAIL 但脸完美,都真实发生过。
+
+### 几何修正(对齐 bedrock 真值)
+
+- 猪头中心 y=0.75m(原公式 1.075m,高 5px,脸全错位的根因);猪鼻**4×3×1** uv(16,16)(原来 8×4×1 错了 2.4 倍间距);鸡头 y=0.75m。
+- 快照入口是 `ModelSnapshot.Run` **不是 RunAll**;`-batchmode` 渲染**必须带图形,别加 -nographics**,若忘了 `-quit` Unity 会挂住,CPU 增长+日志出现 MODEL SNAPSHOT OK 后可手动 Stop-Process 收图。
+
+---
+
 ## DSH(Harness)模型能力配置
 
 **最后验证:2026-09-13,glm-5.3-flash 读图问题已按此修复并实测通过。**
