@@ -1,167 +1,191 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using VoxelCraft.Art;
+using VoxelCraft.Creatures;
 
 namespace VoxelCraft.Editor
 {
     /// <summary>
-    /// Mob Replicator: rebuilds a textured blocky mob from a REFERENCE
-    /// SCREENSHOT. Pipeline: load reference -> detect background (flood fill
-    /// from borders) -> for every box face in the model spec, inverse-map each
-    /// texel through the isometric camera and bilinearly sample the reference
-    /// -> paint a fresh 64x32 skin sheet -> build the boxes with that skin ->
-    /// render at the reference angle/resolution -> save a side-by-side
-    /// comparison PNG. Batch entry: MobReplicator.RunExperiment.
+    /// Mob Replicator v2: rebuilds a textured blocky mob from a REFERENCE
+    /// SCREENSHOT using the game's OWN box model (BlockyAnimal.BuildModel), so
+    /// the UV nets, box dims and 64x32 skin format are exactly what ships.
+    ///
+    /// Pipeline: load reference -> robust background mask (flood fill + alpha
+    /// cutoff + largest connected component; wiki crops touch the image edges)
+    /// -> harvest world quads + UV corners from the real meshes (no duplicated
+    /// net/rot/row-flip conventions: every painted texel lands on the sheet
+    /// texel the mesh UV actually names) -> fit ONLY the projection (yaw /
+    /// pitch / scale / center via silhouette IoU; geometry stays vanilla,
+    /// identical to the game) -> inverse-sample each visible face texel through
+    /// the calibrated orthographic projector, global min-depth staging so
+    /// shared nets (4 legs + 2 feet on one rect) resolve to the closest box ->
+    /// render the real model with the painted skin through a camera that
+    /// reproduces the software projector exactly (ortho size = h/(2*scale)) ->
+    /// 3-panel comparison PNG (reference | replica | 50% blend) + render-based
+    /// IoU -> apply the sheet as the live game skin (<species>_skin.png.bytes).
+    /// Batch entry: MobReplicator.RunExperiment.
     /// </summary>
     public class MobReplicator : EditorWindow
     {
         const string RefDir = @"D:\zlj world\_refs";
         const string OutDir = @"D:\zlj world\_logs";
         const string SkinDir = @"D:\zlj world\VoxelCraft\Assets\Resources\Textures";
+        const float PxPerUnit = 16f; // 1 world m = 16 skin px (game convention)
 
-        static float yaw = 135f, pitch = 30f; // MC wiki renders face LEFT -> mirrored vs yaw 225
+        static float yaw = 135f, pitch = 30f; // initial guess; fitted per mob
+        static bool applyToGame = true;
 
-        // ---------------- spec model ----------------
-        public class MobBox
+        // ---------------- harvested game model ----------------
+        class BoxFace
         {
-            public string id; public string role; public Vector3 size; public Vector3 pos; public int tu, tv;
-            public MobBox(string id, string role, float sx, float sy, float sz, float x, float y, float z, int tu, int tv)
+            public string box;
+            public Vector3 v0, v1, v2, v3;   // world quad, (a,b): v0=(0,0) v1=(1,0) v2=(1,1) v3=(0,1)
+            public Vector2 uv0, uv1, uv2, uv3; // sheet UV at those corners
+            public Vector3 n;                // outward world normal
+            public int ga, gb;               // texel grid = face extents in skin px
+        }
+
+        class ModelGeom
+        {
+            public List<BoxFace> faces = new List<BoxFace>();
+            public List<Vector3[]> boxCorners = new List<Vector3[]>(); // 8 unique world corners per box
+            public Vector3 center;
+        }
+
+        /// <summary>
+        /// Builds the real game model (BlockyAnimal) and harvests per-face world
+        /// quads + UVs straight from the produced meshes. Batch-safe (SelfTest
+        /// builds the same models); the temporary hierarchy is destroyed after.
+        /// </summary>
+        static ModelGeom BuildGameModel(string species)
+        {
+            var go = new GameObject("ReplicaSrc_" + species);
+            try
             {
-                this.id = id; this.role = role; size = new Vector3(sx, sy, sz); pos = new Vector3(x, y, z); this.tu = tu; this.tv = tv;
+                var animal = go.AddComponent<BlockyAnimal>();
+                animal.species = species;
+                animal.BuildModel();
+                // BuildModel gives the root a random yaw; harvest needs model space.
+                go.transform.position = Vector3.zero;
+                go.transform.rotation = Quaternion.identity;
+
+                var geom = new ModelGeom();
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
+                {
+                    var mesh = mf.sharedMesh;
+                    if (mesh == null || mesh.vertexCount != 24) continue;
+                    var t = mf.transform;
+                    var verts = mesh.vertices;
+                    var uvs = mesh.uv;
+                    var corners = new List<Vector3>(8);
+                    for (int f = 0; f < 6; f++)
+                    {
+                        int b = f * 4;
+                        var F = new BoxFace { box = mf.gameObject.name };
+                        F.v0 = t.TransformPoint(verts[b]);
+                        F.v1 = t.TransformPoint(verts[b + 1]);
+                        F.v2 = t.TransformPoint(verts[b + 2]);
+                        F.v3 = t.TransformPoint(verts[b + 3]);
+                        F.uv0 = uvs[b]; F.uv1 = uvs[b + 1]; F.uv2 = uvs[b + 2]; F.uv3 = uvs[b + 3];
+                        // cornerUv order is CCW when seen from outside -> outward normal
+                        F.n = Vector3.Cross(F.v1 - F.v0, F.v3 - F.v0).normalized;
+                        F.ga = Mathf.Max(1, Mathf.RoundToInt(Vector3.Distance(F.v0, F.v1) * PxPerUnit));
+                        F.gb = Mathf.Max(1, Mathf.RoundToInt(Vector3.Distance(F.v0, F.v3) * PxPerUnit));
+                        geom.faces.Add(F);
+                    }
+                    foreach (var v in verts)
+                    {
+                        var w = t.TransformPoint(v);
+                        if (!corners.Contains(w)) corners.Add(w);
+                    }
+                    geom.boxCorners.Add(corners.ToArray());
+                }
+                if (geom.faces.Count == 0)
+                {
+                    Debug.LogError($"REPLICA harvest failed for {species}: no skinned meshes (skin file missing?)");
+                    return geom;
+                }
+                Vector3 lo = geom.faces[0].v0, hi = lo;
+                foreach (var cs in geom.boxCorners)
+                    foreach (var c in cs) { lo = Vector3.Min(lo, c); hi = Vector3.Max(hi, c); }
+                geom.center = (lo + hi) * 0.5f;
+                Debug.Log($"REPLICA harvest '{species}': {geom.boxCorners.Count} boxes, {geom.faces.Count} faces, center={geom.center}");
+                return geom;
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
             }
         }
 
-        public class MobSpec
+        static Vector3 QuadPoint(BoxFace F, float a, float b)
         {
-            public string name; public List<MobBox> boxes = new List<MobBox>();
-            public MobSpec(string name) { this.name = name; }
+            var p0 = Vector3.Lerp(F.v0, F.v1, a);
+            var p1 = Vector3.Lerp(F.v3, F.v2, a);
+            return Vector3.Lerp(p0, p1, b);
         }
 
-        // Sizes/positions in texture pixels; y up, +z = face, origin on the ground.
-        public static MobSpec SpecChicken()
+        static Vector2 QuadUv(BoxFace F, float a, float b)
         {
-            var s = new MobSpec("chicken");
-            s.boxes.Add(new MobBox("body", "body", 6, 6, 8, 0, 8, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", "head", 4, 6, 3, 0, 13.4f, 5.35f, 28, 0));
-            s.boxes.Add(new MobBox("beak", "beak", 4, 3, 1, 0, 12.3f, 7.05f, 28, 9));
-            s.boxes.Add(new MobBox("wattle", "wattle", 2, 2, 2, 0, 9.5f, 6.7f, 40, 9));
-            s.boxes.Add(new MobBox("wing0", "wing", 1, 4, 6, -3.52f, 9, 0, 46, 0));
-            s.boxes.Add(new MobBox("wing1", "wing", 1, 4, 6, 3.52f, 9, 0, 46, 0));
-            s.boxes.Add(new MobBox("leg0", "leg", 2, 5, 2, -1, 2.69f, 0, 50, 16));
-            s.boxes.Add(new MobBox("leg1", "leg", 2, 5, 2, 1, 2.69f, 0, 50, 16));
-            s.boxes.Add(new MobBox("foot0", "foot", 3, 1, 2, -1, 0.5f, 1.5f, 52, 26));
-            s.boxes.Add(new MobBox("foot1", "foot", 3, 1, 2, 1, 0.5f, 1.5f, 52, 26));
-            return s;
-        }
-
-        public static MobSpec SpecPig()
-        {
-            var s = new MobSpec("pig");
-            s.boxes.Add(new MobBox("body", "body", 10, 8, 16, 0, 10, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", "head", 8, 8, 8, 0, 17.2f, 9.8f, 32, 0));
-            s.boxes.Add(new MobBox("snout", "snout", 8, 4, 1, 0, 15.2f, 11.9f, 0, 0));
-            s.boxes.Add(new MobBox("leg0", "leg", 4, 6, 4, -3, 3.2f, 5, 40, 0));
-            s.boxes.Add(new MobBox("leg1", "leg", 4, 6, 4, 3, 3.2f, 5, 40, 0));
-            s.boxes.Add(new MobBox("leg2", "leg", 4, 6, 4, -3, 3.2f, -5, 40, 0));
-            s.boxes.Add(new MobBox("leg3", "leg", 4, 6, 4, 3, 3.2f, -5, 40, 0));
-            return s;
-        }
-
-        public static MobSpec SpecSheep()
-        {
-            var s = new MobSpec("sheep");
-            s.boxes.Add(new MobBox("body", "body", 8, 6, 16, 0, 15, 0, 0, 8));
-            s.boxes.Add(new MobBox("head", "head", 6, 6, 6, 0, 20.4f, 10.7f, 32, 0));
-            s.boxes.Add(new MobBox("leg0", "leg", 4, 12, 4, -2.5f, 6.2f, 5, 0, 0));
-            s.boxes.Add(new MobBox("leg1", "leg", 4, 12, 4, 2.5f, 6.2f, 5, 0, 0));
-            s.boxes.Add(new MobBox("leg2", "leg", 4, 12, 4, -2.5f, 6.2f, -5, 0, 0));
-            s.boxes.Add(new MobBox("leg3", "leg", 4, 12, 4, 2.5f, 6.2f, -5, 0, 0));
-            return s;
-        }
-
-        // ---------------- face layout ----------------
-        struct Face { public Rect rect; public Vector3 n, origin, uAxis, vAxis; public float uw, vh; }
-
-        static IEnumerable<Face> FacesOf(MobBox b)
-        {
-            // Same net layout as BoxBuilder.McNet(u, v, W, H, D). uw/vh are the
-            // face's WORLD extents along uAxis/vAxis (px units).
-            int u = b.tu, v = b.tv; float W = b.size.x, H = b.size.y, D = b.size.z;
-            Vector3 c = b.pos, h = b.size * 0.5f;
-            yield return new Face { rect = new Rect(u, v + D, D, H), n = new Vector3(1, 0, 0), origin = c + new Vector3(h.x, h.y, h.z), uAxis = new Vector3(0, 0, -1), vAxis = new Vector3(0, -1, 0), uw = D, vh = H };
-            yield return new Face { rect = new Rect(u + D + W, v + D, D, H), n = new Vector3(-1, 0, 0), origin = c + new Vector3(-h.x, h.y, -h.z), uAxis = new Vector3(0, 0, 1), vAxis = new Vector3(0, -1, 0), uw = D, vh = H };
-            yield return new Face { rect = new Rect(u + D, v, W, D), n = new Vector3(0, 1, 0), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, -1), uw = W, vh = D };
-            yield return new Face { rect = new Rect(u + D + W, v, W, D), n = new Vector3(0, -1, 0), origin = c + new Vector3(-h.x, -h.y, -h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, 0, 1), uw = W, vh = D };
-            yield return new Face { rect = new Rect(u + D, v + D, W, H), n = new Vector3(0, 0, 1), origin = c + new Vector3(-h.x, h.y, h.z), uAxis = new Vector3(1, 0, 0), vAxis = new Vector3(0, -1, 0), uw = W, vh = H };
-            yield return new Face { rect = new Rect(u + 2 * D + W, v + D, W, H), n = new Vector3(0, 0, -1), origin = c + new Vector3(h.x, h.y, -h.z), uAxis = new Vector3(-1, 0, 0), vAxis = new Vector3(0, -1, 0), uw = W, vh = H };
-        }
-
-        static Vector3 TexelPoint(Face f, int tx, int ty, int tw, int th)
-        {
-            float a = (tx + 0.5f) / tw, b = (ty + 0.5f) / th;
-            return f.origin + f.uAxis * (a * f.uw) + f.vAxis * (b * f.vh);
+            var p0 = Vector2.Lerp(F.uv0, F.uv1, a);
+            var p1 = Vector2.Lerp(F.uv3, F.uv2, a);
+            return Vector2.Lerp(p0, p1, b);
         }
 
         // ---------------- projection ----------------
         static Quaternion camRot; static Vector3 camPos; static Vector2 projCenter; static float projScale = 1f;
+        /// <summary>0 = orthographic; &gt;0 = perspective camera distance in m
+        /// (wiki-style renders carry mild perspective an ortho fit can't match).</summary>
+        static float projDist = 0f;
 
-        static void SetCamera(float rw, float rh, Vector3 target)
+        static void SetCamera(Vector3 target, float rw, float rh)
         {
             camRot = Quaternion.Euler(pitch, yaw, 0f);
-            camPos = target - camRot * Vector3.forward * 500f;
+            camPos = target - camRot * Vector3.forward * (projDist > 0f ? projDist : 500f);
             projCenter = new Vector2(rw * 0.5f, rh * 0.5f);
-            projScale = 1f; // reset, or CalibrateCamera compounds the stale scale
+            projScale = 1f;
         }
 
         /// <summary>
-        /// Auto-calibrates the painter's projection against the reference:
-        /// finds the non-background bounding box in the image and scales/shifts
-        /// our projected spec bounds onto it, so arbitrary screenshots with
-        /// unknown framing sample correctly.
+        /// Aligns the projected model bbox to the reference subject bbox
+        /// (uniform scale = min of the axis ratios, centers matched).
         /// </summary>
-        static void CalibrateCamera(MobSpec spec, Ref r)
+        static void CalibrateCamera(ModelGeom geom, Ref r)
         {
             int minX = r.w, minY = r.h, maxX = -1, maxY = -1;
             for (int y = 0; y < r.h; y++)
                 for (int x = 0; x < r.w; x++)
-                    if (!r.bg[y * r.w + x])
+                    if (!r.bgTop[y * r.w + x])
                     {
                         if (x < minX) minX = x; if (x > maxX) maxX = x;
                         if (y < minY) minY = y; if (y > maxY) maxY = y;
                     }
-            if (maxX < 0) { SetCamera(r.w, r.h, Vector3.zero); return; }
+            if (maxX < 0) { SetCamera(geom.center, r.w, r.h); return; }
 
-            Vector3 lo = new Vector3(999f, 999f, 999f), hi = new Vector3(-999f, -999f, -999f);
-            foreach (var b in spec.boxes)
-                for (int i = 0; i < 8; i++)
-                {
-                    var c = b.pos + Vector3.Scale(
-                        new Vector3((i & 1) != 0 ? 1 : -1, (i & 2) != 0 ? 1 : -1, (i & 4) != 0 ? 1 : -1),
-                        b.size * 0.5f);
-                    lo = Vector3.Min(lo, c); hi = Vector3.Max(hi, c);
-                }
-            var center = (lo + hi) * 0.5f;
-            SetCamera(r.w, r.h, center);
+            SetCamera(geom.center, r.w, r.h);
             Vector2 pmin = new Vector2(9999f, 9999f), pmax = new Vector2(-9999f, -9999f);
-            for (int i = 0; i < 8; i++)
-            {
-                var c = new Vector3((i & 1) != 0 ? hi.x : lo.x, (i & 2) != 0 ? hi.y : lo.y, (i & 4) != 0 ? hi.z : lo.z);
-                var sp = Project(c);
-                pmin = Vector2.Min(pmin, sp); pmax = Vector2.Max(pmax, sp);
-            }
-            float sw = (maxX - minX + 1) / Mathf.Max(pmax.x - pmin.x, 1f);
-            float sh = (maxY - minY + 1) / Mathf.Max(pmax.y - pmin.y, 1f);
+            foreach (var cs in geom.boxCorners)
+                foreach (var c in cs)
+                {
+                    var sp = Project(c);
+                    pmin = Vector2.Min(pmin, sp); pmax = Vector2.Max(pmax, sp);
+                }
+            float sw = (maxX - minX + 1) / Mathf.Max(pmax.x - pmin.x, 1e-3f);
+            float sh = (maxY - minY + 1) / Mathf.Max(pmax.y - pmin.y, 1e-3f);
             projScale = Mathf.Min(sw, sh);
-            Vector2 pc = Project(center);
+            Vector2 pc = Project(geom.center);
             projCenter += new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f) - pc;
-            Debug.Log($"REPLICA calibrate: det=({maxX - minX + 1}x{maxY - minY + 1}) proj=({pmax.x - pmin.x:F1}x{pmax.y - pmin.y:F1}) scale={projScale:F2} center=({projCenter.x:F0},{projCenter.y:F0})");
         }
 
         static Vector2 Project(Vector3 p)
         {
             var c = Quaternion.Inverse(camRot) * (p - camPos);
+            if (projDist > 0f)
+            {
+                float f = projScale * projDist; // focal length in px
+                return new Vector2(projCenter.x + c.x / c.z * f, projCenter.y - c.y / c.z * f);
+            }
             return new Vector2(projCenter.x + c.x * projScale, projCenter.y - c.y * projScale);
         }
 
@@ -172,31 +196,28 @@ namespace VoxelCraft.Editor
         }
 
         // ---------------- reference loading ----------------
-        // px/bg are as Unity loads them (row 0 = BOTTOM); pxTop/bgTop are
-        // TOP-DOWN copies used by the projector, sampler and silhouette fit,
-        // which all work in image coordinates (y from the top).
-        class Ref { public Color[] px, pxTop; public bool[] bg, bgTop; public int w, h; public Color bgColor; }
+        class Ref { public string name; public Color[] px, pxTop; public bool[] bg, bgTop; public int w, h; public Color bgColor; }
 
         static Ref LoadReference(string path)
         {
             var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
             tex.LoadImage(File.ReadAllBytes(path));
-            var r = new Ref { px = tex.GetPixels(), w = tex.width, h = tex.height };
+            var r = new Ref { name = Path.GetFileNameWithoutExtension(path), px = tex.GetPixels(), w = tex.width, h = tex.height };
             r.bg = new bool[r.w * r.h];
-            // Border seed color = mean of the 4 corners.
             Color c0 = r.px[0], c1 = r.px[r.w - 1], c2 = r.px[(r.h - 1) * r.w], c3 = r.px[r.h * r.w - 1];
             r.bgColor = (c0 + c1 + c2 + c3) * 0.25f;
-            // Flood fill from all border pixels within tolerance of the seed.
             var stack = new Stack<int>();
             for (int x = 0; x < r.w; x++) { stack.Push(x); stack.Push((r.h - 1) * r.w + x); }
             for (int y = 0; y < r.h; y++) { stack.Push(y * r.w); stack.Push(y * r.w + r.w - 1); }
-            float tol = 0.08f; // per channel; survives gradients/AA halos
+            float tol = 0.08f;
             while (stack.Count > 0)
             {
                 int i = stack.Pop();
                 if (i < 0 || i >= r.px.Length || r.bg[i]) continue;
                 var c = r.px[i];
-                bool isBg = c.a < 0.1f ||
+                // alpha 0.5 cutoff: wiki crops carry a 1-2 px AA halo of
+                // half-transparent pixels around the subject; those are bg.
+                bool isBg = c.a < 0.5f ||
                             (Mathf.Abs(c.r - r.bgColor.r) <= tol &&
                              Mathf.Abs(c.g - r.bgColor.g) <= tol &&
                              Mathf.Abs(c.b - r.bgColor.b) <= tol);
@@ -209,7 +230,12 @@ namespace VoxelCraft.Editor
                 if (y < r.h - 1) stack.Push(i + r.w);
             }
             Object.DestroyImmediate(tex);
-            // Build top-down copies for projection-space sampling.
+
+            // Keep only the largest connected subject component: stray noise
+            // specks (JPEG ringing, leftover halo islands) must not inflate
+            // the bbox the projector is calibrated against.
+            KeepLargestComponent(r);
+
             r.pxTop = new Color[r.w * r.h];
             r.bgTop = new bool[r.w * r.h];
             for (int y = 0; y < r.h; y++)
@@ -218,6 +244,32 @@ namespace VoxelCraft.Editor
                 System.Array.Copy(r.bg, (r.h - 1 - y) * r.w, r.bgTop, y * r.w, r.w);
             }
             return r;
+        }
+
+        static void KeepLargestComponent(Ref r)
+        {
+            var comp = new int[r.bg.Length]; // 0 = bg/unassigned
+            int next = 0, bestComp = 0, bestSize = 0;
+            var stack = new Stack<int>();
+            for (int i = 0; i < r.bg.Length; i++)
+            {
+                if (r.bg[i] || comp[i] != 0) continue;
+                next++; int size = 0;
+                stack.Push(i); comp[i] = next;
+                while (stack.Count > 0)
+                {
+                    int j = stack.Pop(); size++;
+                    int x = j % r.w, y = j / r.w;
+                    if (x > 0 && !r.bg[j - 1] && comp[j - 1] == 0) { comp[j - 1] = next; stack.Push(j - 1); }
+                    if (x < r.w - 1 && !r.bg[j + 1] && comp[j + 1] == 0) { comp[j + 1] = next; stack.Push(j + 1); }
+                    if (y > 0 && !r.bg[j - r.w] && comp[j - r.w] == 0) { comp[j - r.w] = next; stack.Push(j - r.w); }
+                    if (y < r.h - 1 && !r.bg[j + r.w] && comp[j + r.w] == 0) { comp[j + r.w] = next; stack.Push(j + r.w); }
+                }
+                if (size > bestSize) { bestSize = size; bestComp = next; }
+            }
+            for (int i = 0; i < r.bg.Length; i++)
+                if (!r.bg[i] && comp[i] != bestComp) r.bg[i] = true;
+            Debug.Log($"REPLICA subject '{r.name}': largest component {bestSize}px of {r.bg.Length} ({bestSize * 100 / r.bg.Length}%), {next - 1} stray components removed");
         }
 
         static Color SampleBilinear(Ref r, float fx, float fy, out bool onBg)
@@ -233,107 +285,427 @@ namespace VoxelCraft.Editor
             return c;
         }
 
-        // ---------------- skin painting ----------------
-        static Texture2D PaintSkin(MobSpec spec, Ref r)
+        // ---------------- silhouette rasterization ----------------
+        /// <summary>Fills the projected convex hull of every box into a mask.</summary>
+        static bool[] Rasterize(ModelGeom geom, int w, int h)
         {
-            var sheet = new Texture2D(64, 32, TextureFormat.RGBA32, false);
-            var clear = new Color[64 * 32]; for (int i = 0; i < clear.Length; i++) clear[i] = new Color(0, 0, 0, 0);
-            sheet.SetPixels(clear);
-
-            foreach (var b in spec.boxes)
+            var m = new bool[w * h];
+            foreach (var cs in geom.boxCorners)
             {
-                // Per-face mean from non-background samples (pass 1), then paint
-                // (pass 2): real sample where available, face mean elsewhere,
-                // box mean on faces that never face the camera.
-                var faceMeans = new Color[6]; var faceHas = new bool[6];
-                var faces = new List<Face>(FacesOf(b));
-                var dims = new[] { (int)b.size.z, (int)b.size.x }; // side rect w,h
-                for (int fi = 0; fi < 6; fi++)
-                {
-                    var f = faces[fi];
-                    if (Vector3.Dot(f.n, camPos - f.origin) <= 0.02f) continue;
-                    int tw = (int)f.rect.width, th = (int)f.rect.height;
-                    Color acc = new Color(0, 0, 0, 0); int n = 0;
-                    for (int ty = 0; ty < th; ty++)
-                        for (int tx = 0; tx < tw; tx++)
-                        {
-                            var p = TexelPoint(f, tx, ty, tw, th);
-                            var sp = Project(p);
-                            bool onBg; var c = SampleBilinear(r, sp.x, sp.y, out onBg);
-                            if (!onBg) { acc += c; n++; }
-                        }
-                    if (n > 0) { faceMeans[fi] = acc / n; faceHas[fi] = true; }
-                }
-                Color boxMean = new Color(0.8f, 0.8f, 0.8f, 1f); int bn = 0;
-                for (int fi = 0; fi < 6; fi++) if (faceHas[fi]) { boxMean += faceMeans[fi]; bn++; }
-                if (bn > 0) boxMean = (boxMean - new Color(0.8f, 0.8f, 0.8f, 1f) * 0f) / bn;
+                var pts = new Vector2[cs.Length];
+                for (int i = 0; i < cs.Length; i++) pts[i] = Project(cs[i]);
+                FillConvexHull(pts, m, w, h);
+            }
+            return m;
+        }
 
-                for (int fi = 0; fi < 6; fi++)
+        static void FillConvexHull(Vector2[] pts, bool[] m, int w, int h)
+        {
+            // Andrew monotone chain.
+            var sorted = (Vector2[])pts.Clone();
+            System.Array.Sort(sorted, (p, q) => p.x != q.x ? p.x.CompareTo(q.x) : p.y.CompareTo(q.y));
+            var hull = new List<Vector2>();
+            foreach (var p in sorted)
+            {
+                while (hull.Count >= 2 && Cross(hull[hull.Count - 2], hull[hull.Count - 1], p) <= 0) hull.RemoveAt(hull.Count - 1);
+                hull.Add(p);
+            }
+            int lower = hull.Count + 1;
+            for (int i = sorted.Length - 2; i >= 0; i--)
+            {
+                var p = sorted[i];
+                while (hull.Count >= lower && Cross(hull[hull.Count - 2], hull[hull.Count - 1], p) <= 0) hull.RemoveAt(hull.Count - 1);
+                hull.Add(p);
+            }
+            if (hull.Count < 3) return;
+            hull.RemoveAt(hull.Count - 1);
+
+            float minY = hull[0].y, maxY = hull[0].y;
+            foreach (var p in hull) { minY = Mathf.Min(minY, p.y); maxY = Mathf.Max(maxY, p.y); }
+            int y0 = Mathf.Max(0, (int)Mathf.Floor(minY)), y1 = Mathf.Min(h - 1, (int)Mathf.Ceil(maxY));
+            for (int y = y0; y <= y1; y++)
+            {
+                float ys = y + 0.5f;
+                float minX = float.MaxValue, maxX = float.MinValue;
+                for (int e = 0; e < hull.Count; e++)
                 {
-                    var f = faces[fi];
-                    int tw = (int)f.rect.width, th = (int)f.rect.height;
-                    bool visible = Vector3.Dot(f.n, camPos - f.origin) > 0.02f;
-                    Color fallback = faceHas[fi] ? faceMeans[fi] : boxMean;
-                    for (int ty = 0; ty < th; ty++)
-                        for (int tx = 0; tx < tw; tx++)
+                    var p = hull[e]; var q = hull[(e + 1) % hull.Count];
+                    if ((p.y <= ys && q.y > ys) || (q.y <= ys && p.y > ys))
+                    {
+                        float x = p.x + (ys - p.y) / (q.y - p.y) * (q.x - p.x);
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                    }
+                }
+                if (maxX < minX) continue;
+                int ix0 = Mathf.Max(0, (int)Mathf.Ceil(minX - 0.5f));
+                int ix1 = Mathf.Min(w - 1, (int)Mathf.Floor(maxX - 0.5f));
+                for (int x = ix0; x <= ix1; x++) m[y * w + x] = true;
+            }
+        }
+
+        static float Cross(Vector2 o, Vector2 a, Vector2 b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+        static float Iou(bool[] a, bool[] b)
+        {
+            int inter = 0, uni = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] && b[i]) inter++;
+                if (a[i] || b[i]) uni++;
+            }
+            return uni == 0 ? 0f : (float)inter / uni;
+        }
+
+        // ---------------- projection fitting ----------------
+        /// <summary>
+        /// Generous multiplicative-scale + px-center descent on silhouette IoU.
+        /// bbox alignment is only the initializer (cropped refs clip the
+        /// subject at the image edges, biasing the bbox-derived scale).
+        /// Returns the improved score; projector statics hold the winner.
+        /// </summary>
+        static float OptimizeScaleCenter(ModelGeom geom, Ref r, bool[] subject, float cur)
+        {
+            float bestS = cur, bestScale = projScale;
+            Vector2 bestCenter = projCenter;
+            for (int sweep = 0; sweep < 8; sweep++)
+            {
+                bool improved = false;
+                foreach (float f in new[] { 1.2f, 1.1f, 1.05f, 1.02f, 0.98f, 0.95f, 0.9f, 0.8f })
+                {
+                    projScale = bestScale * f; projCenter = bestCenter;
+                    float s = Iou(Rasterize(geom, r.w, r.h), subject);
+                    if (s > bestS + 1e-5f) { bestS = s; bestScale = projScale; bestCenter = projCenter; improved = true; break; }
+                }
+                if (!improved)
+                {
+                    float px = Mathf.Max(1f, 48f / (1 << sweep));
+                    foreach (float d in new[] { px, -px })
+                    {
+                        for (int axis = 0; axis < 2 && !improved; axis++)
                         {
-                            Color c = fallback;
-                            if (visible)
-                            {
-                                var p = TexelPoint(f, tx, ty, tw, th);
-                                var sp = Project(p);
-                                bool onBg; var s = SampleBilinear(r, sp.x, sp.y, out onBg);
-                                if (!onBg) c = s;
-                            }
-                            int sx = (int)f.rect.x + tx, sy = (int)f.rect.y + ty;
-                            // Net rect y counts from the TOP (SkinnedBox does
-                            // 1 - y/texH), Texture2D.SetPixel counts from the
-                            // BOTTOM -> flip the row.
-                            if (sx >= 0 && sx < 64 && sy >= 0 && sy < 32) sheet.SetPixel(sx, 31 - sy, c);
+                            projScale = bestScale;
+                            projCenter = bestCenter + (axis == 0 ? new Vector2(d, 0f) : new Vector2(0f, d));
+                            float s = Iou(Rasterize(geom, r.w, r.h), subject);
+                            if (s > bestS + 1e-5f) { bestS = s; bestScale = projScale; bestCenter = projCenter; improved = true; }
                         }
+                        if (improved) break;
+                    }
+                }
+                if (!improved) break;
+            }
+            projScale = bestScale; projCenter = bestCenter;
+            return bestS;
+        }
+
+        /// <summary>
+        /// The geometry is FIXED (vanilla game model), so only the projection is
+        /// fitted: coarse quadrant+yaw+pitch sweep, coordinate descent, then a
+        /// scale/center polish. Score = silhouette IoU against the reference.
+        /// Returns the best IoU; when <paramref name="dump"/> is set the fit
+        /// overlay PNG is written and the final calibration stays in the
+        /// projector statics.
+        /// </summary>
+        static float FitProjection(ModelGeom geom, Ref r, string name, bool dump)
+        {
+            var subject = new bool[r.w * r.h];
+            for (int i = 0; i < subject.Length; i++) subject[i] = !r.bgTop[i];
+
+            float Score()
+            {
+                CalibrateCamera(geom, r);
+                return Iou(Rasterize(geom, r.w, r.h), subject);
+            }
+
+            // Pre-select the projection kind: ortho vs perspective camera
+            // distance (wiki-style refs render with mild perspective).
+            float bestD = 0f, bestDScore = -1f;
+            foreach (float d in new[] { 0f, 2.5f, 4f, 6f })
+            {
+                projDist = d;
+                CalibrateCamera(geom, r);
+                float s = OptimizeScaleCenter(geom, r, subject, Iou(Rasterize(geom, r.w, r.h), subject));
+                if (s > bestDScore) { bestDScore = s; bestD = d; }
+            }
+            projDist = bestD;
+            Debug.Log($"REPLICA projection dist '{name}' [{r.name}]: dist={bestD:F1} IoU={bestDScore:F3}");
+
+            // Coarse quadrant+yaw+pitch ranking uses the same (bbox) basis for
+            // every candidate; scale/center is re-optimized at the end.
+            float bestS = -1f, bestYaw = yaw, bestPitch = pitch;
+            foreach (float quad in new[] { 45f, 135f, 225f, 315f })
+                foreach (float dy in new[] { -9f, 0f, 9f })
+                    foreach (float dp in new[] { -4f, 0f, 4f })
+                    {
+                        yaw = quad + dy; pitch = Mathf.Clamp(30f + dp, 5f, 80f);
+                        float s = Score();
+                        if (s > bestS) { bestS = s; bestYaw = yaw; bestPitch = pitch; }
+                    }
+            yaw = bestYaw; pitch = bestPitch;
+
+            for (float step = 2f; step >= 0.5f; step *= 0.5f)
+            {
+                bool improved = true;
+                while (improved)
+                {
+                    improved = false;
+                    foreach (var d in new[] { step, -step })
+                    {
+                        yaw += d;
+                        float s = Score();
+                        if (s > bestS + 1e-5f) { bestS = s; improved = true; }
+                        else
+                        {
+                            yaw -= d;
+                            pitch = Mathf.Clamp(pitch + d, 5f, 80f);
+                            s = Score();
+                            if (s > bestS + 1e-5f) { bestS = s; improved = true; }
+                            else pitch -= d;
+                        }
+                    }
                 }
             }
-            // Opaque everywhere: transparent texels render black on Unlit/Texture.
+
+            // ---- generous scale/center descent, then alternating yaw/pitch
+            // refinement on top of the optimized scale/center (no bbox
+            // recalibration from here on).
+            CalibrateCamera(geom, r);
+            bestS = OptimizeScaleCenter(geom, r, subject, bestS);
+            for (int sweep = 0; sweep < 4; sweep++)
+            {
+                bool improved = false;
+                foreach (float d in new[] { 1f, -1f, 0.5f, -0.5f })
+                {
+                    yaw += d;
+                    float s = Iou(Rasterize(geom, r.w, r.h), subject);
+                    if (s > bestS + 1e-5f) { bestS = s; improved = true; continue; }
+                    yaw -= d;
+                    pitch = Mathf.Clamp(pitch + d, 5f, 80f);
+                    s = Iou(Rasterize(geom, r.w, r.h), subject);
+                    if (s > bestS + 1e-5f) { bestS = s; improved = true; }
+                    else pitch -= d;
+                }
+                if (!improved) break;
+            }
+            bestS = OptimizeScaleCenter(geom, r, subject, bestS);
+            Debug.Log($"REPLICA projection fit '{name}' [{r.name}]: dist={projDist:F1} yaw={yaw:F1} pitch={pitch:F1} scale={projScale:F2} center=({projCenter.x:F0},{projCenter.y:F0}) IoU={bestS:F3}");
+            if (dump) DumpFit(geom, r, name, subject);
+            return bestS;
+        }
+
+        /// <summary>Vertically flipped copy (wiki refs are sometimes exported row-flipped).</summary>
+        static Ref FlipVertical(Ref src)
+        {
+            var r = new Ref
+            {
+                name = src.name + "-flipped",
+                px = src.px, bg = src.bg,
+                w = src.w, h = src.h, bgColor = src.bgColor,
+                pxTop = new Color[src.w * src.h],
+                bgTop = new bool[src.w * src.h],
+            };
+            for (int y = 0; y < src.h; y++)
+            {
+                System.Array.Copy(src.pxTop, (src.h - 1 - y) * src.w, r.pxTop, y * src.w, src.w);
+                System.Array.Copy(src.bgTop, (src.h - 1 - y) * src.w, r.bgTop, y * src.w, src.w);
+            }
+            return r;
+        }
+
+        static void DumpFit(ModelGeom geom, Ref r, string name, bool[] subject)
+        {
+            var model = Rasterize(geom, r.w, r.h);
+            var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
+            var px = new Color[r.w * r.h];
+            for (int i = 0; i < px.Length; i++)
+                px[i] = new Color(subject[i] ? 1f : 0f, model[i] ? 1f : 0f, 0f, 1f);
+            tex.SetPixels(px); tex.Apply();
+            File.WriteAllBytes(Path.Combine(OutDir, $"fit_{name}_overlay.png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+        }
+
+        // ---------------- skin painting ----------------
+        static Texture2D PaintSkin(ModelGeom geom, Ref r)
+        {
+            var sheet = new Texture2D(64, 32, TextureFormat.RGBA32, false);
+            var clear = new Color[64 * 32];
+            for (int i = 0; i < clear.Length; i++) clear[i] = new Color(0, 0, 0, 0);
+            sheet.SetPixels(clear);
+
+            // Occlusion prepass: per-reference-pixel closest surface depth over
+            // all camera-facing faces. A face texel whose depth is beaten here
+            // by a clear margin is hidden behind another box (leg behind body,
+            // beak over head front) and must NOT sample those pixels.
+            var depthBuf = new float[r.w * r.h];
+            for (int i = 0; i < depthBuf.Length; i++) depthBuf[i] = float.PositiveInfinity;
+            var camFwd0 = camRot * Vector3.forward;
+            foreach (var F in geom.faces)
+            {
+                if (Vector3.Dot(F.n, camFwd0) > -0.02f) continue;
+                // ~1 screen-px sampling density.
+                int sa = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v1) * projScale), 2, 2400);
+                int sb = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(F.v0, F.v3) * projScale), 2, 2400);
+                for (int j = 0; j < sb; j++)
+                    for (int i = 0; i < sa; i++)
+                    {
+                        float a = (i + 0.5f) / sa, b = (j + 0.5f) / sb;
+                        var P = QuadPoint(F, a, b);
+                        var sp = Project(P);
+                        int ix = Mathf.Clamp((int)sp.x, 0, r.w - 1);
+                        int iy = Mathf.Clamp((int)sp.y, 0, r.h - 1);
+                        float d = Depth(P);
+                        int idx = iy * r.w + ix;
+                        if (d < depthBuf[idx]) depthBuf[idx] = d;
+                    }
+            }
+
+            // Global min-depth staging: shared nets (4 legs, 2 feet, 2 wings on
+            // one rect) are written by every box; the texel keeps the sample
+            // from the box closest to the camera.
+            var stageC = new Color[64 * 32];
+            var stageD = new float[64 * 32];
+            var stageHas = new bool[64 * 32];
+            for (int i = 0; i < stageD.Length; i++) stageD[i] = float.PositiveInfinity;
+
+            var camFwd = camRot * Vector3.forward;
+            const float OccEps = 0.02f; // view-space m; occluders sit >= ~12mm nearer
+            var accSum = new Dictionary<string, Color>();
+            var accN = new Dictionary<string, int>();
+
+            foreach (var F in geom.faces)
+            {
+                if (Vector3.Dot(F.n, camFwd) > -0.02f) continue; // faces away
+                float sum0 = 0f;
+                var sum = new Color(sum0, sum0, sum0, 0f); int n = 0;
+                for (int j = 0; j < F.gb; j++)
+                    for (int i = 0; i < F.ga; i++)
+                    {
+                        float a = (i + 0.5f) / F.ga, b = (j + 0.5f) / F.gb;
+                        var P = QuadPoint(F, a, b);
+                        var sp = Project(P);
+                        float d = Depth(P);
+                        int px = Mathf.Clamp((int)sp.x, 0, r.w - 1);
+                        int py = Mathf.Clamp((int)sp.y, 0, r.h - 1);
+                        if (depthBuf[py * r.w + px] < d - OccEps) continue; // occluded
+                        bool onBg;
+                        var c = SampleBilinear(r, sp.x, sp.y, out onBg);
+                        if (onBg) continue;
+                        var uv = QuadUv(F, a, b);
+                        int tx = Mathf.Clamp(Mathf.RoundToInt(uv.x * 64f - 0.5f), 0, 63);
+                        int tyTop = Mathf.Clamp(Mathf.RoundToInt((1f - uv.y) * 32f - 0.5f), 0, 31);
+                        int idx = tyTop * 64 + tx;
+                        if (!stageHas[idx] || d < stageD[idx])
+                        {
+                            stageC[idx] = c; stageD[idx] = d; stageHas[idx] = true;
+                        }
+                        sum += c; n++;
+                    }
+                if (n > 0)
+                {
+                    accSum[F.box] = accSum.TryGetValue(F.box, out var prev) ? prev + sum : sum;
+                    accN[F.box] = (accN.TryGetValue(F.box, out var pn) ? pn : 0) + n;
+                }
+            }
+
+            // Fallback: texels a box owns but nobody sampled (its own far side,
+            // fully hidden faces) get that box's visible-face mean. Boxes with
+            // NO accepted samples at all (fully occluded, e.g. the wattle)
+            // are skipped here so the through-sampling pass below can fill
+            // them with something better than a flat mean.
+            foreach (var F in geom.faces)
+            {
+                if (accN.TryGetValue(F.box, out int bn) && bn == 0) continue;
+                Color mean = Color.grey;
+                bool hasMean = accN.TryGetValue(F.box, out int bn2) && bn2 > 0;
+                if (hasMean) mean = accSum[F.box] / bn2;
+                for (int j = 0; j < F.gb; j++)
+                    for (int i = 0; i < F.ga; i++)
+                    {
+                        float a = (i + 0.5f) / F.ga, b = (j + 0.5f) / F.gb;
+                        var uv = QuadUv(F, a, b);
+                        int tx = Mathf.Clamp(Mathf.RoundToInt(uv.x * 64f - 0.5f), 0, 63);
+                        int tyTop = Mathf.Clamp(Mathf.RoundToInt((1f - uv.y) * 32f - 0.5f), 0, 31);
+                        int idx = tyTop * 64 + tx;
+                        if (!stageHas[idx]) { stageC[idx] = mean; stageHas[idx] = true; }
+                    }
+            }
+
+            // Last resort: still-unclaimed texels (fully occluded boxes) sample
+            // straight through, ignoring occlusion - imperfect but far more
+            // useful in-game than grey (the wattle keeps its red).
+            foreach (var F in geom.faces)
+            {
+                if (Vector3.Dot(F.n, camFwd) > -0.02f) continue;
+                for (int j = 0; j < F.gb; j++)
+                    for (int i = 0; i < F.ga; i++)
+                    {
+                        float a = (i + 0.5f) / F.ga, b = (j + 0.5f) / F.gb;
+                        var P = QuadPoint(F, a, b);
+                        var sp = Project(P);
+                        bool onBg;
+                        var c = SampleBilinear(r, sp.x, sp.y, out onBg);
+                        if (onBg) continue;
+                        var uv = QuadUv(F, a, b);
+                        int tx = Mathf.Clamp(Mathf.RoundToInt(uv.x * 64f - 0.5f), 0, 63);
+                        int tyTop = Mathf.Clamp(Mathf.RoundToInt((1f - uv.y) * 32f - 0.5f), 0, 31);
+                        int idx = tyTop * 64 + tx;
+                        if (!stageHas[idx]) { stageC[idx] = c; stageHas[idx] = true; }
+                    }
+            }
+            for (int i = 0; i < stageC.Length; i++)
+                sheet.SetPixel(i % 64, 31 - i / 64, stageHas[i] ? stageC[i] : new Color(0.75f, 0.75f, 0.75f, 1f));
+
             var all = sheet.GetPixels();
-            for (int i = 0; i < all.Length; i++) all[i].a = 1f;
+            for (int i = 0; i < all.Length; i++) all[i].a = 1f; // transparent renders black on Unlit
             sheet.SetPixels(all);
+            sheet.filterMode = FilterMode.Point;
+            sheet.wrapMode = TextureWrapMode.Clamp;
             sheet.Apply();
             return sheet;
         }
 
         // ---------------- model render + composite ----------------
-        static void RenderAndCompare(MobSpec spec, Texture2D sheet, Ref r, string outPath)
+        static void RenderAndCompare(ModelGeom geom, string species, Texture2D sheet, Ref r, string outPath)
         {
+            Color bgCol = r.bgColor.a < 0.5f ? Color.white : r.bgColor;
             var mat = new Material(Shader.Find("Unlit/Texture")) { mainTexture = sheet };
-            var root = new GameObject("Replica_" + spec.name);
+            var root = new GameObject("ReplicaView_" + species);
             try
             {
-                foreach (var b in spec.boxes)
-                {
-                    var go = BoxBuilder.SkinnedBox(root.transform, b.id, b.pos / 16f, b.size / 16f, mat,
-                        BoxBuilder.McNet(b.tu, b.tv, (int)b.size.x, (int)b.size.y, (int)b.size.z), 64, 32);
-                }
-
-                Bounds bounds = new Bounds(root.transform.position, Vector3.zero); bool first = true;
+                var animal = root.AddComponent<BlockyAnimal>();
+                animal.species = species;
+                animal.BuildModel();
+                root.transform.position = Vector3.zero;
+                root.transform.rotation = Quaternion.identity;
                 foreach (var ren in root.GetComponentsInChildren<Renderer>())
-                {
-                    if (first) { bounds = ren.bounds; first = false; } else bounds.Encapsulate(ren.bounds);
-                }
-                Vector3 center = bounds.center;
-                float height = bounds.size.y;
+                    ren.sharedMaterial = mat;
 
+                // Camera exactly reproduces the software projector: ortho 1
+                // world unit = projScale px, or perspective focal = scale*dist;
+                // geom.center sits at projCenter either way.
+                var rot = Quaternion.Euler(pitch, yaw, 0f);
                 var camGo = new GameObject("Cam");
                 var cam = camGo.AddComponent<Camera>();
                 cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = r.bgColor;
-                cam.orthographic = true;
-                float rw = r.w, rh = r.h; // render at full reference resolution
-                float aspect = (float)r.w / r.h;
-                cam.aspect = aspect;
-                float halfH = height * 0.5f * 1.3f + 0.02f;
-                cam.orthographicSize = halfH;
-                var rot = Quaternion.Euler(pitch, yaw, 0f);
-                camGo.transform.position = center - rot * Vector3.forward * 10f;
+                cam.backgroundColor = bgCol;
+                cam.nearClipPlane = 0.01f;
+                cam.farClipPlane = 500f;
+                float rw = r.w, rh = r.h;
+                cam.aspect = rw / rh;
+                float camDist = 10f;
+                if (projDist > 0f)
+                {
+                    cam.orthographic = false;
+                    float focal = projScale * projDist;
+                    cam.fieldOfView = 2f * Mathf.Atan(rh / (2f * focal)) * Mathf.Rad2Deg;
+                    camDist = projDist;
+                }
+                else
+                {
+                    cam.orthographic = true;
+                    cam.orthographicSize = rh / (2f * projScale);
+                }
+                camGo.transform.position = geom.center - rot * Vector3.forward * camDist;
                 camGo.transform.rotation = rot;
 
                 var rt = new RenderTexture((int)rw, (int)rh, 24);
@@ -347,78 +719,107 @@ namespace VoxelCraft.Editor
                 RenderTexture.active = null;
                 Object.DestroyImmediate(rt);
 
-                // ReadPixels is bottom-up; flip to top-down to match the reference.
-                var flipped = new Texture2D((int)rw, (int)rh, TextureFormat.RGBA32, false);
-                var sp2 = shot.GetPixels();
-                var fp = new Color[sp2.Length];
-                for (int y = 0; y < (int)rh; y++)
-                    System.Array.Copy(sp2, y * (int)rw, fp, ((int)rh - 1 - y) * (int)rw, (int)rw);
-                flipped.SetPixels(fp);
-                flipped.Apply();
+                // ReadPixels is bottom-up; flip to top-down to match the ref.
+                var shotPx = shot.GetPixels();
                 Object.DestroyImmediate(shot);
+                var repPx = new Color[shotPx.Length];
+                for (int y = 0; y < (int)rh; y++)
+                    System.Array.Copy(shotPx, y * (int)rw, repPx, ((int)rh - 1 - y) * (int)rw, (int)rw);
 
-                // Side-by-side: reference | ours.
-                int gap = 8;
-                var comb = new Texture2D(r.w + gap + (int)rw, Mathf.Max(r.h, (int)rh), TextureFormat.RGBA32, false);
-                var cbg = new Color[Mathf.Max(r.h, (int)rh) * (r.w + gap + (int)rw)];
+                // Render-based silhouette IoU: honest end-to-end metric.
+                var repMask = new bool[repPx.Length];
+                for (int i = 0; i < repPx.Length; i++)
+                {
+                    var c = repPx[i];
+                    repMask[i] = c.a > 0.5f &&
+                                 (Mathf.Abs(c.r - bgCol.r) > 0.08f ||
+                                  Mathf.Abs(c.g - bgCol.g) > 0.08f ||
+                                  Mathf.Abs(c.b - bgCol.b) > 0.08f);
+                }
+                var refMask = new bool[repPx.Length];
+                for (int i = 0; i < refMask.Length; i++) refMask[i] = !r.bgTop[i];
+                float iou = Iou(repMask, refMask);
+                Debug.Log($"REPLICA render IoU '{species}': {iou:F3} (yaw={yaw:F1} pitch={pitch:F1} scale={projScale:F2})");
+
+                // 3-panel composite: reference | replica | 50% blend, all over bg.
+                int gap = 8, W = r.w * 3 + gap * 2, H = r.h;
+                var comb = new Texture2D(W, H, TextureFormat.RGBA32, false);
+                var cbg = new Color[W * H];
                 for (int i = 0; i < cbg.Length; i++) cbg[i] = new Color(0.15f, 0.15f, 0.18f, 1f);
                 comb.SetPixels(cbg);
-                comb.SetPixels(0, 0, r.w, r.h, r.px);
-                comb.SetPixels(r.w + gap, 0, (int)rw, (int)rh, flipped.GetPixels());
+                var refOver = new Color[r.w * r.h];
+                for (int i = 0; i < refOver.Length; i++)
+                    refOver[i] = r.pxTop[i].a < 0.6f ? bgCol : Color.Lerp(bgCol, r.pxTop[i], r.pxTop[i].a);
+                comb.SetPixels(0, 0, r.w, r.h, refOver);
+                comb.SetPixels(r.w + gap, 0, (int)rw, (int)rh, repPx);
+                var blend = new Color[r.w * r.h];
+                for (int i = 0; i < blend.Length; i++) blend[i] = Color.Lerp(refOver[i], repPx[i], 0.5f);
+                comb.SetPixels(2 * (r.w + gap), 0, r.w, r.h, blend);
                 comb.Apply();
                 File.WriteAllBytes(outPath, comb.EncodeToPNG());
-                Object.DestroyImmediate(flipped); Object.DestroyImmediate(comb);
+                Object.DestroyImmediate(comb);
                 Debug.Log($"REPLICA wrote {outPath}");
             }
             finally
             {
                 Object.DestroyImmediate(root);
+                Object.DestroyImmediate(mat);
             }
         }
 
-        static void SaveSheet(MobSpec spec, Texture2D sheet)
+        static void SaveSheet(string species, Texture2D sheet)
         {
             var png = sheet.EncodeToPNG();
-            File.WriteAllBytes(Path.Combine(SkinDir, $"replica_{spec.name}_skin.png.bytes"), png);
-            File.WriteAllBytes(Path.Combine(OutDir, $"replica_{spec.name}_sheet.png"), png);
-            Debug.Log($"REPLICA skin sheet -> replica_{spec.name}_skin.png.bytes");
+            File.WriteAllBytes(Path.Combine(OutDir, $"replica_{species}_sheet.png"), png);
+            File.WriteAllBytes(Path.Combine(SkinDir, $"replica_{species}_skin.png.bytes"), png);
+            if (applyToGame)
+            {
+                File.WriteAllBytes(Path.Combine(SkinDir, $"{species}_skin.png.bytes"), png);
+                Debug.Log($"REPLICA applied game skin -> {species}_skin.png.bytes");
+            }
+            Debug.Log($"REPLICA skin sheet -> replica_{species}_skin.png.bytes");
         }
 
-        // Synthetic fallback reference: flat-shaded projection of the spec
-        // itself, so the pipeline can be exercised without a real screenshot.
-        static void MakeSyntheticRef(MobSpec spec, string path)
+        // ---------------- synthetic fallback reference ----------------
+        static void MakeSyntheticRef(ModelGeom geom, string path)
         {
             int w = 600, h = 600;
-            var img = new Color[w * h];
-            for (int i = 0; i < img.Length; i++) img[i] = new Color(1f, 1f, 1f, 1f);
-            SetCamera(w, h, new Vector3(0f, 12f, 0f));
-            projScale = 13f;
-            var ordered = new List<MobBox>(spec.boxes);
-            ordered.Sort((a, b2) => Depth(b2.pos).CompareTo(Depth(a.pos))); // far first
-            foreach (var b in ordered)
-                foreach (var f in FacesOf(b))
+            yaw = 135f; pitch = 30f;
+            SetCamera(geom.center, w, h);
+            Vector2 pmin = new Vector2(9999f, 9999f), pmax = new Vector2(-9999f, -9999f);
+            foreach (var cs in geom.boxCorners)
+                foreach (var c in cs)
                 {
-                    if (Vector3.Dot(f.n, camPos - f.origin) <= 0.02f) continue;
-                    float shade = f.n.y > 0.5f ? 1f : f.n.z > 0.5f ? 0.86f : 0.72f;
-                    Color col = new Color(0.85f * shade, 0.83f * shade, 0.8f * shade, 1f);
-                    if (b.id.StartsWith("beak") || b.id.StartsWith("leg") || b.id.StartsWith("foot")) col = new Color(0.87f * shade, 0.55f * shade, 0.3f * shade, 1f);
-                    if (b.id.StartsWith("wattle")) col = new Color(0.7f * shade, 0.15f * shade, 0.12f * shade, 1f);
-                    if (b.id.StartsWith("snout")) col = new Color(0.88f * shade, 0.6f * shade, 0.55f * shade, 1f);
-                    int tw = (int)f.rect.width * 8, th = (int)f.rect.height * 8;
-                    for (int ty = 0; ty < th; ty++)
-                        for (int tx = 0; tx < tw; tx++)
-                        {
-                            var p = TexelPoint(f, tx, ty, tw, th);
-                            var sp2 = Project(p);
-                            for (int ox = 0; ox < 3; ox++)
-                                for (int oy = 0; oy < 3; oy++)
-                                {
-                                    int ix = (int)sp2.x + ox, iy = (int)sp2.y + oy;
-                                    if (ix < 0 || ix >= w || iy < 0 || iy >= h) continue;
-                                    img[iy * w + ix] = col;
-                                }
-                        }
+                    var sp = Project(c);
+                    pmin = Vector2.Min(pmin, sp); pmax = Vector2.Max(pmax, sp);
                 }
+            projScale = 0.7f * Mathf.Min(w / Mathf.Max(pmax.x - pmin.x, 1e-3f), h / Mathf.Max(pmax.y - pmin.y, 1e-3f));
+            Vector2 pc = Project(geom.center);
+            projCenter += new Vector2(w * 0.5f, h * 0.5f) - pc;
+
+            var faces = new List<BoxFace>(geom.faces);
+            faces.Sort((x, y) => Depth(QuadPoint(y, 0.5f, 0.5f)).CompareTo(Depth(QuadPoint(x, 0.5f, 0.5f))));
+            var img = new Color[w * h];
+            for (int i = 0; i < img.Length; i++) img[i] = Color.white;
+            var m = new bool[w * h];
+            foreach (var F in faces)
+            {
+                if (Vector3.Dot(F.n, camRot * Vector3.forward) > -0.02f) continue;
+                float shade = F.n.y > 0.5f ? 1f : F.n.z > 0.5f ? 0.86f : F.n.x != 0f ? 0.78f : 0.7f;
+                Color col = new Color(0.85f * shade, 0.83f * shade, 0.8f * shade, 1f);
+                if (F.box.StartsWith("Beak") || F.box.StartsWith("Wattle") || F.box.StartsWith("Leg") || F.box.StartsWith("Foot")) col = new Color(0.87f * shade, 0.55f * shade, 0.3f * shade, 1f);
+                if (F.box.StartsWith("Wattle")) col = new Color(0.7f * shade, 0.15f * shade, 0.12f * shade, 1f);
+                if (F.box.StartsWith("Snout")) col = new Color(0.88f * shade, 0.6f * shade, 0.55f * shade, 1f);
+                System.Array.Clear(m, 0, m.Length);
+                for (int j = 0; j <= F.gb; j++)
+                    for (int i2 = 0; i2 <= F.ga; i2++)
+                    {
+                        var sp = Project(QuadPoint(F, Mathf.Min(1f, (float)i2 / F.ga), Mathf.Min(1f, (float)j / F.gb)));
+                        int ix = Mathf.Clamp((int)sp.x, 0, w - 1), iy = Mathf.Clamp((int)sp.y, 0, h - 1);
+                        m[iy * w + ix] = true;
+                    }
+                for (int i = 0; i < m.Length; i++) if (m[i]) img[i] = col;
+            }
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
             tex.SetPixels(img); tex.Apply();
             Directory.CreateDirectory(RefDir);
@@ -427,184 +828,79 @@ namespace VoxelCraft.Editor
             Debug.Log($"REPLICA synthetic stand-in reference -> {path}");
         }
 
-        // ---------------- silhouette fitting ----------------
-        /// <summary>Rasterizes the spec's camera-facing faces into a mask.</summary>
-        static bool[] RasterizeMask(MobSpec spec, int w, int h)
-        {
-            var m = new bool[w * h];
-            foreach (var b in spec.boxes)
-                foreach (var f in FacesOf(b))
-                {
-                    if (Vector3.Dot(f.n, camPos - f.origin) <= 0.02f) continue;
-                    // Sample density adapts to the current projection scale so
-                    // the quad fills SOLID (2px spacing, 2x2 stamps).
-                    int tw = Mathf.Max(1, (int)(f.uw * projScale / 2f));
-                    int th = Mathf.Max(1, (int)(f.vh * projScale / 2f));
-                    for (int ty = 0; ty < th; ty++)
-                        for (int tx = 0; tx < tw; tx++)
-                        {
-                            var p = TexelPoint(f, tx, ty, tw, th);
-                            var sp = Project(p);
-                            for (int ox = 0; ox < 2; ox++)
-                                for (int oy = 0; oy < 2; oy++)
-                                {
-                                    int ix = (int)sp.x + ox, iy = (int)sp.y + oy;
-                                    if (ix >= 0 && ix < w && iy >= 0 && iy < h) m[iy * w + ix] = true;
-                                }
-                        }
-                }
-            return m;
-        }
-
-        static float Iou(bool[] a, bool[] b)
-        {
-            int inter = 0, uni = 0;
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] && b[i]) inter++;
-                if (a[i] || b[i]) uni++;
-            }
-            return uni == 0 ? 0f : (float)inter / uni;
-        }
-
-        /// <summary>
-        /// Re-lays out a spec from 8 fitted parameters: body size, head size,
-        /// leg height, leg thickness. Dependent parts (head/legs/wings/beak/
-        /// wattle/snout/feet) follow their parent part by vanilla-style rules,
-        /// so one silhouette drives the whole skeleton.
-        /// </summary>
-        static void LayoutSpec(MobSpec spec, float[] p)
-        {
-            MobBox body = null, head = null;
-            float legH = p[6], legT = p[7];
-            foreach (var b in spec.boxes)
-            {
-                if (b.role == "body") { body = b; body.size = new Vector3(p[0], p[1], p[2]); }
-                if (b.role == "head") { head = b; head.size = new Vector3(p[3], p[4], p[5]); }
-                if (b.role == "leg") b.size = new Vector3(legT, b.size.y, legT);
-            }
-            if (body == null) return;
-            body.pos = new Vector3(0f, legH + body.size.y * 0.5f, 0f);
-            if (head != null)
-                head.pos = new Vector3(0f, legH + body.size.y + head.size.y * 0.4f,
-                    body.size.z * 0.5f + head.size.z * 0.45f);
-            foreach (var b in spec.boxes)
-            {
-                if (b.role == "leg") b.pos = new Vector3(b.pos.x, legH - b.size.y * 0.5f + 0.19f, b.pos.z);
-                if (b.role == "wing") b.pos = new Vector3(Mathf.Sign(b.pos.x) * (body.size.x * 0.5f + 0.52f), legH + body.size.y - 2f, 0f);
-                if (b.role == "beak") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.18f, head.size.z * 0.5f + 0.21f);
-                if (b.role == "wattle") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.5f - 0.88f, head.size.z * 0.5f - 0.16f);
-                if (b.role == "snout") b.pos = head.pos + new Vector3(0f, -head.size.y * 0.25f, head.size.z * 0.5f + 0.22f);
-                if (b.role == "foot") b.pos = new Vector3(b.pos.x, 0.5f, b.pos.z);
-            }
-        }
-
-        static float[] ParamsOf(MobSpec spec)
-        {
-            MobBox body = null, head = null; float legH = 5f, legT = 2f; bool hasLeg = false;
-            foreach (var b in spec.boxes)
-            {
-                if (b.role == "body") body = b;
-                if (b.role == "head") head = b;
-                if (b.role == "leg" && !hasLeg) { legH = b.pos.y + b.size.y * 0.5f - 0.19f; legT = b.size.x; hasLeg = true; }
-            }
-            if (body == null || head == null) return null;
-            return new float[] { body.size.x, body.size.y, body.size.z, head.size.x, head.size.y, head.size.z, legH, legT };
-        }
-
-        static MobSpec FitSpecToSilhouette(MobSpec preset, Ref r)
-        {
-            var spec = new MobSpec(preset.name);
-            foreach (var b in preset.boxes)
-                spec.boxes.Add(new MobBox(b.id, b.role, b.size.x, b.size.y, b.size.z, b.pos.x, b.pos.y, b.pos.z, b.tu, b.tv));
-            float[] start = ParamsOf(spec);
-            if (start == null) return spec;
-
-            var mask = new bool[r.w * r.h];
-            for (int i = 0; i < mask.Length; i++) mask[i] = !r.bgTop[i];
-
-            System.Func<float[], float> score = delegate (float[] trial)
-            {
-                LayoutSpec(spec, trial);
-                CalibrateCamera(spec, r);
-                return Iou(RasterizeMask(spec, r.w, r.h), mask);
-            };
-
-            // Single-view silhouettes are front/back ambiguous: try the preset
-            // facing and its 180-degree twin, keep whichever fits better.
-            float baseYaw = yaw;
-            float[] bestP = null; float best = -1f; float bestYaw = baseYaw;
-            foreach (float cy in new[] { baseYaw, baseYaw + 180f })
-            {
-                yaw = cy;
-                float[] p = (float[])start.Clone();
-                float b0 = score(p);
-                float step = 2f;
-                for (int sweep = 0; sweep < 3; sweep++)
-                {
-                    for (int i = 0; i < p.Length; i++)
-                    {
-                        foreach (float d in new[] { step, -step, step * 0.5f, -step * 0.5f })
-                        {
-                            var trial = (float[])p.Clone();
-                            trial[i] = Mathf.Max(1f, trial[i] + d);
-                        // Vanilla prior: keep dims within 0.5x-2x of the preset
-                        trial[i] = Mathf.Clamp(trial[i], start[i] * 0.5f, start[i] * 2f);
-                            float s = score(trial);
-                            if (s > b0 + 0.0005f) { b0 = s; p = trial; }
-                        }
-                    }
-                    step *= 0.5f;
-                }
-                if (b0 > best) { best = b0; bestP = p; bestYaw = cy; }
-            }
-
-            yaw = bestYaw;
-            LayoutSpec(spec, bestP);
-            CalibrateCamera(spec, r);
-            // Snap to whole texture pixels; keep if it does not hurt the fit.
-            var snapped = (float[])bestP.Clone();
-            for (int i = 0; i < snapped.Length; i++) snapped[i] = Mathf.Max(1f, Mathf.Round(snapped[i]));
-            float sSnap = score(snapped);
-            if (sSnap >= best - 0.01f) { LayoutSpec(spec, snapped); best = sSnap; bestP = snapped; }
-            Debug.Log($"REPLICA fit '{spec.name}': yaw={yaw:F0} IoU={best:F3} body=({bestP[0]:F0},{bestP[1]:F0},{bestP[2]:F0}) head=({bestP[3]:F0},{bestP[4]:F0},{bestP[5]:F0}) legH={bestP[6]:F0} legT={bestP[7]:F0}");
-            DumpFit(spec, r);
-            return spec;
-        }
-
-        /// <summary>Writes reference/model/overlay masks for fit diagnosis.</summary>
-        static void DumpFit(MobSpec spec, Ref r)
-        {
-            var model = RasterizeMask(spec, r.w, r.h);
-            int filled = 0; foreach (var b in model) if (b) filled++;
-            Debug.Log($"REPLICA rasterize '{spec.name}': {filled}px of {r.w * r.h}");
-            var tex = new Texture2D(r.w, r.h, TextureFormat.RGBA32, false);
-            var px = new Color[r.w * r.h];
-            for (int i = 0; i < px.Length; i++)
-                px[i] = new Color(r.bgTop[i] ? 0f : 1f, model[i] ? 1f : 0f, 0f, 1f);
-            tex.SetPixels(px); tex.Apply();
-            File.WriteAllBytes(Path.Combine(OutDir, $"fit_{spec.name}_overlay.png"), tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
-        }
-
         // ---------------- batch entry ----------------
         public static void RunExperiment()
         {
             Directory.CreateDirectory(RefDir);
             Directory.CreateDirectory(OutDir);
-            RunOne(SpecChicken()); RunOne(SpecPig()); RunOne(SpecSheep());
+            RunOne("chicken"); RunOne("pig"); RunOne("sheep");
             Debug.Log("REPLICA EXPERIMENT DONE");
         }
 
-        static void RunOne(MobSpec spec)
+        /// <summary>
+        /// Diagnostic: sweeps projection kind (ortho / perspective distance)
+        /// and (yaw, pitch), optimizing scale/center at each - tells a wrong
+        /// projection apart from a geometry mismatch. Doesn't touch skins.
+        /// </summary>
+        public static void RunAngleProbe()
         {
-            string refPath = Path.Combine(RefDir, spec.name + ".png");
-            if (!File.Exists(refPath)) MakeSyntheticRef(spec, refPath);
-            var r = LoadReference(refPath);
-            spec = FitSpecToSilhouette(spec, r);
-            var sheet = PaintSkin(spec, r);
-            SaveSheet(spec, sheet);
-            RenderAndCompare(spec, sheet, r, Path.Combine(OutDir, $"replica_{spec.name}.png"));
+            Directory.CreateDirectory(OutDir);
+            foreach (string species in new[] { "pig", "chicken", "sheep" })
+            {
+                var geom = BuildGameModel(species);
+                var r = LoadReference(Path.Combine(RefDir, species + ".png"));
+                r.name = species;
+                var subject = new bool[r.w * r.h];
+                for (int i = 0; i < subject.Length; i++) subject[i] = !r.bgTop[i];
+                foreach (float dist in new[] { 0f, 2.5f, 4f, 6f })
+                {
+                    projDist = dist;
+                    foreach (var (ya, pi) in new[] { (135f, 30f), (135f, 35f), (135f, 40f), (140f, 38f), (145f, 33f) })
+                    {
+                        yaw = ya; pitch = pi;
+                        CalibrateCamera(geom, r);
+                        float s = OptimizeScaleCenter(geom, r, subject, Iou(Rasterize(geom, r.w, r.h), subject));
+                        Debug.Log($"REPLICA probe {species} dist={dist:F1} yaw={ya:F0} pitch={pi:F0} IoU={s:F3}");
+                    }
+                }
+                projDist = 0f;
+            }
+            Debug.Log("REPLICA ANGLE PROBE DONE");
+        }
+
+        static void RunOne(string species)
+        {
+            yaw = 135f; pitch = 30f; // reset shared state between mobs
+            var geom = BuildGameModel(species);
+            if (geom.faces.Count == 0) return;
+
+            string refPath = Path.Combine(RefDir, species + ".png");
+            if (!File.Exists(refPath)) MakeSyntheticRef(geom, refPath);
+            var rOrig = LoadReference(refPath);
+
+            // Auto-orient: chat-derived references are sometimes stored
+            // vertically flipped (wattle above beak, hooves skyward). Fit both
+            // orientations and keep the higher-IoU one.
+            float sOrig = FitProjection(geom, rOrig, species, dump: false);
+            var rFlip = FlipVertical(rOrig);
+            float sFlip = FitProjection(geom, rFlip, species, dump: false);
+            Ref r;
+            if (sFlip > sOrig + 0.005f)
+            {
+                r = rFlip;
+                Debug.Log($"REPLICA orientation '{species}': FLIPPED (asIs={sOrig:F3} flipped={sFlip:F3})");
+                FitProjection(geom, r, species, dump: true);
+            }
+            else
+            {
+                r = rOrig;
+                Debug.Log($"REPLICA orientation '{species}': as-is (asIs={sOrig:F3} flipped={sFlip:F3})");
+                FitProjection(geom, r, species, dump: true);
+            }
+
+            var sheet = PaintSkin(geom, r);
+            SaveSheet(species, sheet);
+            RenderAndCompare(geom, species, sheet, r, Path.Combine(OutDir, $"replica_{species}.png"));
         }
 
         // ---------------- window ----------------
@@ -613,15 +909,14 @@ namespace VoxelCraft.Editor
 
         void OnGUI()
         {
-            EditorGUILayout.HelpBox("Put reference screenshots in D:\\zlj world\\_refs as chicken.png / pig.png / sheep.png, then Run Experiment. Missing files fall back to synthetic stand-ins. Output: _logs\\replica_<mob>.png", MessageType.Info);
-            yaw = EditorGUILayout.Slider("Camera yaw", yaw, 0f, 360f);
-            pitch = EditorGUILayout.Slider("Camera pitch", pitch, 0f, 80f);
+            EditorGUILayout.HelpBox("Put reference screenshots in D:\\zlj world\\_refs as chicken.png / pig.png / sheep.png, then Run Experiment. The model is the GAME's own (BlockyAnimal); only the projection is fitted. Output: _logs\\replica_<mob>.png (reference | replica | blend). Skins are written to <mob>_skin.png.bytes.", MessageType.Info);
+            yaw = EditorGUILayout.Slider("Initial camera yaw", yaw, 0f, 360f);
+            pitch = EditorGUILayout.Slider("Initial camera pitch", pitch, 0f, 80f);
+            applyToGame = EditorGUILayout.Toggle("Apply skins to game", applyToGame);
             if (GUILayout.Button("Run Experiment")) RunExperiment();
-            if (GUILayout.Button("Chicken only")) RunOne(SpecChicken());
-            if (GUILayout.Button("Pig only")) RunOne(SpecPig());
-            if (GUILayout.Button("Sheep only")) RunOne(SpecSheep());
+            if (GUILayout.Button("Chicken only")) RunOne("chicken");
+            if (GUILayout.Button("Pig only")) RunOne("pig");
+            if (GUILayout.Button("Sheep only")) RunOne("sheep");
         }
     }
 }
-
-

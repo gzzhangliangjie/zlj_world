@@ -129,6 +129,33 @@ llm-pi-ai:
 - 改任何网格后必须跑 `SelfTest.RunAll`(`m9.skin_uv_nets` 逐矩形越界+像素校验;`m11.skinned_uv_sampling` 读回真实 mesh.uv 对照 MC 网格+旋转约定)全绿才算完成;流程见技能 `unity-batchmode`。
 - 改网格前可离线肉眼预览:用 System.Drawing 按上表把六面从皮肤裁剪→按 rot 旋转→拼 T 型展开图查看(2026-09-13 验证时用过,临时脚本已删,照此思路重写即可)。
 
+### 图像行序/翻转陷阱(多次踩坑总结,2026-09-14 固化)
+
+**翻转类 bug 反复出现,根源是整条管线里同时存在 4 种行序约定,任何一处漏翻就上下颠倒。** 动图像代码前先对照这张表:
+
+| 环节 | 行序约定 |
+|---|---|
+| `Texture2D.GetPixels/SetPixels` | row 0 = **底部**(GL 风格,自下而上) |
+| PNG 文件 / System.Drawing / 读图工具显示 | row 0 = **顶部**(自上而下) |
+| `MobReplicator` 屏幕坐标 `Project()` | **y 向下**(顶部为 0),`Ref.pxTop/bgTop` 已转成自上而下 |
+| `Camera.Render` → `ReadPixels` | 读回**自下而上**,必须翻成自上而下再和参考图对比/合成 |
+
+排查口诀:**看到" anatomically 不可能"(鸡肉髯长喙上方、猪蹄朝天)先怀疑管线行序,再怀疑素材**;用 `System.Drawing.GetPixel` 实测特征色(肉髯红/蹄深色)的 meanY 位置做客观判定,别靠肉眼读缩略图——本次连续三轮把正常参考图误判为翻转,就是缩略拼图看走眼,像素统计和全分辨率单图才是仲裁。
+
+- `MobReplicator` 已内置**自动定向**:对原图和垂直翻转图各拟合一次投影取 IoU 高者(`FlipVertical` + `RunOne` 双拟合),新参考图翻转也自愈;但注意**正立模型 + pitch 钳制(5..80°)本来无法拟合倒立目标**,翻转分支得分低不完全等于图没翻转,最终仲裁仍靠上面的特征色实测。
+- 透明像素在 Unlit 无透明 Shader 下渲染为**黑色**(两次踩到):生成皮肤后强制 `a=1`;参考图 alpha<0.5 的 AA 光晕按背景处理。
+- 对比渲染相机必须与软件投影器**严格等价**(ortho:`orthographicSize = h/(2*projScale)`;透视:`fov = 2*atan(h/(2*focal))`,相机距 `projDist`,中心对 `projCenter`),否则复刻面板取景错乱像"相机插进模型里"。`Renderer.bounds` 取景在批模式是垃圾值,禁用。
+
+### MobReplicator v2(截图复刻工具,2026-09-14 重写)
+
+`Assets/Editor/MobReplicator.cs`,批处理入口 `RunExperiment`(三物种)/`RunAngleProbe`(投影诊断)。**架构原则:模型即游戏模型,杜绝任何约定复制。**
+
+- **几何**:`BlockyAnimal.BuildModel()` 造真实游戏模型(临时 GO,重置根旋转后),从 24 顶点 mesh 直接采集每面世界四边形+UV 角点——画到哪个贴图纹素由 mesh UV 双线性插值给出,McNet/QuadNet/rot/行序全部零重复;
+- **拟合**:几何固定不动,只拟合投影。粗搜 4 象限 yaw×pitch → 坐标下降 → **宽范围 scale/center IoU 下降**(bbox 对齐只做初值!wiki 裁剪图主体贴边被切,主体 bbox=图像边界,直接用必偏)→ yaw/pitch 交替精修;
+- **实测结论**:wiki 渲染 ≈ 正交投影(透视距离 2.5/4/6m 全部更差)、yaw≈133-146、**pitch≈38-43(不是 30)**;参考图是裁剪切边的,fit IoU 天花板 ≈0.87(猪/鸡/羊实测 0.874/0.877/0.874,渲染回读 0.86/0.84/0.71);
+- **画肤**:①逐像素深度预通道(所有朝画面 1px 密度光栅化取 min-depth)→ ②每个纹素先遮挡测试(`depthBuf < d - 0.02m` 则跳过)再采样,治好"鸡腿采到脚部黑影变黑腿";③全局 min-depth staging 解决 4 腿+2 脚共用一个 legNet 的争抢;④零样本盒(肉髯)先盒均值回退、再穿透采样兜底;
+- **应用**:产出直接写 `Assets/Resources/Textures/<species>_skin.png.bytes`(游戏加载路径,`applyToGame` 开关),牛无参考图保持原样;自测闸门不变(`vx ci`,`m9.skin_uv_nets` 对新皮肤照常校验)。
+
 ### 手持道具 3D 模型(m10)
 
 - 工具/食物 = **24×24 图标 alpha 挤出**:front+back 双面 + 透明邻边的侧壁,单 Mesh 单 DrawCall(`ItemModelFactory.BuildFlat`);1 像素=0.02 世界单位,厚 0.04;
