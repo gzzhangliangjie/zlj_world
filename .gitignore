@@ -15,3 +15,6 @@ Thumbs.db
 # ---- Mojang 版权材料:仅本地参考,禁止再分发(EULA) ----
 _vanilla-src/
 _refs/vanilla/
+
+# Unity batch logs (scratch)
+unity-*.log
