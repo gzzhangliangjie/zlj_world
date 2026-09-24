@@ -65,9 +65,15 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
                     break;
                 case "chicken":
-                    body = BoxBuilder.QuadrupedBodyNet(0, 8, 6, 8, 6);
+                    // Vanilla Java ChickenModel: body uv (0,9) 6x8x6 rot90.
+                    // Was (0,8): off-by-one row sampled the head net bottom,
+                    // scrambling the whole torso.
+                    body = BoxBuilder.QuadrupedBodyNet(0, 9, 6, 8, 6);
                     head = BoxBuilder.McNet(0, 0, 4, 6, 3);
-                    leg = BoxBuilder.McNet(26, 0, 2, 5, 2);        // 2 px thin sticks
+                    // Vanilla legs are 3x5x3 boxes at uv(26,0), not 2x5x2
+                    // sticks: the 2px sticks sampled across column
+                    // boundaries and picked up wing/base-white noise.
+                    leg = BoxBuilder.McNet(26, 0, 3, 5, 3);
                     break;
                 default: // pig
                     body = BoxBuilder.QuadrupedBodyNet(28, 8, 10, 16, 8);
@@ -128,24 +134,30 @@ namespace VoxelCraft.Creatures
 
                 if (species == "chicken")
                 {
-                    // 4x3x1 px beak slab on the head front (sheet rect at 14,0).
-                    // Sunk 18mm into the head so the back face is never coplanar
-                    // with the head front face (z-fighting).
+                    // Vanilla beak (bedrock chicken.geo.json): 4x2x2 px box at
+                    // uv (14,0). Sunk 18mm into the head so the back face is
+                    // never coplanar with the head front face (z-fighting).
                     AddSkinnedChild(head, "Beak",
                         new Vector3(0f, -headBox.y * 0.18f, headBox.z * 0.5f + 0.01325f),
-                        new Vector3(0.25f, 0.1875f, 0.0625f), skin, BoxBuilder.McNet(14, 0, 4, 3, 1));
+                        new Vector3(0.25f, 0.125f, 0.125f), skin, BoxBuilder.McNet(14, 0, 4, 2, 2));
+                    // Vanilla red comb: 2x2x2 px box on TOP of the head
+                    // (bedrock uv (14,4); Java ChickenModel CombLayer).
+                    AddSkinnedChild(head, "Comb",
+                        new Vector3(0f, headBox.y * 0.5f + 0.0625f, headBox.z * 0.25f),
+                        new Vector3(0.125f, 0.125f, 0.125f), skin, BoxBuilder.McNet(14, 4, 2, 2, 2));
                     // Vanilla red wattle: 2x2x2 px box hanging below the beak
-                    // (mobs_mc draws the red at sheet ~15,2).
+                    // (sheet red block measured at net (2,5); the old (15,2)
+                    // sampled beak orange + stray pixels - face garbage root cause).
                     AddSkinnedChild(head, "Wattle",
                         new Vector3(0f, -headBox.y * 0.5f - 0.055f, headBox.z * 0.5f - 0.01f),
-                        new Vector3(0.125f, 0.125f, 0.125f), skin, BoxBuilder.McNet(15, 2, 2, 2, 2));
+                        new Vector3(0.125f, 0.125f, 0.125f), skin, BoxBuilder.McNet(2, 5, 2, 2, 2));
                 }
 
                 if (species == "chicken")
                 {
                     // Vanilla 1x4x6 px wings flush against the body sides
-                    // (sheet rect 24,13). Their inward faces are backfaces
-                    // against the body side, so no z-fighting there.
+                    // (bedrock sheet rect 24,13). Their inward faces are
+                    // backfaces against the body side, so no z-fighting there.
                     var wingNet = BoxBuilder.McNet(24, 13, 1, 4, 6);
                     float bodyTop = legH + bodySize.y;
                     for (int s = 0; s < 2; s++)
@@ -159,10 +171,11 @@ namespace VoxelCraft.Creatures
                 }
 
                 // Quadrupeds: 4 hips at the body corners. The chicken is a
-                // biped: 2 legs 1 px (0.0625 m) either side of center.
+                // biped: vanilla legs are 3 px wide, centered x=-3..0 and
+                // 0..3 px (bedrock leg0/leg1), i.e. hips at x=+-1.5 px.
                 bool biped = species == "chicken";
                 Vector2[] hipXZ = biped
-                    ? new[] { new Vector2(-0.0625f, 0f), new Vector2(0.0625f, 0f) }
+                    ? new[] { new Vector2(-0.09375f, 0f), new Vector2(0.09375f, 0f) }
                     : new[]
                     {
                         new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
@@ -202,7 +215,7 @@ namespace VoxelCraft.Creatures
                 var legMat = CreatureTextureFactory.Get(species, "leg");
                 bool bipedF = species == "chicken";
                 Vector2[] hipXZ = bipedF
-                    ? new[] { new Vector2(-0.0625f, 0f), new Vector2(0.0625f, 0f) }
+                    ? new[] { new Vector2(-0.09375f, 0f), new Vector2(0.09375f, 0f) }
                     : new[]
                     {
                         new Vector2(-bodySize.x * 0.32f, -bodySize.z * 0.32f),
@@ -268,10 +281,12 @@ namespace VoxelCraft.Creatures
                     legThick = 0.25f;
                     break;
                 case "chicken":
-                    bodySize = new Vector3(0.375f, 0.375f, 0.5f);  // 6 x 6 x 8 px
-                    legH = 0.3125f;
+                    // Vanilla chicken (bedrock geo): body 6x8x6 rot90 at
+                    // y 4..12 px, legs 3x5x3 at y 0..5, head 4x6x3 at y 9..15.
+                    bodySize = new Vector3(0.375f, 0.5f, 0.375f);  // 6 x 8 x 6 px
+                    legH = 0.3125f;                                 // 5 px legs
                     headBox = new Vector3(0.25f, 0.375f, 0.1875f); // 4 x 6 x 3 px
-                    legThick = 0.125f;                             // 2 px thin sticks
+                    legThick = 0.1875f;                             // 3 px vanilla legs
                     break;
                 default: // pig
                     bodySize = new Vector3(0.625f, 0.5f, 1.0f);    // 10 x 8 x 16 px

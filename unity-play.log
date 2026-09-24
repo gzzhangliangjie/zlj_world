@@ -1,0 +1,33 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-zlj10" at "2026-09-24T19:49:21.7835859Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 21500, path: "C:/Program Files/WindowsApps/UnityTechnologies.UnityHub_3.21.3.65535_x64__2vrhnee42bhxm/app/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              8fcc492f724246bb90d2d7b53f3e2d0a
+  Correlation Id:          061ae41d0b8b80dac791362d815272c2
+  External correlation Id: 5627168981093820529
+  Machine Id:              7gJxhz8ICutasP4quVJ9EJ3nvB4=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-zlj10" (connect: 0.00s, validation: 0.01s, handshake: 0.03s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-zlj10-notifications" at "2026-09-24T19:49:21.8310046Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully updated license
+Built from '2022.3/china_unity/release' branch; Version is '2022.3.57f1c2 (32588f90613b) revision 3299471'; Using compiler version '192829333'; Build Type 'Release'
+OS: 'Windows 11  (10.0.26200) 64bit CoreCountrySpecific' Language: 'zh' Physical Memory: 32371 MB
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Serial number assigned to: "ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX"
+BatchMode: 0, IsHumanControllingUs: 1, StartBugReporterOnCrash: 1, Is64bit: 1, IsPro: 0
+[Licensing::Client] Successfully resolved entitlement details
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\2022.3.57f1\Editor\Unity.exe
+-projectPath
+D:/zlj_world/VoxelCraft
+-executeMethod
+Assets.Editor.BatchPlay
+-logFile
+D:/zlj_world/unity-play.log
+Successfully changed project path to: D:/zlj_world/VoxelCraft
+D:/zlj_world/VoxelCraft
+[WARNING] Ignore caches that are heterogeneous
+Exiting without the bug reporter. Application will terminate with return code 0

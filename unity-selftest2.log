@@ -1,0 +1,1142 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-zlj10" at "2026-09-24T20:13:52.9157209Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 21500, path: "C:/Program Files/WindowsApps/UnityTechnologies.UnityHub_3.21.3.65535_x64__2vrhnee42bhxm/app/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              fe10974b12f947519d8ea73bc6b6a5ae
+  Correlation Id:          061ae41d0b8b80dac791362d815272c2
+  External correlation Id: 4273482030830758053
+  Machine Id:              7gJxhz8ICutasP4quVJ9EJ3nvB4=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-zlj10" (connect: 0.00s, validation: 0.01s, handshake: 0.03s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-zlj10-notifications" at "2026-09-24T20:13:52.9576841Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully updated license
+Built from '2022.3/china_unity/release' branch; Version is '2022.3.57f1c2 (32588f90613b) revision 3299471'; Using compiler version '192829333'; Build Type 'Release'
+OS: 'Windows 11  (10.0.26200) 64bit CoreCountrySpecific' Language: 'zh' Physical Memory: 32371 MB
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Serial number assigned to: "ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX"
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1, IsPro: 0
+[Licensing::Client] Successfully resolved entitlement details
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\2022.3.57f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+D:/zlj_world/VoxelCraft
+-executeMethod
+VoxelCraft.Editor.SelfTest.RunAll
+-logFile
+D:/zlj_world/unity-selftest2.log
+Successfully changed project path to: D:/zlj_world/VoxelCraft
+D:/zlj_world/VoxelCraft
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [14700]  Target information:
+
+Player connection [14700]  * "[IP] 192.168.10.102 [Port] 55504 [Flags] 2 [Guid] 1854422923 [EditorId] 1854422923 [Version] 1048832 [Id] WindowsEditor(7,JJHOME) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [14700] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [14700] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[PhysX] Initialized MultithreadedTaskDispatcher with 8 workers.
+[Package Manager] UpmClient::Connect -- Connected to IPC stream "Upm-9196" after 0.4 seconds.
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 51 packages:
+  Packages from [https://packages.unity.cn]:
+    com.unity.ads@4.4.2 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ads@4.4.2)
+    com.unity.ai.navigation@1.1.5 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ai.navigation@1.1.5)
+    com.unity.analytics@3.8.1 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.analytics@3.8.1)
+    com.unity.collab-proxy@2.6.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.collab-proxy@2.6.0)
+    com.unity.ide.rider@3.0.34 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ide.rider@3.0.34)
+    com.unity.ide.visualstudio@2.0.22 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ide.visualstudio@2.0.22)
+    com.unity.ide.vscode@1.2.5 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ide.vscode@1.2.5)
+    com.unity.purchasing@4.11.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.purchasing@4.11.0)
+    com.unity.test-framework@1.1.33 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.test-framework@1.1.33)
+    com.unity.textmeshpro@3.0.7 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.textmeshpro@3.0.7)
+    com.unity.timeline@1.7.6 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.timeline@1.7.6)
+    com.unity.xr.legacyinputhelpers@2.1.11 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.xr.legacyinputhelpers@2.1.11)
+    com.unity.ext.nunit@1.0.6 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ext.nunit@1.0.6)
+    com.unity.services.core@1.14.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.services.core@1.14.0)
+    com.unity.services.analytics@6.0.2 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.services.analytics@6.0.2)
+    com.unity.nuget.newtonsoft-json@3.2.1 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1)
+  Built-in packages:
+    com.unity.2d.sprite@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.2d.sprite@1.0.0)
+    com.unity.2d.tilemap@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.2d.tilemap@1.0.0)
+    com.unity.ugui@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.ugui@1.0.0)
+    com.unity.modules.ai@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.ai@1.0.0)
+    com.unity.modules.androidjni@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.androidjni@1.0.0)
+    com.unity.modules.animation@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.animation@1.0.0)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.assetbundle@1.0.0)
+    com.unity.modules.audio@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.audio@1.0.0)
+    com.unity.modules.cloth@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.cloth@1.0.0)
+    com.unity.modules.director@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.director@1.0.0)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.imageconversion@1.0.0)
+    com.unity.modules.imgui@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.imgui@1.0.0)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.jsonserialize@1.0.0)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.particlesystem@1.0.0)
+    com.unity.modules.physics@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.physics@1.0.0)
+    com.unity.modules.physics2d@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.physics2d@1.0.0)
+    com.unity.modules.screencapture@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.screencapture@1.0.0)
+    com.unity.modules.terrain@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.terrain@1.0.0)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.terrainphysics@1.0.0)
+    com.unity.modules.tilemap@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.tilemap@1.0.0)
+    com.unity.modules.ui@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.ui@1.0.0)
+    com.unity.modules.uielements@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.uielements@1.0.0)
+    com.unity.modules.umbra@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.umbra@1.0.0)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unityanalytics@1.0.0)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unitywebrequest@1.0.0)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle@1.0.0)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unitywebrequestaudio@1.0.0)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unitywebrequesttexture@1.0.0)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.unitywebrequestwww@1.0.0)
+    com.unity.modules.vehicles@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.vehicles@1.0.0)
+    com.unity.modules.video@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.video@1.0.0)
+    com.unity.modules.vr@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.vr@1.0.0)
+    com.unity.modules.wind@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.wind@1.0.0)
+    com.unity.modules.xr@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.xr@1.0.0)
+    com.unity.modules.subsystems@1.0.0 (location: D:\zlj_world\VoxelCraft\Library\PackageCache\com.unity.modules.subsystems@1.0.0)
+[Subsystems] No new subsystems found in resolved package list.
+Package Manager log level set to [2]
+[Package Manager] Done registering packages in 0.46 seconds
+Refreshing native plugins compatible for Editor in 2921.38 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 2022.3.57f1c2 (32588f90613b)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/2022.3.57f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/zlj_world/VoxelCraft/Assets
+GfxDevice: creating device client; threaded=0; jobified=0
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: Intel(R) Arc(TM) 130V GPU (16GB) (ID=0x64a0)
+    Vendor:   Intel
+    VRAM:     18451 MB
+    Driver:   32.0.101.6987
+[Licensing::Client] Successfully resolved entitlement details
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/2022.3.57f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/2022.3.57f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/2022.3.57f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56196
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/2022.3.57f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.015287 seconds.
+- Loaded All Assemblies, in  0.864 seconds
+Native extension for WindowsStandalone target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.589 seconds
+Domain Reload Profiling: 1450ms
+	BeginReloadAssembly (344ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (73ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (140ms)
+	LoadAllAssembliesAndSetupDomain (284ms)
+		LoadAssemblies (334ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (278ms)
+			TypeCache.Refresh (274ms)
+				TypeCache.ScanAssembly (250ms)
+			ScanForSourceGeneratedMonoScriptInfo (1ms)
+			ResolveRequiredComponents (2ms)
+	FinalizeReload (590ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (500ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (19ms)
+			SetLoadedEditorAssemblies (13ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (4ms)
+			ProcessInitializeOnLoadAttributes (349ms)
+			ProcessInitializeOnLoadMethodAttributes (115ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:80
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\zlj_world\VoxelCraft\
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 78.3752ms
+Starting: C:\Program Files\Unity\2022.3.57f1\Editor\Data\bee_backend.exe --dont-print-to-structured-log --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/zlj_world/VoxelCraft
+DisplayProgressbar: Compiling Scripts
+ExitCode: 4 Duration: 3s574ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
+[619/625    3s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+*** Tundra requires additional run (3.48 seconds), 1 items updated, 618 evaluated
+Starting: C:\Program Files\Unity\2022.3.57f1\Editor\Data\Tools\netcorerun\netcorerun.exe "C:\Program Files\Unity\2022.3.57f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/1900b0aE.dag.json" "Library/Bee/1900b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: D:/zlj_world/VoxelCraft
+ExitCode: 0 Duration: 0s473ms
+Starting: C:\Program Files\Unity\2022.3.57f1\Editor\Data\bee_backend.exe --dont-print-to-structured-log --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: D:/zlj_world/VoxelCraft
+ExitCode: 0 Duration: 0s130ms
+Finished compiling graph: 628 nodes, 8445 flattened edges (7433 ToBuild, 120 ToUse), maximum node priority 496
+[623/625    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[624/625    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (0.10 seconds), 2 items updated, 625 evaluated
+AssetDatabase: script compilation time: 5.333375s
+Total cache size 9741676
+Total cache size after purge 9741676
+Begin MonoManager ReloadAssembly
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in 11.549 seconds
+Refreshing native plugins compatible for Editor in 100.06 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Start importing Assets/Scripts/Creatures/BlockyAnimal.cs using Guid(95f75baeb46212443b9b26c094632751) Importer(-1,00000000000000000000000000000000) [PhysX] Initialized MultithreadedTaskDispatcher with 8 workers.
+ -> (artifact id: '45983e229127b3df868797617e155bae') in 0.080883 seconds
+Refreshing native plugins compatible for Editor in 24.65 ms, found 2 plugins.
+Native extension for WindowsStandalone target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  1.748 seconds
+Domain Reload Profiling: 13293ms
+	BeginReloadAssembly (383ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (11ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (63ms)
+	RebuildCommonClasses (72ms)
+	RebuildNativeTypeToScriptingClass (21ms)
+	initialDomainReloadingComplete (68ms)
+	LoadAllAssembliesAndSetupDomain (10999ms)
+		LoadAssemblies (10801ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (406ms)
+			TypeCache.Refresh (307ms)
+				TypeCache.ScanAssembly (265ms)
+			ScanForSourceGeneratedMonoScriptInfo (88ms)
+			ResolveRequiredComponents (9ms)
+	FinalizeReload (1749ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (1463ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (11ms)
+			SetLoadedEditorAssemblies (6ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (108ms)
+			ProcessInitializeOnLoadAttributes (968ms)
+			ProcessInitializeOnLoadMethodAttributes (348ms)
+			AfterProcessingInitializeOnLoad (21ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (17ms)
+Start importing Assets/Resources/Textures/chicken_skin.png.bytes using Guid(72c6a870b5367ea4aa525d5a340d950f) Importer(-1,00000000000000000000000000000000) [PhysX] Initialized MultithreadedTaskDispatcher with 8 workers.
+ -> (artifact id: 'd6844789ae489b48582a21b2814ba3b3') in 0.016596 seconds
+Refreshing native plugins compatible for Editor in 10.56 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2311fceeb7d0e57428d2ca849828b354): Total: 52.585 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=2 (actual=2, local cache=0, cache server=0)
+		Asset DB Process Time: managed=10 ms, native=33187 ms
+		Asset DB Callback time: managed=102 ms, native=18 ms
+		Scripting: domain reloads=1, domain reload time=13856 ms, compile time=5334 ms, other=75 ms
+		Project Asset Count: scripts=3286, non-scripts=956
+		Asset File Changes: new=0, changed=2, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeBeforeRefreshCallbacks: 1.127ms
+	ApplyChangesToAssetFolders: 0.109ms
+	Scan: 439.392ms
+	OnSourceAssetsModified: 5.078ms
+	GetAllGuidsForCategorization: 0.871ms
+	CategorizeAssets: 130.168ms
+	ImportOutOfDateAssets: 2394.041ms (-3103.236ms without children)
+		ImportManagerImport: 117.898ms (18.495ms without children)
+			ImportInProcess: 98.942ms
+			UpdateCategorizedAssets: 0.461ms
+		CompileScripts: 5333.568ms
+		ReloadNativeAssets: 0.001ms
+		UnloadImportedAssets: 41.025ms
+		ReloadImportedAssets: 0.951ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.604ms
+		InitializingProgressBar: 0.049ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 1.180ms
+	PostProcessAllAssets: 102.402ms
+	Hotreload: 12.606ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.001ms
+	UnloadStreamsBegin: 0.495ms
+	PersistCurrentRevisions: 0.520ms
+	UnloadStreamsEnd: 0.035ms
+	GenerateScriptTypeHashes: 1.791ms
+	Untracked: 49498.346ms
+Application.AssetDatabase Initial Refresh End
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.05 seconds
+Scanning for USB devices : 2.509ms
+Initializing Unity extensions:
+[Licensing::Client] Successfully resolved entitlement details
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-VoxelCraft
+[PhysX] Initialized MultithreadedTaskDispatcher with 8 workers.
+ProgressiveSceneManager::Cancel()
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 77 unused Assets / (492.9 KB). Loaded Objects now: 3048.
+Memory consumption went from 108.2 MB to 107.7 MB.
+Total: 11.273400 ms (FindLiveObjects: 0.346600 ms CreateObjectMapping: 0.176500 ms MarkObjects: 10.282300 ms  DeleteObjects: 0.465000 ms)
+
+SELFTEST PASS m0.skeleton : editor assembly compiles
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:25)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.external_textures : external tiles 24/24, procedural fallback 4
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:31)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.atlas_size : 96x80
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:33)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.icons : icon count 22/22
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:37)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.block_defs : 
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:51)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.atlas_pixels : visible pixels in every tile
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:79)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m1.shaders : blocks=True water=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:88)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m2.determinism : regenerating the same chunk is byte-identical
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:97)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m2.determinism_instance : fresh generator instance is byte-identical
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:102)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m2.trees_present : anchors=108 in 171x171 grid; containing chunk logs=20 leaves=204
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:141)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m2.biome_variety : water=2469 snow=633 desert=229 grass=3087 of 10101 samples
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:159)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m2.height_bounds : minH=24 maxH=67 bounds=[1,68]
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:161)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.streaming_mesh : remeshed 9/9 chunks in one budget step
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:173)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.face_culling : solid 5471==5471, water 1874==1874
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:218)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.ao_variety : 11 distinct shade values
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:228)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.water_surface : water chunk quads=256, lowered vertex=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:268)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.edit_dirty : affected chunks=4
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:275)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m3.unload : unloaded=25, origin chunk removed=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:281)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m5.raycast_axis : hit=(10, 70, 0) place=(9, 70, 0)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:294)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m5.raycast_miss : upward ray hits nothing
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:298)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m5.raycast_water_pass : water passed, hit=(8, 70, 2) place=(7, 70, 2)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:301)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m5.raycast_diagonal : hit=(12, 70, 12) place=(11, 70, 12)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:307)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m5.raycast_reach : block at 13.5m is outside 6m reach
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:310)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7a.audio_library : clips=77, groups=8
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:321)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7b.ores : coal=1338 iron=960 gold=242 diamond=165 gravel=2207 obsidian=51
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:346)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7b.ice : cold water at (48,88) freezes
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:377)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7b.hotbar_pages : pages=2, all slots placeable=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:393)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7c.creature_skins : 12 species-part materials built
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:409)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7c.surface_height : surface 29==29, after placement 34==34
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:424)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7c.animal_model : 12 transforms in cow model
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:433)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m7d.player_model : 13 transforms in player model (inactive included)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:441)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m8.tool_rules : hand=soft+slow-wood, pick=stone-only, sword=not-stone, clock harmless, bedrock immortal
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:453)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m8.inventory : drops (grass->dirt, stone->cobble, leaves->none), consume gating, creative bypass
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:470)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Art.BoxBuilder:Box (UnityEngine.Transform,string,UnityEngine.Vector3,UnityEngine.Vector3,UnityEngine.Material) (at Assets/Scripts/Art/BoxBuilder.cs:16)
+VoxelCraft.Items.DropEntity:Setup (VoxelCraft.Items.DropEntity/Kind,VoxelCraft.Core.BlockType,VoxelCraft.World.WorldRoot,UnityEngine.Transform,UnityEngine.Texture2D) (at Assets/Scripts/Items/ItemDrops.cs:36)
+VoxelCraft.Items.ItemDrops:Spawn (VoxelCraft.Core.BlockType,UnityEngine.Vector3) (at Assets/Scripts/Items/ItemDrops.cs:134)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:477)
+
+[Assets/Editor/SelfTest.cs line 477]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Art.BoxBuilder:Box (UnityEngine.Transform,string,UnityEngine.Vector3,UnityEngine.Vector3,UnityEngine.Material) (at Assets/Scripts/Art/BoxBuilder.cs:16)
+VoxelCraft.Items.DropEntity:Setup (VoxelCraft.Items.DropEntity/Kind,VoxelCraft.Core.BlockType,VoxelCraft.World.WorldRoot,UnityEngine.Transform,UnityEngine.Texture2D) (at Assets/Scripts/Items/ItemDrops.cs:36)
+VoxelCraft.Items.ItemDrops:Spawn (VoxelCraft.Core.BlockType,UnityEngine.Vector3) (at Assets/Scripts/Items/ItemDrops.cs:134)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:478)
+
+[Assets/Editor/SelfTest.cs line 478]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Art.BoxBuilder:Box (UnityEngine.Transform,string,UnityEngine.Vector3,UnityEngine.Vector3,UnityEngine.Material) (at Assets/Scripts/Art/BoxBuilder.cs:16)
+VoxelCraft.Items.DropEntity:Setup (VoxelCraft.Items.DropEntity/Kind,VoxelCraft.Core.BlockType,VoxelCraft.World.WorldRoot,UnityEngine.Transform,UnityEngine.Texture2D) (at Assets/Scripts/Items/ItemDrops.cs:36)
+VoxelCraft.Items.ItemDrops:SpawnMeat (UnityEngine.Vector3,int) (at Assets/Scripts/Items/ItemDrops.cs:149)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:480)
+
+[Assets/Editor/SelfTest.cs line 480]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Art.BoxBuilder:Box (UnityEngine.Transform,string,UnityEngine.Vector3,UnityEngine.Vector3,UnityEngine.Material) (at Assets/Scripts/Art/BoxBuilder.cs:16)
+VoxelCraft.Items.DropEntity:Setup (VoxelCraft.Items.DropEntity/Kind,VoxelCraft.Core.BlockType,VoxelCraft.World.WorldRoot,UnityEngine.Transform,UnityEngine.Texture2D) (at Assets/Scripts/Items/ItemDrops.cs:36)
+VoxelCraft.Items.ItemDrops:SpawnMeat (UnityEngine.Vector3,int) (at Assets/Scripts/Items/ItemDrops.cs:149)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:480)
+
+[Assets/Editor/SelfTest.cs line 480]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Items.ItemDrops:ClearAll () (at Assets/Scripts/Items/ItemDrops.cs:199)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:483)
+
+[Assets/Scripts/Items/ItemDrops.cs line 199]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Items.ItemDrops:ClearAll () (at Assets/Scripts/Items/ItemDrops.cs:199)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:483)
+
+[Assets/Scripts/Items/ItemDrops.cs line 199]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Items.ItemDrops:ClearAll () (at Assets/Scripts/Items/ItemDrops.cs:199)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:483)
+
+[Assets/Scripts/Items/ItemDrops.cs line 199]
+
+Destroy may not be called from edit mode! Use DestroyImmediate instead.
+Destroying an object in edit mode destroys it permanently.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Object:Destroy (UnityEngine.Object)
+VoxelCraft.Items.ItemDrops:ClearAll () (at Assets/Scripts/Items/ItemDrops.cs:199)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:483)
+
+[Assets/Scripts/Items/ItemDrops.cs line 199]
+
+SELFTEST PASS m8.item_drops : spawned=4 (air skipped), cleared=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:485)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m8.surface_trees : raw=72, ignoring trees=28
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:492)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m8b.crops : mature=True immature-seed=True seed-gate=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:506)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m9.skin_sheets : pig=True cow=True sheep=True chicken=True player=True
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:517)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m9.skin_layout : player sheet 64x32, absent skins return null
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:523)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m9.animal_skinned : 13 transforms in pig model
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:532)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m9.player_skinned : 13 transforms in player model (inactive included)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:539)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST FAIL m9.skin_uv_nets : empty or out-of-bounds rect in chicken nets
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:590)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m10.item_models : tool/food/block held models all have meshes
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:638)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m10.held_view : anchors created without refs
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:647)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST PASS m11.skinned_uv_sampling : mesh.uv matches MC net + rotation convention
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:Report (string,bool,string) (at Assets/Editor/SelfTest.cs:805)
+VoxelCraft.Editor.SelfTest:<RunAll>g__Eval|0_1 (string,bool,string,VoxelCraft.Editor.SelfTest/<>c__DisplayClass0_0&) (at Assets/Editor/SelfTest.cs:720)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:711)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 805)
+
+SELFTEST SUMMARY pass=42 fail=1 | unity=2022.3.57f1c2
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:714)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 714)
+
+SELFTEST RESULT: FAIL
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+VoxelCraft.Editor.SelfTest:RunAll () (at Assets/Editor/SelfTest.cs:715)
+
+(Filename: Assets/Editor/SelfTest.cs Line: 715)
+
+Batchmode quit successfully invoked - shutting down!
+[PhysX] Initialized MultithreadedTaskDispatcher with 8 workers.
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-zlj10-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-zlj10 channel disconnected successfully.
+Cleanup mono
+abort_threads: Failed aborting id: 0000000000005DC4, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000005384, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000005DC4, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000005384, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4548
+[Performance] WinEditorMain                                                                                                  :        1 samples, Peak.   436 ms (1.0x), Avg.   436 ms, Total. 436.5 ms (0.7%)
+[Performance] WinEditorMain.ConfigureCrashHandler                                                                            :        1 samples, Peak.  23.3 us (1.0x), Avg.  23.3 us, Total. 23.30 us (0.0%)
+[Performance] WinEditorMain.CurlRequestInitialize                                                                            :        1 samples, Peak.   376 us (1.0x), Avg.   376 us, Total. 376.3 us (0.0%)
+[Performance] WinEditorMain.SetupLogFile                                                                                     :        1 samples, Peak.   143 us (1.0x), Avg.   143 us, Total. 142.8 us (0.0%)
+[Performance] WinEditorMain.RunNativeTestsIfRequiredAndExit                                                                  :        1 samples, Peak.   100 ns (1.0x), Avg.   100 ns, Total. 100.0 ns (0.0%)
+[Performance] WinEditorMain.Licensing                                                                                        :        1 samples, Peak.   418 ms (1.0x), Avg.   418 ms, Total. 417.7 ms (0.7%)
+[Performance] WinEditorMain.InitializeCrashHandler                                                                           :        1 samples, Peak.  15.5 ms (1.0x), Avg.  15.5 ms, Total. 15.47 ms (0.0%)
+[Performance] WinEditorMain.CreateApplication                                                                                :        1 samples, Peak.   105 us (1.0x), Avg.   105 us, Total. 105.1 us (0.0%)
+[Performance] Application.InitializeProject                                                                                  :        1 samples, Peak.  60.0 s (1.0x), Avg.  60.0 s, Total. 60.01 s (94.4%)
+[Performance] Application.PackageManager.StartServer                                                                         :        1 samples, Peak.  7.10 ms (1.0x), Avg.  7.10 ms, Total. 7.098 ms (0.0%)
+[Performance] Application.AcquireProjectLock                                                                                 :        1 samples, Peak.  1.81 ms (1.0x), Avg.  1.81 ms, Total. 1.815 ms (0.0%)
+[Performance] Application.InitializeEngineNoGraphics                                                                         :        1 samples, Peak.  78.0 ms (1.0x), Avg.  78.0 ms, Total. 78.00 ms (0.1%)
+[Performance] Application.PackageManager.Initialize                                                                          :        1 samples, Peak.   380 ms (1.0x), Avg.   380 ms, Total. 380.2 ms (0.6%)
+[Performance] Connecting to Package Manager                                                                                  :       39 samples, Peak.  73.9 us (17.4x), Avg.  4.24 us, Total. 165.2 us (0.0%)
+[Performance] Application.EngineGraphics.Initialize                                                                          :        1 samples, Peak.   367 ms (1.0x), Avg.   367 ms, Total. 366.8 ms (0.6%)
+[Performance] Application.GI.Initialize                                                                                      :        1 samples, Peak.  12.7 ms (1.0x), Avg.  12.7 ms, Total. 12.71 ms (0.0%)
+[Performance] Application.LoadAllDefaultResourcesFromEditor                                                                  :        1 samples, Peak.  3.58 ms (1.0x), Avg.  3.58 ms, Total. 3.579 ms (0.0%)
+[Performance] Application.LoadMonoAssemblies                                                                                 :        1 samples, Peak.  1.53 s (1.0x), Avg.  1.53 s, Total. 1.526 s (2.4%)
+[Performance] RestoreManagedReferences                                                                                       :        2 samples, Peak.   121 ms (2.0x), Avg.  60.5 ms, Total. 121.0 ms (0.2%)
+[Performance] InitializeOnLoad DrivenRectTransformUndo                                                                       :        2 samples, Peak.   970 us (1.2x), Avg.   842 us, Total. 1.683 ms (0.0%)
+[Performance] InitializeOnLoad UnityConnect                                                                                  :        2 samples, Peak.   167 us (1.3x), Avg.   131 us, Total. 261.9 us (0.0%)
+[Performance] InitializeOnLoad NativeFormatImporterUtility                                                                   :        2 samples, Peak.  5.08 ms (1.2x), Avg.  4.26 ms, Total. 8.514 ms (0.0%)
+[Performance] InitializeOnLoad MixerEffectDefinitionReloader                                                                 :        2 samples, Peak.  7.05 ms (1.2x), Avg.  5.79 ms, Total. 11.58 ms (0.0%)
+[Performance] InitializeOnLoad CacheServerWindow                                                                             :        2 samples, Peak.  40.6 us (1.4x), Avg.  28.2 us, Total. 56.50 us (0.0%)
+[Performance] InitializeOnLoad PlayModeDownload                                                                              :        2 samples, Peak.  8.96 ms (1.9x), Avg.  4.71 ms, Total. 9.411 ms (0.0%)
+[Performance] InitializeOnLoad AddComponentWindow                                                                            :        2 samples, Peak.   287 us (1.1x), Avg.   260 us, Total. 519.5 us (0.0%)
+[Performance] InitializeOnLoad ProjectSearch                                                                                 :        2 samples, Peak.   360 us (1.1x), Avg.   314 us, Total. 627.7 us (0.0%)
+[Performance] InitializeOnLoad SettingsService                                                                               :        2 samples, Peak.  20.5 us (1.2x), Avg.  17.4 us, Total. 34.70 us (0.0%)
+[Performance] InitializeOnLoad ManagedDebugger                                                                               :        2 samples, Peak.  1.16 ms (1.1x), Avg.  1.07 ms, Total. 2.140 ms (0.0%)
+[Performance] InitializeOnLoad ObjectSelectorSearch                                                                          :        2 samples, Peak.   827 us (1.2x), Avg.   677 us, Total. 1.354 ms (0.0%)
+[Performance] InitializeOnLoad AssetStoreContext                                                                             :        2 samples, Peak.  94.4 ms (1.1x), Avg.  83.2 ms, Total. 166.4 ms (0.3%)
+[Performance] InitializeOnLoad PrefabInstanceChangedListener                                                                 :        2 samples, Peak.   369 us (1.0x), Avg.   352 us, Total. 704.2 us (0.0%)
+[Performance] InitializeOnLoad WindowLayout                                                                                  :        2 samples, Peak.  1.07 ms (1.1x), Avg.   979 us, Total. 1.958 ms (0.0%)
+[Performance] InitializeOnLoad UISystemProfilerRenderService                                                                 :        2 samples, Peak.  20.4 us (1.2x), Avg.  16.9 us, Total. 33.90 us (0.0%)
+[Performance] InitializeOnLoad SceneSearch                                                                                   :        2 samples, Peak.   117 us (1.2x), Avg.  99.0 us, Total. 198.0 us (0.0%)
+[Performance] InitializeOnLoad EditMode                                                                                      :        2 samples, Peak.  1.25 ms (1.2x), Avg.  1.07 ms, Total. 2.135 ms (0.0%)
+[Performance] InitializeOnLoad CloudBuild                                                                                    :        2 samples, Peak.  15.2 us (1.4x), Avg.  11.2 us, Total. 22.30 us (0.0%)
+[Performance] InitializeOnLoad MenuItems                                                                                     :        2 samples, Peak.   208 us (1.0x), Avg.   204 us, Total. 408.0 us (0.0%)
+[Performance] InitializeOnLoad ShortcutIntegration                                                                           :        2 samples, Peak.  99.3 us (1.0x), Avg.  97.4 us, Total. 194.8 us (0.0%)
+[Performance] InitializeOnLoad ManagedDebuggerWindow                                                                         :        2 samples, Peak.   217 us (1.0x), Avg.   213 us, Total. 425.9 us (0.0%)
+[Performance] InitializeOnLoad SearchService                                                                                 :        2 samples, Peak.   213 us (1.1x), Avg.   191 us, Total. 381.1 us (0.0%)
+[Performance] InitializeOnLoad EditorMonitor                                                                                 :        2 samples, Peak.  1.31 ms (1.2x), Avg.  1.10 ms, Total. 2.203 ms (0.0%)
+[Performance] InitializeOnLoad RetainedMode                                                                                  :        2 samples, Peak.  6.66 ms (1.1x), Avg.  6.13 ms, Total. 12.26 ms (0.0%)
+[Performance] InitializeOnLoad EditorShaderLoader                                                                            :        2 samples, Peak.  2.70 ms (1.1x), Avg.  2.47 ms, Total. 4.940 ms (0.0%)
+[Performance] InitializeOnLoad EditorDelegateRegistration                                                                    :        2 samples, Peak.  1.69 ms (1.3x), Avg.  1.34 ms, Total. 2.670 ms (0.0%)
+[Performance] InitializeOnLoad UIDocumentHierarchyWatcher                                                                    :        2 samples, Peak.   277 us (1.0x), Avg.   268 us, Total. 536.8 us (0.0%)
+[Performance] InitializeOnLoad LiveReloadTrackerCreator                                                                      :        2 samples, Peak.   570 us (1.1x), Avg.   516 us, Total. 1.032 ms (0.0%)
+[Performance] InitializeOnLoad UxmlObjectEditorFactories                                                                     :        2 samples, Peak.  1.13 ms (1.2x), Avg.   937 us, Total. 1.874 ms (0.0%)
+[Performance] InitializeOnLoad UXMLEditorFactories                                                                           :        2 samples, Peak.   182 ms (1.1x), Avg.   168 ms, Total. 336.6 ms (0.5%)
+[Performance] InitializeOnLoad PurchasingService                                                                             :        2 samples, Peak.  20.2 ms (1.0x), Avg.  19.8 ms, Total. 39.62 ms (0.1%)
+[Performance] InitializeOnLoad CloudBuildPoller                                                                              :        2 samples, Peak.   413 us (1.3x), Avg.   327 us, Total. 653.5 us (0.0%)
+[Performance] InitializeOnLoad EditorGameServicesAnalytics                                                                   :        2 samples, Peak.  7.30 ms (1.5x), Avg.  4.86 ms, Total. 9.727 ms (0.0%)
+[Performance] InitializeOnLoad AnalyticsService                                                                              :        2 samples, Peak.   926 us (1.3x), Avg.   734 us, Total. 1.468 ms (0.0%)
+[Performance] InitializeOnLoad BuildService                                                                                  :        2 samples, Peak.   407 us (1.1x), Avg.   379 us, Total. 758.7 us (0.0%)
+[Performance] InitializeOnLoad AdsService                                                                                    :        2 samples, Peak.  1.09 ms (1.0x), Avg.  1.08 ms, Total. 2.169 ms (0.0%)
+[Performance] InitializeOnLoad UDPService                                                                                    :        2 samples, Peak.   371 us (1.1x), Avg.   323 us, Total. 645.5 us (0.0%)
+[Performance] InitializeOnLoad CrashService                                                                                  :        2 samples, Peak.   250 us (1.0x), Avg.   245 us, Total. 489.8 us (0.0%)
+[Performance] InitializeOnLoad ServicesRepository                                                                            :        2 samples, Peak.   800 ns (1.0x), Avg.   800 ns, Total. 1.600 us (0.0%)
+[Performance] InitializeOnLoad SearchWindow                                                                                  :        2 samples, Peak.   272 us (1.1x), Avg.   237 us, Total. 473.0 us (0.0%)
+[Performance] InitializeOnLoad CustomIndexers                                                                                :        2 samples, Peak.  37.7 ms (1.1x), Avg.  35.4 ms, Total. 70.86 ms (0.1%)
+[Performance] InitializeOnLoad SearchMonitor                                                                                 :        2 samples, Peak.  2.01 ms (1.1x), Avg.  1.75 ms, Total. 3.504 ms (0.0%)
+[Performance] InitializeOnLoad ParameterControllerEditor                                                                     :        2 samples, Peak.  32.8 us (1.1x), Avg.  30.8 us, Total. 61.70 us (0.0%)
+[Performance] InitializeOnLoad LayerSettingsWindow                                                                           :        2 samples, Peak.  43.4 us (1.7x), Avg.  25.1 us, Total. 50.20 us (0.0%)
+[Performance] InitializeOnLoad PackageManagerHookGUIDConverter.RegisterPackagesEventHandler                                  :        2 samples, Peak.  1.53 ms (1.7x), Avg.   878 us, Total. 1.755 ms (0.0%)
+[Performance] InitializeOnLoad EditorDragAndDrop.RegisterEditorClient                                                        :        2 samples, Peak.   828 us (1.4x), Avg.   588 us, Total. 1.176 ms (0.0%)
+[Performance] InitializeOnLoad EditorEventCallbacks.InitializeFontAssetResourceChangeCallBacks                               :        2 samples, Peak.  2.97 ms (1.1x), Avg.  2.73 ms, Total. 5.465 ms (0.0%)
+[Performance] InitializeOnLoad SceneTemplateService.Init                                                                     :        2 samples, Peak.  3.69 ms (1.3x), Avg.  2.94 ms, Total. 5.878 ms (0.0%)
+[Performance] InitializeOnLoad DiagnosticSwitchesConsoleMessage.Init                                                         :        2 samples, Peak.  12.6 ms (1.7x), Avg.  7.41 ms, Total. 14.83 ms (0.0%)
+[Performance] InitializeOnLoad SceneVisibilityManager.Initialize                                                             :        2 samples, Peak.  12.1 ms (1.7x), Avg.  7.29 ms, Total. 14.58 ms (0.0%)
+[Performance] InitializeOnLoad PackageManagerWindow.EditorInitializedInSafeMode                                              :        2 samples, Peak.  70.0 ms (2.0x), Avg.  35.2 ms, Total. 70.38 ms (0.1%)
+[Performance] InitializeOnLoad MemoryProfilerCompilationGuard.InjectCompileGuard                                             :        2 samples, Peak.   469 us (1.2x), Avg.   400 us, Total. 799.7 us (0.0%)
+[Performance] InitializeOnLoad SysrootManager.Initialize                                                                     :        2 samples, Peak.  1.45 ms (1.2x), Avg.  1.22 ms, Total. 2.449 ms (0.0%)
+[Performance] InitializeOnLoad ScopedRegistryAddedPopup.SubscribeToRegistriesAdded                                           :        2 samples, Peak.  19.1 ms (2.0x), Avg.  9.66 ms, Total. 19.32 ms (0.0%)
+[Performance] InitializeOnLoad EditorWindow.Initialize                                                                       :        2 samples, Peak.   684 us (1.2x), Avg.   562 us, Total. 1.124 ms (0.0%)
+[Performance] InitializeOnLoad ToolShortcutContext.Init                                                                      :        2 samples, Peak.  2.91 ms (1.8x), Avg.  1.60 ms, Total. 3.198 ms (0.0%)
+[Performance] InitializeOnLoad AssetPostprocessingInternal.RefreshCustomDependencies                                         :        2 samples, Peak.  8.03 ms (1.4x), Avg.  5.73 ms, Total. 11.46 ms (0.0%)
+[Performance] AssemblyReloadEvents.afterAssemblyReload: UnityEditor.SceneTemplate.SceneTemplateService.AfterAssemblyReload   :        2 samples, Peak.  8.89 ms (1.6x), Avg.  5.56 ms, Total. 11.13 ms (0.0%)
+[Performance] ProcessService.EditorAfterLoadAllAssemblies                                                                    :        2 samples, Peak.   621 us (1.1x), Avg.   576 us, Total. 1.153 ms (0.0%)
+[Performance] Application.ReadLicenseInfo                                                                                    :        1 samples, Peak.  20.3 ms (1.0x), Avg.  20.3 ms, Total. 20.30 ms (0.0%)
+[Performance] Application.InitialRefresh                                                                                     :        1 samples, Peak.  52.6 s (1.0x), Avg.  52.6 s, Total. 52.59 s (82.7%)
+[Performance] ShaderImporter.SourceAssetModified                                                                             :        2 samples, Peak.  1.60 us (1.4x), Avg.  1.15 us, Total. 2.300 us (0.0%)
+[Performance] ShaderIncludeImporter.SourceAssetModified                                                                      :        2 samples, Peak.  1.70 us (1.1x), Avg.  1.50 us, Total. 3.000 us (0.0%)
+[Performance] Compiling Scripts                                                                                              :        1 samples, Peak.  5.33 s (1.0x), Avg.  5.33 s, Total. 5.333 s (8.4%)
+[Performance] AssemblyReloadEvents.beforeAssemblyReload: UnityEditor.SceneTemplate.SceneTemplateService.BeforeAssemblyReload :        1 samples, Peak.  2.83 ms (1.0x), Avg.  2.83 ms, Total. 2.828 ms (0.0%)
+[Performance] PresetManagerPostProcessor.OnPreprocessAsset                                                                   :        2 samples, Peak.  4.78 ms (2.0x), Avg.  2.40 ms, Total. 4.797 ms (0.0%)
+[Performance] CancelSplashScreenOnAssetChange.OnPreprocessAsset                                                              :        2 samples, Peak.   424 us (2.0x), Avg.   214 us, Total. 427.1 us (0.0%)
+[Performance] InitializeOnLoad CoreStatsIntegration                                                                          :        1 samples, Peak.   790 us (1.0x), Avg.   790 us, Total. 789.6 us (0.0%)
+[Performance] InitializeOnLoad BackgroundWatcher                                                                             :        1 samples, Peak.   425 us (1.0x), Avg.   425 us, Total. 424.9 us (0.0%)
+[Performance] InitializeOnLoad UnityTestProtocolStarter                                                                      :        1 samples, Peak.  1.29 ms (1.0x), Avg.  1.29 ms, Total. 1.286 ms (0.0%)
+[Performance] InitializeOnLoad TestStarter                                                                                   :        1 samples, Peak.  1.87 ms (1.0x), Avg.  1.87 ms, Total. 1.873 ms (0.0%)
+[Performance] InitializeOnLoad RerunCallbackInitializer                                                                      :        1 samples, Peak.  9.47 ms (1.0x), Avg.  9.47 ms, Total. 9.468 ms (0.0%)
+[Performance] InitializeOnLoad VisualStudioEditor                                                                            :        1 samples, Peak.  30.9 ms (1.0x), Avg.  30.9 ms, Total. 30.92 ms (0.0%)
+[Performance] InitializeOnLoad TestRunnerApiListener                                                                         :        1 samples, Peak.  1.15 ms (1.0x), Avg.  1.15 ms, Total. 1.154 ms (0.0%)
+[Performance] InitializeOnLoad VisualStudioIntegration                                                                       :        1 samples, Peak.  2.33 ms (1.0x), Avg.  2.33 ms, Total. 2.332 ms (0.0%)
+[Performance] InitializeOnLoad PrefabLayoutRebuilder                                                                         :        1 samples, Peak.  1.79 ms (1.0x), Avg.  1.79 ms, Total. 1.794 ms (0.0%)
+[Performance] InitializeOnLoad AnalyticsImporter                                                                             :        1 samples, Peak.  6.97 ms (1.0x), Avg.  6.97 ms, Total. 6.973 ms (0.0%)
+[Performance] InitializeOnLoad AnalyticsEventTrackerEditorCallbacks                                                          :        1 samples, Peak.  1.68 ms (1.0x), Avg.  1.68 ms, Total. 1.684 ms (0.0%)
+[Performance] InitializeOnLoad RiderScriptEditor                                                                             :        1 samples, Peak.  12.7 ms (1.0x), Avg.  12.7 ms, Total. 12.71 ms (0.0%)
+[Performance] InitializeOnLoad CallbackInitializer                                                                           :        1 samples, Peak.  4.54 ms (1.0x), Avg.  4.54 ms, Total. 4.539 ms (0.0%)
+[Performance] InitializeOnLoad SpriteEditorWindow                                                                            :        1 samples, Peak.  1.01 ms (1.0x), Avg.  1.01 ms, Total. 1.010 ms (0.0%)
+[Performance] InitializeOnLoad PlasticPlugin                                                                                 :        1 samples, Peak.   383 ms (1.0x), Avg.   383 ms, Total. 382.9 ms (0.6%)
+[Performance] InitializeOnLoad ToolbarBootstrap                                                                              :        1 samples, Peak.   118 ms (1.0x), Avg.   118 ms, Total. 118.3 ms (0.2%)
+[Performance] InitializeOnLoad PurchasingServiceAnalyticsSender                                                              :        1 samples, Peak.  1.48 ms (1.0x), Avg.  1.48 ms, Total. 1.480 ms (0.0%)
+[Performance] InitializeOnLoad UnityPurchasingEditor                                                                         :        1 samples, Peak.  2.34 ms (1.0x), Avg.  2.34 ms, Total. 2.339 ms (0.0%)
+[Performance] InitializeOnLoad PurchasingImporter                                                                            :        1 samples, Peak.   386 us (1.0x), Avg.   386 us, Total. 386.4 us (0.0%)
+[Performance] InitializeOnLoad NavigationWindow                                                                              :        1 samples, Peak.  1.20 ms (1.0x), Avg.  1.20 ms, Total. 1.201 ms (0.0%)
+[Performance] InitializeOnLoad VSCodeScriptEditor                                                                            :        1 samples, Peak.  5.97 ms (1.0x), Avg.  5.97 ms, Total. 5.971 ms (0.0%)
+[Performance] InitializeOnLoad SceneViewGridManager.Initialize                                                               :        1 samples, Peak.  24.6 ms (1.0x), Avg.  24.6 ms, Total. 24.58 ms (0.0%)
+[Performance] InitializeOnLoad TilemapPrefabStageHelper.Initialize                                                           :        1 samples, Peak.  4.99 ms (1.0x), Avg.  4.99 ms, Total. 4.992 ms (0.0%)
+[Performance] InitializeOnLoad SceneViewOpenTilePaletteHelper.Initialize                                                     :        1 samples, Peak.  2.49 ms (1.0x), Avg.  2.49 ms, Total. 2.489 ms (0.0%)
+[Performance] InitializeOnLoad TileDragAndDropManager.Initialize                                                             :        1 samples, Peak.  2.00 ms (1.0x), Avg.  2.00 ms, Total. 2.005 ms (0.0%)
+[Performance] InitializeOnLoad ObfuscationMigration.MigrateObfuscations                                                      :        1 samples, Peak.   894 us (1.0x), Avg.   894 us, Total. 894.0 us (0.0%)
+[Performance] InitializeOnLoad UnityPurchasingEditor.MigrateBillingMode                                                      :        1 samples, Peak.  2.29 ms (1.0x), Avg.  2.29 ms, Total. 2.287 ms (0.0%)
+[Performance] InitializeOnLoad UnityPurchasingEditor.CheckUdpUpmPackageInstalled                                             :        1 samples, Peak.  2.55 ms (1.0x), Avg.  2.55 ms, Total. 2.545 ms (0.0%)
+[Performance] InitializeOnLoad ProductCatalogEditor.MigrateProductCatalog                                                    :        1 samples, Peak.   224 ms (1.0x), Avg.   224 ms, Total. 223.6 ms (0.4%)
+[Performance] InitializeOnLoad EngineStateHelper.Init                                                                        :        1 samples, Peak.   445 us (1.0x), Avg.   445 us, Total. 444.9 us (0.0%)
+[Performance] InitializeOnLoad ThreadHelper.Init                                                                             :        1 samples, Peak.   728 us (1.0x), Avg.   728 us, Total. 728.0 us (0.0%)
+[Performance] InitializeOnLoad TestJobDataHolder.ResumeRunningJobs                                                           :        1 samples, Peak.  1.61 ms (1.0x), Avg.  1.61 ms, Total. 1.614 ms (0.0%)
+[Performance] InitializeOnLoad AnalyticsReporter.RegisterCallbacks                                                           :        1 samples, Peak.   613 us (1.0x), Avg.   613 us, Total. 612.5 us (0.0%)
+[Performance] InitializeOnLoad VisualStudioEditor.LegacyVisualStudioCodePackageDisabler                                      :        1 samples, Peak.  7.33 ms (1.0x), Avg.  7.33 ms, Total. 7.326 ms (0.0%)
+[Performance] InitializeOnLoad UnityThreadUtils.CaptureUnityThreadInfo                                                       :        1 samples, Peak.   393 us (1.0x), Avg.   393 us, Total. 392.5 us (0.0%)
+[Performance] InitializeOnLoad EditorGameServiceRegistry.RegisterAllServices                                                 :        1 samples, Peak.  25.0 ms (1.0x), Avg.  25.0 ms, Total. 24.96 ms (0.0%)
+[Performance] InitializeOnLoad ServiceInstallationListener.RegisterToEvents                                                  :        1 samples, Peak.  1.93 ms (1.0x), Avg.  1.93 ms, Total. 1.934 ms (0.0%)
+[Performance] InitializeOnLoad ActionSchedulerCleaner.RegisterSchedulerCleaner                                               :        1 samples, Peak.  2.85 ms (1.0x), Avg.  2.85 ms, Total. 2.850 ms (0.0%)
+[Performance] DidReloadScriptsTestRunnerWindow.CompilationCallback                                                           :        1 samples, Peak.   525 us (1.0x), Avg.   525 us, Total. 524.6 us (0.0%)
+[Performance] DidReloadScriptsTestListCache.ScriptReloaded                                                                   :        1 samples, Peak.  2.41 ms (1.0x), Avg.  2.41 ms, Total. 2.406 ms (0.0%)
+[Performance] DidReloadScriptsAdvancedDropdownWindow.OnScriptReload                                                          :        1 samples, Peak.   549 us (1.0x), Avg.   549 us, Total. 549.1 us (0.0%)
+[Performance] AssetDatabase.ImportAssets                                                                                     :        3 samples, Peak.  1.60 us (1.5x), Avg.  1.03 us, Total. 3.100 us (0.0%)
+[Performance] VersionControl.Task.Wait                                                                                       :        1 samples, Peak.  11.8 us (1.0x), Avg.  11.8 us, Total. 11.80 us (0.0%)
+[Performance] TMPro_TexturePostProcessor.OnPostprocessAllAssets                                                              :        2 samples, Peak.  1.09 ms (1.1x), Avg.   950 us, Total. 1.900 ms (0.0%)
+[Performance] AssetPostprocessor.OnPostprocessAllAssets                                                                      :        2 samples, Peak.  1.48 ms (1.0x), Avg.  1.48 ms, Total. 2.953 ms (0.0%)
+[Performance] BuilderAssetPostprocessor.OnPostprocessAllAssets                                                               :        2 samples, Peak.  6.45 ms (1.0x), Avg.  6.45 ms, Total. 12.89 ms (0.0%)
+[Performance] ArtifactBrowserPostProcessor.OnPostprocessAllAssets                                                            :        2 samples, Peak.   917 us (1.0x), Avg.   913 us, Total. 1.826 ms (0.0%)
+[Performance] AssetEvents.OnPostprocessAllAssets                                                                             :        4 samples, Peak.   530 us (1.7x), Avg.   318 us, Total. 1.274 ms (0.0%)
+[Performance] AudioMixerPostprocessor.OnPostprocessAllAssets                                                                 :        2 samples, Peak.   547 us (1.0x), Avg.   545 us, Total. 1.090 ms (0.0%)
+[Performance] StyleCatalogPostProcessor.OnPostprocessAllAssets                                                               :        2 samples, Peak.  49.2 ms (1.0x), Avg.  49.2 ms, Total. 98.33 ms (0.2%)
+[Performance] BuildCatalog                                                                                                   :        1 samples, Peak.  45.9 ms (1.0x), Avg.  45.9 ms, Total. 45.91 ms (0.1%)
+[Performance] ModelImporterPostProcessor.OnPostprocessAllAssets                                                              :        2 samples, Peak.  2.28 ms (1.0x), Avg.  2.27 ms, Total. 4.549 ms (0.0%)
+[Performance] RetainedModeAssetPostprocessor.OnPostprocessAllAssets                                                          :        2 samples, Peak.  5.60 ms (1.0x), Avg.  5.59 ms, Total. 11.19 ms (0.0%)
+[Performance] AssetChangedListener.OnPostprocessAllAssets                                                                    :        2 samples, Peak.  3.48 ms (1.0x), Avg.  3.47 ms, Total. 6.949 ms (0.0%)
+[Performance] SpeedTreePostProcessor.OnPostprocessAllAssets                                                                  :        2 samples, Peak.   348 us (1.0x), Avg.   345 us, Total. 689.0 us (0.0%)
+[Performance] TextAssetPostProcessor.OnPostprocessAllAssets                                                                  :        2 samples, Peak.   776 us (1.0x), Avg.   773 us, Total. 1.547 ms (0.0%)
+[Performance] AssetProcessor.OnPostprocessAllAssets                                                                          :        6 samples, Peak.  2.73 ms (1.6x), Avg.  1.69 ms, Total. 10.16 ms (0.0%)
+[Performance] SpriteEditorTexturePostprocessor.OnPostprocessAllAssets                                                        :        2 samples, Peak.   647 us (1.0x), Avg.   644 us, Total. 1.288 ms (0.0%)
+[Performance] SyncVS.PostprocessSyncProject                                                                                  :        1 samples, Peak.   232 us (1.0x), Avg.   232 us, Total. 232.2 us (0.0%)
+[Performance] Application.ImportPackagesAndSetTemplateWhenCreatingProject                                                    :        1 samples, Peak.  27.3 ms (1.0x), Avg.  27.3 ms, Total. 27.31 ms (0.0%)
+[Performance] Application.SyncCurrentColorSpace                                                                              :        1 samples, Peak.   548 ms (1.0x), Avg.   548 ms, Total. 548.1 ms (0.9%)
+[Performance] Application.OnUsbDevicesChanged                                                                                :        1 samples, Peak.  2.62 ms (1.0x), Avg.  2.62 ms, Total. 2.616 ms (0.0%)
+[Performance] Application.AssetInstanceCacheUpdate                                                                           :        1 samples, Peak.   600 ns (1.0x), Avg.   600 ns, Total. 600.0 ns (0.0%)
+[Performance] Application.UnityExtensions.Initialize                                                                         :        1 samples, Peak.  5.07 ms (1.0x), Avg.  5.07 ms, Total. 5.067 ms (0.0%)
+[Performance] CodeEditorProjectSync.SyncEditorProject                                                                        :        1 samples, Peak.   464 us (1.0x), Avg.   464 us, Total. 464.4 us (0.0%)
+[Performance] Application.ExecuteStartups                                                                                    :        1 samples, Peak.   143 ms (1.0x), Avg.   143 ms, Total. 142.6 ms (0.2%)
+[Performance] Menu.RegisterMenuInterface                                                                                     :       26 samples, Peak.  4.70 us (9.3x), Avg.   504 ns, Total. 13.10 us (0.0%)
+[Performance] Gizmo.RebuildRenderers                                                                                         :        1 samples, Peak.   142 ms (1.0x), Avg.   142 ms, Total. 141.6 ms (0.2%)
+[Performance] Gizmo.AddGizmoRenderers                                                                                        :       88 samples, Peak.  3.21 ms (55.5x), Avg.  57.8 us, Total. 5.087 ms (0.0%)
+[Performance] Application.editorInitializingProject                                                                          :        1 samples, Peak.   288 ms (1.0x), Avg.   288 ms, Total. 288.2 ms (0.5%)
+[Performance] Application.InitializeMenu                                                                                     :        1 samples, Peak.   300 ms (1.0x), Avg.   300 ms, Total. 300.2 ms (0.5%)
+[Performance] Menu.RebuildAll                                                                                                :        1 samples, Peak.   300 ms (1.0x), Avg.   300 ms, Total. 300.1 ms (0.5%)
+[Performance] Menu.BuildRegisteredMenuInterfaces                                                                             :        1 samples, Peak.   291 ms (1.0x), Avg.   291 ms, Total. 290.9 ms (0.5%)
+[Performance] Menu.FilterMenuItem                                                                                            :      623 samples, Peak.   104 ms (619.9x), Avg.   167 us, Total. 104.1 ms (0.2%)
+[Performance] UpdateAllMenus                                                                                                 :        1 samples, Peak.  1.04 ms (1.0x), Avg.  1.04 ms, Total. 1.045 ms (0.0%)
+[Performance] Menu.RebuildOSMainMenu                                                                                         :        2 samples, Peak.  7.72 ms (1.1x), Avg.  6.75 ms, Total. 13.50 ms (0.0%)
+[Performance] EditorSceneManager.sceneClosing: UnityEditor.SceneVisibilityManager.EditorSceneManagerOnSceneClosing           :        1 samples, Peak.   538 us (1.0x), Avg.   538 us, Total. 538.0 us (0.0%)
+[Performance] GUIView.RepaintAll.PlayerLoopController                                                                        :        1 samples, Peak.  2.30 us (1.0x), Avg.  2.30 us, Total. 2.300 us (0.0%)
+[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneTemplate.SceneTemplateService.OnNewSceneCreated           :        1 samples, Peak.   542 us (1.0x), Avg.   542 us, Total. 541.9 us (0.0%)
+[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneVisibilityManager.EditorSceneManagerOnNewSceneCreated     :        1 samples, Peak.   288 us (1.0x), Avg.   288 us, Total. 287.9 us (0.0%)
+[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneManagement.StageNavigationManager.OnNewSceneCreated       :        1 samples, Peak.   131 us (1.0x), Avg.   131 us, Total. 130.8 us (0.0%)
+[Performance] Application.InvokeFinishedLoadingProject                                                                       :        1 samples, Peak.  25.9 ms (1.0x), Avg.  25.9 ms, Total. 25.95 ms (0.0%)
+[Performance] ProcessService.OnProjectLoaded                                                                                 :        1 samples, Peak.  95.8 us (1.0x), Avg.  95.8 us, Total. 95.80 us (0.0%)
+[Performance] SceneDataContainer.TransformHierarchyChangedSetParentCallback                                                  :      153 samples, Peak.  73.9 us (36.2x), Avg.  2.04 us, Total. 312.4 us (0.0%)
+[Performance] SceneVisibilityState.IsFlagSetInParents                                                                        :      339 samples, Peak.  4.60 us (9.8x), Avg.   471 ns, Total. 159.8 us (0.0%)
+[Performance] EditorApplication.quitting: UnityEditor.Tilemaps.SceneViewGridManager.EditorQuitting                           :        1 samples, Peak.   175 us (1.0x), Avg.   175 us, Total. 175.2 us (0.0%)
+[Performance] EditorApplication.quitting: callback in UnityEditor.TextCore.Text.EditorEventCallbacks                         :        1 samples, Peak.  17.2 ms (1.0x), Avg.  17.2 ms, Total. 17.24 ms (0.0%)
+[Performance] Application.Shutdown.PauseProfilerSession                                                                      :        1 samples, Peak.  50.1 us (1.0x), Avg.  50.1 us, Total. 50.10 us (0.0%)
+[Performance] Application.Shutdown.PauseAssetImportWorkers                                                                   :        1 samples, Peak.   506 us (1.0x), Avg.   506 us, Total. 505.6 us (0.0%)
+[Performance] Application.Shutdown.SaveAssets                                                                                :        1 samples, Peak.  26.1 ms (1.0x), Avg.  26.1 ms, Total. 26.14 ms (0.0%)
+[Performance] PaletteAssetModificationProcessor.OnWillSaveAssets                                                             :        1 samples, Peak.  2.59 ms (1.0x), Avg.  2.59 ms, Total. 2.585 ms (0.0%)
+[Performance] AssetModificationProcessor.OnWillSaveAssets                                                                    :        1 samples, Peak.  1.25 ms (1.0x), Avg.  1.25 ms, Total. 1.249 ms (0.0%)
+[Performance] UnityCloudProjectLinkMonitor.OnWillSaveAssets                                                                  :        1 samples, Peak.  2.36 ms (1.0x), Avg.  2.36 ms, Total. 2.357 ms (0.0%)
+[Performance] BuilderAssetModificationProcessor.OnWillSaveAssets                                                             :        1 samples, Peak.   999 us (1.0x), Avg.   999 us, Total. 998.5 us (0.0%)
+[Performance] TerrainModificationProcessor.OnWillSaveAssets                                                                  :        1 samples, Peak.  1.70 ms (1.0x), Avg.  1.70 ms, Total. 1.700 ms (0.0%)
+[Performance] Application.Shutdown.CleanupRenderPipeline                                                                     :        1 samples, Peak.  15.1 us (1.0x), Avg.  15.1 us, Total. 15.10 us (0.0%)
+[Performance] Application.Shutdown.StopPreloadManager                                                                        :        1 samples, Peak.  10.1 ms (1.0x), Avg.  10.1 ms, Total. 10.09 ms (0.0%)
+[Performance] Application.Shutdown.DestroyWorld                                                                              :        1 samples, Peak.  2.21 ms (1.0x), Avg.  2.21 ms, Total. 2.210 ms (0.0%)
+[Performance] Application.Shutdown.CleanupAfterLoad                                                                          :        1 samples, Peak.  10.6 ms (1.0x), Avg.  10.6 ms, Total. 10.60 ms (0.0%)
+[Performance] Application.Shutdown.Progress                                                                                  :        1 samples, Peak.  9.90 us (1.0x), Avg.  9.90 us, Total. 9.900 us (0.0%)
+[Performance] Application.Shutdown.GICleanupManagers                                                                         :        1 samples, Peak.  3.70 ms (1.0x), Avg.  3.70 ms, Total. 3.702 ms (0.0%)
+[Performance] Application.Shutdown.MenuCleanupClass                                                                          :        1 samples, Peak.   381 us (1.0x), Avg.   381 us, Total. 380.9 us (0.0%)
+[Performance] Application.Shutdown.ADBSaveStateBeforeShutdown                                                                :        1 samples, Peak.  19.2 us (1.0x), Avg.  19.2 us, Total. 19.20 us (0.0%)
+[Performance] Application.Shutdown.RemoteShutdown                                                                            :        1 samples, Peak.  1.20 us (1.0x), Avg.  1.20 us, Total. 1.200 us (0.0%)
+[Performance] Application.Shutdown.CleanupVCProvider                                                                         :        1 samples, Peak.  21.7 us (1.0x), Avg.  21.7 us, Total. 21.70 us (0.0%)
+[Performance] Application.Shutdown.InputShutdown                                                                             :        1 samples, Peak.   800 ns (1.0x), Avg.   800 ns, Total. 800.0 ns (0.0%)
+[Performance] Application.Shutdown.GizmoManagerDestroy                                                                       :        1 samples, Peak.  1.55 ms (1.0x), Avg.  1.55 ms, Total. 1.552 ms (0.0%)
+[Performance] Application.Shutdown.ProfilerSession                                                                           :        1 samples, Peak.   523 us (1.0x), Avg.   523 us, Total. 522.5 us (0.0%)
+[Performance] Application.Shutdown.ReleaseGfxWindowOnAllGUIViews                                                             :        1 samples, Peak.   800 ns (1.0x), Avg.   800 ns, Total. 800.0 ns (0.0%)
+[Performance] Application.Shutdown.CleanupEngine                                                                             :        1 samples, Peak.   143 ms (1.0x), Avg.   143 ms, Total. 143.2 ms (0.2%)
+[Performance] Application.Shutdown.CleanupAssetDatabase                                                                      :        1 samples, Peak.  15.1 ms (1.0x), Avg.  15.1 ms, Total. 15.13 ms (0.0%)
+[Performance] Application.Shutdown.ScriptCompilationCleanUp                                                                  :        1 samples, Peak.  63.0 ms (1.0x), Avg.  63.0 ms, Total. 63.01 ms (0.1%)
+[Performance] Application.Shutdown.DestroyJobSystem                                                                          :        1 samples, Peak.   458 us (1.0x), Avg.   458 us, Total. 457.9 us (0.0%)
+[Performance] Application.Shutdown.CleanupPersistentManager                                                                  :        1 samples, Peak.  3.80 ms (1.0x), Avg.  3.80 ms, Total. 3.796 ms (0.0%)
+[Performance] Application.Shutdown.CleanupAsyncReadManager                                                                   :        1 samples, Peak.   695 us (1.0x), Avg.   695 us, Total. 695.5 us (0.0%)
+[Performance] Application.Shutdown.CleanupProgressBar                                                                        :        1 samples, Peak.   500 ns (1.0x), Avg.   500 ns, Total. 500.0 ns (0.0%)
+[Performance] Application.Shutdown.CleanupMono                                                                               :        1 samples, Peak.   138 ms (1.0x), Avg.   138 ms, Total. 138.1 ms (0.2%)
+[Performance] Application.Shutdown.CleanupStdConverters                                                                      :        1 samples, Peak.  14.7 us (1.0x), Avg.  14.7 us, Total. 14.70 us (0.0%)
+[Performance] Application.Shutdown.UnloadAllPlatformSupportModuleNativeDlls                                                  :        1 samples, Peak.  1.20 us (1.0x), Avg.  1.20 us, Total. 1.200 us (0.0%)
+[Performance] Application.Shutdown.UnloadAllPlatformSupportNativeLibraries                                                   :        1 samples, Peak. 100.0 ns (1.0x), Avg. 100.0 ns, Total. 100.00 ns (0.0%)
+[Performance] Application.Shutdown.CleanupAutoDocumentation                                                                  :        1 samples, Peak.   624 us (1.0x), Avg.   624 us, Total. 623.5 us (0.0%)
+[Performance] Application.Shutdown.ShaderNameManagerDestroy                                                                  :        1 samples, Peak.   111 us (1.0x), Avg.   111 us, Total. 111.4 us (0.0%)
+[Performance] Application.Shutdown.CleanupCacheServer                                                                        :        1 samples, Peak.   200 ns (1.0x), Avg.   200 ns, Total. 200.0 ns (0.0%)
+[Performance] Application.Shutdown.Virtualization_Shutdown                                                                   :        1 samples, Peak.  1.10 us (1.0x), Avg.  1.10 us, Total. 1.100 us (0.0%)
+[Performance] Application.Shutdown.DevConnections                                                                            :        1 samples, Peak.   260 us (1.0x), Avg.   260 us, Total. 260.0 us (0.0%)
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0
