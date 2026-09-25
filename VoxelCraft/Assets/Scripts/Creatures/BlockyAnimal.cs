@@ -32,7 +32,8 @@ namespace VoxelCraft.Creatures
         private BedrockAnimationPlayer geoAnimPlayer; // official clips (geo path)
         private float animPhase;
         private float stateTimer;
-        private bool walking = true;
+        [Tooltip("Roaming state; verification harness forces this true/false.")]
+        public bool walking = true;
         private float targetYaw;
         private float smoothY;
         private readonly Collider[] overlapBuffer = new Collider[8];
@@ -129,10 +130,12 @@ namespace VoxelCraft.Creatures
             // where Mojang put them. Falls back to the hand-built nets below
             // when no geo file exists for this species.
             var geoAsset = Resources.Load<TextAsset>("Geo/" + species + ".geo");
-            // Fox geo rest pose is a vertical pillar (the game pitches it in
-            // animations); tip it into the standing pose at import.
+            // Fox geo texture is 64x32 declared but padded skin shifts UVs and
+            // the 45-deg pillar pose needs per-bone handling the generic
+            // importer lacks - fox uses the hand-built (verified) path below.
+            bool foxHandbuilt = species == "fox";
             float geoPitch = species == "fox" ? 45f : 0f;
-            if (skin != null && geoAsset != null &&
+            if (!foxHandbuilt && skin != null && geoAsset != null &&
                 BedrockGeoImporter.Build(bodyRoot, geoAsset, null, skin, geoPitch,
                     out var geoLegs, out var geoTail, out var geoHead, out var geoWings))
             {
@@ -153,8 +156,12 @@ namespace VoxelCraft.Creatures
                 }
                 animPlayer.LoadClips();
                 animPlayer.Bind(bodyRoot);
+                // Goat gait variables come from the ENTITY layer
+                // (goat.entity.json pre_animation), not the animation file.
+                if (species == "goat") { animPlayer.goatGait = true; animPlayer.walkSpeedRef = walkSpeed; }
                 // Base gaits: quadruped.walk (distance-driven) or chicken.move.
                 string walkClip = species == "chicken" ? "animation.chicken.move"
+                    : species == "goat" ? "animation.goat.walk"
                     : "animation.quadruped.walk";
                 animPlayer.Play(walkClip);
                 // Chicken wings flap while moving (official general clip).
@@ -232,7 +239,9 @@ namespace VoxelCraft.Creatures
                     var fb = new GameObject("FoxBody").transform;
                     fb.SetParent(bodyRoot, false);
                     fb.localPosition = new Vector3(0f, 0.5f, 0f);      // bedrock pivot (0,8,0)
-                    fb.localRotation = Quaternion.Euler(-8f, 0f, 0f); // standing: pillar near-upright, shoulder slightly low
+                    // Java FoxModel: body.xRot = PI/4 (45 deg) - the geo rest
+                    // pose is a vertical pillar, tipped nose-down when standing
+                    fb.localRotation = Quaternion.Euler(-45f, 0f, 0f);
                     torso = fb;
                     bodyCenter = new Vector3(0f, -0.15625f, 0f);      // cube centre rel. pivot
                 }
@@ -651,6 +660,14 @@ namespace VoxelCraft.Creatures
             // runs for hand-built fallback models.
             if (geoAnimPlayer != null)
             {
+                // Locomotion drives the gait clock; idle animals ease back to
+                // the rest pose instead of freezing mid-swing.
+                geoAnimPlayer.moving = walking && move > 0f;
+                geoAnimPlayer.walkSpeedRef = walkSpeed;
+                geoAnimPlayer.gaitWeight = Mathf.Lerp(
+                    geoAnimPlayer.gaitWeight,
+                    geoAnimPlayer.moving ? 1f : 0f,
+                    Time.deltaTime * 4f);
                 // Feed the wing-flap variable the legacy flap value so the
                 // official chicken.general clip can use it.
                 if (wings[0] != null)
@@ -661,7 +678,16 @@ namespace VoxelCraft.Creatures
                 return;
             }
             animPhase += Time.deltaTime * (4f + move * 3f);
-            float swing = walking && move > 0f ? Mathf.Sin(animPhase) * 0.55f : 0f;
+            ApplyLegacyGait(move);
+        }
+
+        /// <summary>Hand-built fallback gait (fox and other non-geo species).
+        /// Public + time-parameterised so the batch verification harness can
+        /// drive it without MonoBehaviour.Update (editor batch mode never
+        /// runs Update; the gait then froze and evaded testing).</summary>
+        public void ApplyLegacyGait(float move, float dt, float phase)
+        {
+            float swing = walking && move > 0f ? Mathf.Sin(phase) * 0.55f : 0f;
             for (int i = 0; i < 4; i++)
             {
                 if (legs[i] == null) continue; // bipeds only fill slots 0..1
@@ -670,15 +696,15 @@ namespace VoxelCraft.Creatures
             }
             if (head != null)
             {
-                head.localRotation = Quaternion.Euler(Mathf.Sin(animPhase * 0.4f) * 4f, 0f, 0f);
+                head.localRotation = Quaternion.Euler(Mathf.Sin(phase * 0.4f) * 4f, 0f, 0f);
             }
             // Chicken wings: flap outward about the top hinge (vanilla idle
             // spreads ~20 deg; while walking they beat at the anim phase).
             if (wings[0] != null)
             {
                 float flap = walking && move > 0f
-                    ? 0.25f + 0.45f * Mathf.Abs(Mathf.Sin(animPhase * 1.5f))
-                    : 0.25f + 0.06f * Mathf.Sin(animPhase * 0.7f);
+                    ? 0.25f + 0.45f * Mathf.Abs(Mathf.Sin(phase * 1.5f))
+                    : 0.25f + 0.06f * Mathf.Sin(phase * 0.7f);
                 wings[0].localRotation = Quaternion.Euler(0f, 0f, -flap * 57.3f); // left wing out
                 wings[1].localRotation = Quaternion.Euler(0f, 0f, flap * 57.3f);  // right wing out
             }
@@ -686,8 +712,10 @@ namespace VoxelCraft.Creatures
             if (tail != null)
             {
                 tail.localRotation = tailBaseRot * Quaternion.Euler(
-                    -10f + Mathf.Sin(animPhase * 1.2f) * 12f, 0f, 0f);
+                    -10f + Mathf.Sin(phase * 1.2f) * 12f, 0f, 0f);
             }
         }
+
+        private void ApplyLegacyGait(float move) => ApplyLegacyGait(move, Time.deltaTime, animPhase);
     }
 }

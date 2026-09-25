@@ -203,6 +203,11 @@ namespace VoxelCraft.Creatures
                     if (geo.TryGetValue("texturewidth", out object tw)) texW = (int)(double)tw;
                     if (geo.TryGetValue("textureheight", out object th)) texH = (int)(double)th;
                     if (geo.TryGetValue("bones", out object bl)) bones = (List<object>)bl;
+                    // Multi-geometry files (sheep: sheared 64x32 + fleeced
+                    // 64x64): pick the variant matching the skin's aspect.
+                    if (!string.IsNullOrEmpty(geometryId) &&
+                        skin.mainTexture != null && skin.mainTexture.height != texH)
+                        continue; // keep scanning for the matching variant
                     break;
                 }
             }

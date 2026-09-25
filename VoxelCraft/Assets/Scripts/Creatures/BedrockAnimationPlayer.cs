@@ -65,9 +65,24 @@ namespace VoxelCraft.Creatures
         private Vector3 prevPos;
         private bool hasPrevPos;
         private float distanceMoved;
+        /// <summary>Tick() integrates distance while this is true (batch tests
+        /// and snapshots don't run Update, so Tick owns the clock).</summary>
+        public bool moving = true;
 
         /// <summary>Set externally (e.g. by look-at AI) in degrees.</summary>
         public float headYawDeg;
+
+        /// <summary>Goat: compute tcos gait vars from the entity-layer
+        /// pre_animation script (goat.entity.json) each tick.</summary>
+        public bool goatGait;
+
+        /// <summary>Locomotion speed (m/s) feeding gait variable math.</summary>
+        public float walkSpeedRef = 1.4f;
+
+        /// <summary>0 = rest pose, 1 = full gait. Set by the AI each frame;
+        /// idle animals return their legs to the rest pose instead of
+        /// freezing mid-swing (vanilla lerps limbSwing the same way).</summary>
+        public float gaitWeight = 1f;
 
         public void LoadClips()
         {
@@ -230,22 +245,45 @@ namespace VoxelCraft.Creatures
 
         private void Update()
         {
+            // distanceMoved is owned by Tick() (batch verification can't run
+            // Update); Update only feeds real transform motion in play mode.
             Vector3 pos = transform.position;
-            if (hasPrevPos) distanceMoved += Vector3.Distance(pos, prevPos);
-            prevPos = pos; hasPrevPos = true;
             Tick();
         }
 
         /// <summary>Advance clocks and apply poses (exposed for tests).</summary>
-        public void Tick()
+        public void Tick() { Tick(Time.deltaTime > 0f ? Time.deltaTime : 1f / 60f); }
+
+        /// <summary>Batch verification drives time manually: Time.deltaTime
+        /// is ZERO in editor batch mode (no frames), so dt must be passed in
+        /// there or the gait clock never advances.</summary>
+        public void Tick(float dt)
         {
-            float dt = Time.deltaTime;
+            // Advance the locomotion clock inside Tick (NOT Update): batch
+            // verification and editor snapshots never run MonoBehaviour
+            // Update, and the gait froze at cos(0) in the last regression.
+            if (moving) distanceMoved += walkSpeedRef * dt;
+            if (goatGait)
+            {
+                // goat.entity.json pre_animation (gliding_speed_value ~ 0.6):
+                // tcos_right_side = cos(dist * 38.17) * move_speed / 0.6 * 57.3
+                float speed = Mathf.Clamp01(walkSpeedRef);
+                float tcos = Mathf.Cos(distanceMoved * 38.17f * 0.25f) *
+                             (speed / 0.6f) * 57.3f;
+                variables["tcos_right_side"] = tcos;
+                variables["tcos_left_side"] = -tcos;
+            }
             for (int i = playing.Count - 1; i >= 0; i--)
             {
                 var p = playing[i];
                 var c = p.clip;
                 float maxT = c.length > 0f ? c.length : MaxTrackTime(c);
-                if (c.timeFromDistance) p.time = distanceMoved;
+                if (c.timeFromDistance)
+                    // Bedrock distance is in blocks with a gait period of
+                    // ~0.66 m per full swing; our distanceMoved is metres at
+                    // game scale, so scale to keep the vanilla step cadence
+                    // (raw 38.17 rad/m is ~8 Hz at 1.4 m/s - comically fast).
+                    p.time = distanceMoved * 0.25f;
                 else p.time += dt;
                 if (maxT > 0f && p.time > maxT)
                 {
@@ -267,6 +305,7 @@ namespace VoxelCraft.Creatures
 
         private void Sample(Clip c, float time)
         {
+            float w = Mathf.Clamp01(gaitWeight);
             foreach (var tr in c.tracks)
             {
                 if (!boneIndex.TryGetValue(tr.bone, out var bone)) continue;
@@ -278,7 +317,23 @@ namespace VoxelCraft.Creatures
                                         : kf.post;
                 }
                 else v = SampleKeyframes(tr, time);
+                if (w < 1f)
+                {
+                    // Blend toward the captured rest pose as gaitWeight -> 0
+                    Vector3 rest = RestValue(bone, tr.channel);
+                    v = Vector3.Lerp(rest, v, w);
+                }
                 Apply(bone, tr.channel, v);
+            }
+        }
+
+        private Vector3 RestValue(Transform bone, string channel)
+        {
+            switch (channel)
+            {
+                case "rotation": return bone.localRotation.eulerAngles;
+                case "position": return bone.localPosition;
+                default: return Vector3.zero;
             }
         }
 
