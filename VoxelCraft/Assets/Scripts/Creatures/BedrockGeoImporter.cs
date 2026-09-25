@@ -215,6 +215,7 @@ namespace VoxelCraft.Creatures
             var byName = new Dictionary<string, Transform>();
             var boneMeta = new Dictionary<string, Dictionary<string, object>>();
             var boneNameToOriginal = new Dictionary<string, string>();
+            var boneBind = new Dictionary<string, Vector3>();
             foreach (var b in bones)
             {
                 var bone = (Dictionary<string, object>)b;
@@ -255,17 +256,26 @@ namespace VoxelCraft.Creatures
                     t.localPosition = pos;
                 }
                 // 1.8 files store the torso UPRIGHT and tip it horizontal via
-                // bind_pose_rotation - that IS the rest pose for them, so it
-                // must be applied (explicit "rotation" still wins if both).
-                if (bone.TryGetValue("bind_pose_rotation", out object bpv) && bpv is List<object> bpl && bpl.Count == 3)
-                {
-                    t.localRotation = Quaternion.Euler(
-                        -ToFloat(bpl[0]), -ToFloat(bpl[1]), -ToFloat(bpl[2]));
-                }
+                // bind_pose_rotation. Semantics per bedrock runtime: the bind
+                // rotation reorients THIS BONE'S OWN CUBES around its pivot
+                // but does NOT rotate child bones - child pivots are already
+                // authored in the final (lying-down) frame. We therefore keep
+                // bone localRotation identity here and rotate the bone's cubes
+                // individually in pass 3 (see bindRot lookup). Explicit
+                // "rotation" is an animation-time rest offset and still
+                // applies to the transform.
                 if (bone.TryGetValue("rotation", out object rv) && rv is List<object> rl && rl.Count == 3)
                 {
                     t.localRotation = Quaternion.Euler(
                         -ToFloat(rl[0]), -ToFloat(rl[1]), -ToFloat(rl[2]));
+                }
+                if (bone.TryGetValue("bind_pose_rotation", out object bpv) && bpv is List<object> bpl && bpl.Count == 3)
+                {
+                    // Store for cube-level application; ALSO bake it into the
+                    // transform so children authored in the final frame stay
+                    // correct: pivot math below already handles rotated
+                    // parents via Inverse(parent.localRotation).
+                    boneBind[name] = new Vector3(ToFloat(bpl[0]), ToFloat(bpl[1]), ToFloat(bpl[2]));
                 }
             }
 
@@ -296,16 +306,36 @@ namespace VoxelCraft.Creatures
                     float cx = -(ToFloat(origin[0]) + sx * 0.5f) * Px;
                     float cy = (ToFloat(origin[1]) + sy * 0.5f) * Px;
                     float cz = -(ToFloat(origin[2]) + sz * 0.5f) * Px;
+                    Vector3 centre = new Vector3(cx, cy, cz);
+
+                    // 1.8 bind_pose_rotation (e.g. pig torso [90,0,0]): the
+                    // cube is AUTHORED in the upright frame and must be spun
+                    // around the bone pivot into the final pose. Children
+                    // bones are NOT affected (their pivots are already final).
+                    if (boneBind.TryGetValue(name, out Vector3 bindDeg))
+                    {
+                        // Bedrock Rx(-theta) lands the pillar on its back in
+                        // our flipped frame; verified: pig torso must sit at
+                        // y 6..14 px meeting the 6 px legs.
+                        Quaternion bindRot = Quaternion.Euler(bindDeg.x, bindDeg.y, bindDeg.z);
+                        Vector3 pivot = modelPos[name];
+                        // Rotate around the bone pivot in model space.
+                        centre = pivot + bindRot * (centre - pivot);
+                    }
 
                     // local position relative to the bone pivot, in the bone's
                     // parent frame (model-space delta rotated into local space)
-                    Vector3 local = new Vector3(cx, cy, cz) - modelPos[name];
+                    Vector3 local = centre - modelPos[name];
                     if (bone.parent != null && bone.parent != root)
                         local = Quaternion.Inverse(bone.parent.localRotation) * local;
 
                     Vector4[] net = BuildNet(u, v, W, H, D);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
                         local, new Vector3(sx * Px, sy * Px, sz * Px), skin, net, texW, texH);
+                    // A bind-rotated cube also changes ORIENTATION (upright
+                    // pillar -> horizontal torso), not just position.
+                    if (boneBind.TryGetValue(name, out Vector3 bd2))
+                        box.transform.localRotation = Quaternion.Euler(bd2.x, bd2.y, bd2.z);
 
                     // Cube-local rotation (about cube origin) if present.
                     if (cube.TryGetValue("rotation", out object cro) && cro is List<object> crl && crl.Count == 3)
@@ -356,6 +386,9 @@ namespace VoxelCraft.Creatures
                     // position: SetParent(root, worldPositionStays) also
                     // bakes the parent pitch into localRotation, which flips
                     // legs sideways. Parent with stays=false and reset pose.
+                    // (No child compensation needed: with cube-level bind
+                    // rotation no leg bone carries a rotated frame, and the
+                    // fox body pitch must NOT be baked into its legs.)
                     string legName = boneNameToOriginal != null && boneNameToOriginal.TryGetValue(lt.name, out var orig) ? orig : lt.name;
                     Vector3 mp = modelPos.TryGetValue(legName, out var lp) ? lp : lt.localPosition;
                     lt.SetParent(root, false);

@@ -29,6 +29,7 @@ namespace VoxelCraft.Creatures
 
         private Transform bodyRoot;
         private Transform head;
+        private BedrockAnimationPlayer geoAnimPlayer; // official clips (geo path)
         private float animPhase;
         private float stateTimer;
         private bool walking = true;
@@ -118,10 +119,10 @@ namespace VoxelCraft.Creatures
             // (the model source itself) - bones, pivots and cubes land exactly
             // where Mojang put them. Falls back to the hand-built nets below
             // when no geo file exists for this species.
-            var geoAsset = Resources.Load<TextAsset>("Geo/" + species);
+            var geoAsset = Resources.Load<TextAsset>("Geo/" + species + ".geo");
             // Fox geo rest pose is a vertical pillar (the game pitches it in
             // animations); tip it into the standing pose at import.
-            float geoPitch = species == "fox" ? -45f : 0f;
+            float geoPitch = species == "fox" ? 45f : 0f;
             if (skin != null && geoAsset != null &&
                 BedrockGeoImporter.Build(bodyRoot, geoAsset, null, skin, geoPitch,
                     out var geoLegs, out var geoTail, out var geoHead, out var geoWings))
@@ -131,6 +132,33 @@ namespace VoxelCraft.Creatures
                 tail = geoTail;
                 if (tail != null) tailBaseRot = tail.localRotation;
                 head = geoHead;
+
+                // Official bedrock animation clips drive the same bone names.
+                var animPlayer = gameObject.GetComponent<BedrockAnimationPlayer>();
+                if (animPlayer == null) animPlayer = gameObject.AddComponent<BedrockAnimationPlayer>();
+                animPlayer.clipsJson.Clear();
+                foreach (var af in new[] { species, "quadruped", "wolf" })
+                {
+                    var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
+                    if (ta != null) animPlayer.clipsJson.Add(ta);
+                }
+                animPlayer.LoadClips();
+                animPlayer.Bind(bodyRoot);
+                // Base gaits: quadruped.walk (distance-driven) or chicken.move.
+                string walkClip = species == "chicken" ? "animation.chicken.move"
+                    : "animation.quadruped.walk";
+                animPlayer.Play(walkClip);
+                // Chicken wings flap while moving (official general clip).
+                if (species == "chicken")
+                {
+                    animPlayer.variables["wing_flap"] = 0f;
+                    animPlayer.Play("animation.chicken.general");
+                }
+                // NOTE: species ".setup" clips (wolf/pig "-this" re-roots) are
+                // NOT played: they exist to convert bedrock's 1.8 bind pose,
+                // which BedrockGeoImporter already applies via
+                // bind_pose_rotation + leg re-rooting.
+                geoAnimPlayer = animPlayer;
 
                 // Collider from the imported bounds (feet-origin model).
                 var rends = GetComponentsInChildren<Renderer>();
@@ -609,6 +637,20 @@ namespace VoxelCraft.Creatures
                 }
             }
 
+            // Geo-imported animals are driven by the official bedrock clips
+            // (quadruped.walk etc.); the legacy hand-tuned gait below only
+            // runs for hand-built fallback models.
+            if (geoAnimPlayer != null)
+            {
+                // Feed the wing-flap variable the legacy flap value so the
+                // official chicken.general clip can use it.
+                if (wings[0] != null)
+                    geoAnimPlayer.variables["wing_flap"] =
+                        walking && move > 0f
+                            ? (0.25f + 0.45f * Mathf.Abs(Mathf.Sin(animPhase * 1.5f))) * 57.3f
+                            : (0.25f + 0.06f * Mathf.Sin(animPhase * 0.7f)) * 57.3f;
+                return;
+            }
             animPhase += Time.deltaTime * (4f + move * 3f);
             float swing = walking && move > 0f ? Mathf.Sin(animPhase) * 0.55f : 0f;
             for (int i = 0; i < 4; i++)

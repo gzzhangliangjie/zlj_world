@@ -536,7 +536,7 @@ namespace VoxelCraft.Editor
             bool geoOk = true; string geoBad = "";
             foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
             {
-                var asset = Resources.Load<TextAsset>("Geo/" + sp);
+                var asset = Resources.Load<TextAsset>("Geo/" + sp + ".geo");
                 if (asset == null) continue;
                 var go = new GameObject("GeoTest_" + sp);
                 var ani = go.AddComponent<Creatures.BlockyAnimal>();
@@ -547,6 +547,32 @@ namespace VoxelCraft.Editor
                 UnityEngine.Object.DestroyImmediate(go);
             }
             Eval("m10.geo_import", geoOk, geoBad.Length > 0 ? geoBad : "all geo species build");
+
+            // Official bedrock animation clips load and the Molang walk
+            // formula evaluates (cos walk = 80deg at t=0).
+            bool animOk = true; string animBad = "";
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
+            {
+                var apgo = new GameObject("AnimTest_" + sp);
+                var ap = apgo.AddComponent<Creatures.BedrockAnimationPlayer>();
+                foreach (var af in new[] { sp, "quadruped", "wolf" })
+                {
+                    var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
+                    if (ta != null) ap.clipsJson.Add(ta);
+                }
+                ap.LoadClips();
+                if (!ap.clips.ContainsKey("animation.quadruped.walk") && sp != "chicken")
+                { animOk = false; animBad = sp + ": no quadruped.walk clip"; }
+                bool walked = ap.Play("animation.quadruped.walk");
+                if (sp != "chicken" && !walked) { animOk = false; animBad = sp + ": Play(walk) failed"; }
+                UnityEngine.Object.DestroyImmediate(apgo);
+                if (!animOk) break;
+            }
+            float molangV = Creatures.BedrockAnimationPlayer.Molang.Eval(
+                "math.cos(0 * 38.17) * 80.0",
+                new Creatures.BedrockAnimationPlayer.Molang.Ctx { animTime = 0f });
+            if (Mathf.Abs(molangV - 80f) > 0.01f) { animOk = false; animBad = "molang cos = " + molangV; }
+            Eval("m11.bedrock_anims", animOk, animBad.Length > 0 ? animBad : "clips load + walk plays + molang ok");
 
             var skinnedRigGo = new GameObject("SkinRigTest");
             var skinnedRig = skinnedRigGo.AddComponent<Player.ThirdPersonRig>();
