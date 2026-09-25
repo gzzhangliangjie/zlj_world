@@ -16,7 +16,7 @@ namespace VoxelCraft.Creatures
         public float spawnMaxDistance = 42f;
         public float despawnDistance = 70f;
 
-        private static readonly string[] Species = { "pig", "cow", "sheep", "chicken" };
+        private static readonly string[] Species = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" };
         private readonly List<BlockyAnimal> animals = new List<BlockyAnimal>();
         private float scanTimer;
 

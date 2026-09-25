@@ -395,7 +395,7 @@ namespace VoxelCraft.Editor
 
             // ----- M7C: creature skins, models, surface query -----
             bool creatureMats = true;
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
             {
                 foreach (string part in new[] { "body", "face", "leg" })
                 {
@@ -531,6 +531,23 @@ namespace VoxelCraft.Editor
             UnityEngine.Object.DestroyImmediate(skinnedPigGo);
             Eval("m9.animal_skinned", skinnedPigParts >= 11, $"{skinnedPigParts} transforms in pig model");
 
+            // Geo importer: every species with a Geo/<species>.geo.json asset
+            // must build a non-trivial tree (>= 6 bones/cubes) with all legs.
+            bool geoOk = true; string geoBad = "";
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
+            {
+                var asset = Resources.Load<TextAsset>("Geo/" + sp);
+                if (asset == null) continue;
+                var go = new GameObject("GeoTest_" + sp);
+                var ani = go.AddComponent<Creatures.BlockyAnimal>();
+                ani.species = sp;
+                ani.BuildModel();
+                int parts = go.GetComponentsInChildren<Transform>(true).Length;
+                if (parts < 8) { geoOk = false; geoBad = $"{sp}: only {parts} transforms"; }
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+            Eval("m10.geo_import", geoOk, geoBad.Length > 0 ? geoBad : "all geo species build");
+
             var skinnedRigGo = new GameObject("SkinRigTest");
             var skinnedRig = skinnedRigGo.AddComponent<Player.ThirdPersonRig>();
             skinnedRig.BuildModel();
@@ -543,7 +560,7 @@ namespace VoxelCraft.Editor
             // regressions like mismatched MC-rotated torso nets).
             bool uvOk = true;
             string uvBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
             {
                 var spSkin = CreatureTextureFactory.GetSkinMaterial(sp + "_skin");
                 var spTex = spSkin != null ? spSkin.mainTexture as Texture2D : null;
