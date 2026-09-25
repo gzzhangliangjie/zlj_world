@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using VoxelCraft.Creatures;
 
 namespace VoxelCraft.Editor
 {
@@ -348,13 +349,11 @@ namespace VoxelCraft.Editor
             // eyes (bedrock goat paints them on the head SIDES).
             Vector4 rect = Vector4.zero;
             bool sideEyes = false; // goat override rect spans L+front+R and mirrors internally
-            // pixel-verified overrides (png coords, unity v-flipped):
-            // fox front (7,14,8,6); chicken front (0,3,8,6) holds eyes at
-            // (3,4),(6,4); goat front strip (36,56,21,6) mirrors internally
-            // (eyes on head sides land inside this wide rect).
-            if (sp == "fox") rect = new Vector4(7, 32 - 11 - 6, 8, 6); // fitted front (7,11,8,6)
-            else if (sp == "chicken") rect = new Vector4(0, 32 - 3 - 6, 8, 6);
-            else if (sp == "goat") rect = new Vector4(36, 64 - 56 - 6, 21, 6);
+            // Pixel-verified overrides live in the data registry
+            // (Resources/Registry/creatures.json faceOverrides, png coords);
+            // everything else computes the rect from the geo JSON itself.
+            int[] ovr = CreatureRegistry.FaceOverride(sp);
+            if (ovr != null) rect = new Vector4(ovr[0], ovr[1], ovr[2], ovr[3]);
             else if (!HeadFaceRectFromGeo(sp, out rect))
             {
                 Add("face", sp, true, "no geo head rect (skipped)", 0, 0, 1);

@@ -1,0 +1,99 @@
+{
+    "//": "Data-driven creature registry. Drop Geo/<sp>.geo + Textures/<sp>_skin.png + Anims/<sp>.animation.json + an entry here = new species, no code changes.",
+    "species": {
+        "chicken": {
+            "walkClip": "animation.chicken.move",
+            "extraClips": [
+                "animation.chicken.general"
+            ],
+            "extraVariables": {
+                "wing_flap": 0
+            },
+            "biped": true,
+            "behaviours": []
+        },
+        "cow": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": []
+        },
+        "fox": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": [
+                {
+                    "clip": "animation.fox.sit",
+                    "absolute": false,
+                    "minT": 6,
+                    "maxT": 12
+                },
+                {
+                    "clip": "animation.fox.sleep",
+                    "absolute": false,
+                    "minT": 8,
+                    "maxT": 16
+                }
+            ]
+        },
+        "goat": {
+            "walkClip": "animation.goat.walk",
+            "gait": "goat",
+            "behaviours": []
+        },
+        "mooshroom": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": []
+        },
+        "pig": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": []
+        },
+        "sheep": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": [
+                {
+                    "clip": "animation.sheep.grazing.v2",
+                    "absolute": false,
+                    "minT": 4,
+                    "maxT": 9
+                }
+            ]
+        },
+        "wolf": {
+            "walkClip": "animation.quadruped.walk",
+            "behaviours": [
+                {
+                    "clip": "animation.wolf.sitting",
+                    "absolute": true,
+                    "minT": 6,
+                    "maxT": 14
+                },
+                {
+                    "clip": "animation.wolf.shaking",
+                    "absolute": true,
+                    "minT": 2.5,
+                    "maxT": 4
+                }
+            ]
+        }
+    },
+    "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
+    "faceOverrides": {
+        "fox": [
+            7,
+            15,
+            8,
+            6
+        ],
+        "chicken": [
+            0,
+            23,
+            8,
+            6
+        ],
+        "goat": [
+            36,
+            2,
+            21,
+            6
+        ]
+    }
+}

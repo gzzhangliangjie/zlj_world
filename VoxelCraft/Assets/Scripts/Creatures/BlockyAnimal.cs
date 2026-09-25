@@ -168,20 +168,24 @@ namespace VoxelCraft.Creatures
                 }
                 animPlayer.LoadClips();
                 animPlayer.Bind(bodyRoot);
-                // Goat gait variables come from the ENTITY layer
-                // (goat.entity.json pre_animation), not the animation file.
-                if (species == "goat") { animPlayer.goatGait = true; animPlayer.walkSpeedRef = walkSpeed; }
-                // Base gaits: quadruped.walk (distance-driven) or chicken.move.
-                string walkClip = species == "chicken" ? "animation.chicken.move"
-                    : species == "goat" ? "animation.goat.walk"
-                    : "animation.quadruped.walk";
-                animPlayer.Play(walkClip);
-                // Chicken wings flap while moving (official general clip).
-                if (species == "chicken")
+                // Species config (walk clip, gait, extra clips/variables)
+                // comes from the data registry - no per-species code.
+                var reg = CreatureRegistry.Get(species);
+                string walkClip = reg != null ? reg.walkClip : "animation.quadruped.walk";
+                if (reg != null && reg.gait == "goat")
                 {
-                    animPlayer.variables["wing_flap"] = 0f;
-                    animPlayer.Play("animation.chicken.general");
+                    // Goat gait variables come from the ENTITY layer
+                    // (goat.entity.json pre_animation), not the animation file.
+                    animPlayer.goatGait = true;
+                    animPlayer.walkSpeedRef = walkSpeed;
                 }
+                animPlayer.Play(walkClip);
+                if (reg != null && reg.extraVariables != null)
+                    foreach (var ekv in reg.extraVariables)
+                        animPlayer.variables[ekv.Key] = ekv.Value;
+                if (reg != null && reg.extraClips != null)
+                    foreach (var extra in reg.extraClips)
+                        animPlayer.Play(extra);
                 // NOTE: species ".setup" clips (wolf/pig "-this" re-roots) are
                 // NOT played: they exist to convert bedrock's 1.8 bind pose,
                 // which BedrockGeoImporter already applies via

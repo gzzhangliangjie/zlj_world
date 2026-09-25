@@ -30,28 +30,25 @@ namespace VoxelCraft.Creatures
         private float stateTimer;
         private float behaviourCooldown;
 
-        // Species behaviour tables. Clips are official bedrock-samples names;
-        // BehaviourBrain only picks WHICH clip, never invents poses.
-        private static readonly Dictionary<string, BehDef[]> table =
-            new Dictionary<string, BehDef[]>
+        // Species behaviour tables come from the data registry
+        // (Resources/Registry/creatures.json) - clips are official bedrock
+        // names; BehaviourBrain only picks WHICH clip, never invents poses.
+        private static Dictionary<string, BehDef[]> table;
+        private static Dictionary<string, BehDef[]> BuildTable()
+        {
+            var t = new Dictionary<string, BehDef[]>();
+            string[] known = { "wolf", "sheep", "fox", "chicken", "cow", "goat", "mooshroom", "pig" };
+            foreach (var sp in known)
             {
-                ["wolf"] = new[]
-                {
-                    new BehDef { clip = "animation.wolf.sitting", absolute = true, minT = 6f, maxT = 14f },
-                    new BehDef { clip = "animation.wolf.shaking", absolute = true, minT = 2.5f, maxT = 4f },
-                },
-                ["sheep"] = new[]
-                {
-                    // grazing.v2: head dips 9px + 36deg down, 2s loop - an
-                    // offset clip (head y position -9, plain values).
-                    new BehDef { clip = "animation.sheep.grazing.v2", absolute = false, minT = 4f, maxT = 9f },
-                },
-                ["fox"] = new[]
-                {
-                    new BehDef { clip = "animation.fox.sit", absolute = false, minT = 6f, maxT = 12f },
-                    new BehDef { clip = "animation.fox.sleep", absolute = false, minT = 8f, maxT = 16f },
-                },
-            };
+                var reg = CreatureRegistry.Get(sp);
+                if (reg == null || reg.behaviours == null || reg.behaviours.Count == 0) continue;
+                var list = new List<BehDef>();
+                foreach (var b in reg.behaviours)
+                    list.Add(new BehDef { clip = b.clip, absolute = b.absolute, minT = b.minT, maxT = b.maxT });
+                t[sp] = list.ToArray();
+            }
+            return t;
+        }
 
         private void Update()
         {
@@ -79,6 +76,7 @@ namespace VoxelCraft.Creatures
                 player = GetComponent<BedrockAnimationPlayer>();
                 if (player == null) return;
             }
+            if (table == null) table = BuildTable();
             if (!table.TryGetValue(ani.species, out var behs)) return;
 
             stateTimer -= dt;
