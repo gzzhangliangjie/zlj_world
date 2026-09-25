@@ -395,7 +395,7 @@ namespace VoxelCraft.Editor
 
             // ----- M7C: creature skins, models, surface query -----
             bool creatureMats = true;
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
             {
                 foreach (string part in new[] { "body", "face", "leg" })
                 {
@@ -551,7 +551,7 @@ namespace VoxelCraft.Editor
             // Official bedrock animation clips load and the Molang walk
             // formula evaluates (cos walk = 80deg at t=0).
             bool animOk = true; string animBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
             {
                 var apgo = new GameObject("AnimTest_" + sp);
                 var ap = apgo.AddComponent<Creatures.BedrockAnimationPlayer>();
@@ -586,7 +586,7 @@ namespace VoxelCraft.Editor
             // regressions like mismatched MC-rotated torso nets).
             bool uvOk = true;
             string uvBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
             {
                 var spSkin = CreatureTextureFactory.GetSkinMaterial(sp + "_skin");
                 var spTex = spSkin != null ? spSkin.mainTexture as Texture2D : null;

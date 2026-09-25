@@ -24,8 +24,8 @@ namespace VoxelCraft.Editor
             Shader.SetGlobalColor("_VoxelFogColor", new Color(0.68f, 0.80f, 0.92f));
 
             var root = new GameObject("Models");
-            string[] species = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom" };
-            float[] xs = { 0f, 1.7f, 3.4f, 4.6f, -1.8f, -3.6f, 8.1f };
+            string[] species = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" };
+            float[] xs = { 0f, 1.7f, 3.4f, 4.6f, -1.8f, -3.6f, 8.1f, -5.4f };
             for (int i = 0; i < species.Length; i++)
             {
                 var go = new GameObject(species[i]);
@@ -74,6 +74,7 @@ namespace VoxelCraft.Editor
             CloseUp(camGo, cam, -1.8f, 0.9f, "wolf");
             CloseUp(camGo, cam, -3.6f, 0.7f, "fox");
             CloseUp(camGo, cam, 8.1f, 1.3f, "mooshroom");
+            CloseUp(camGo, cam, -5.4f, 1.1f, "goat");
             // Player sanity: the rig hides the model in first person by design
             // (SetActive(false)); force it visible for the snapshot only.
             foreach (var t in playerGo.GetComponentsInChildren<Transform>(true)) t.gameObject.SetActive(true);

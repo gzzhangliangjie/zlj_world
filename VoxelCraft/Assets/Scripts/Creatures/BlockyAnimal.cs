@@ -92,6 +92,15 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 8, 6, 6);
                     leg = BoxBuilder.McNet(14, 24, 2, 6, 2);
                     break;
+                case "goat":
+                    // Vanilla goat (bedrock geo, 64x64 sheet): neck+chest
+                    // 9x11x16 uv(1,1), rump 11x14x11 uv(0,28), head
+                    // 5x7x10 uv(34,46), horns 2x7x2 uv(12,55), legs
+                    // 3x10x3 front uv(35,2), 3x6x3 back uv(36,29)/(49,29).
+                    body = BoxBuilder.McNet(1, 1, 9, 11, 16);
+                    head = BoxBuilder.McNet(34, 46, 5, 7, 10);
+                    leg = BoxBuilder.McNet(35, 2, 3, 10, 3);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
