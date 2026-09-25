@@ -181,6 +181,9 @@ namespace VoxelCraft.Creatures
                 // which BedrockGeoImporter already applies via
                 // bind_pose_rotation + leg re-rooting.
                 geoAnimPlayer = animPlayer;
+                // Ambient behaviours (wolf sit/shake, sheep graze, fox sit/sleep)
+                if (gameObject.GetComponent<BehaviourBrain>() == null)
+                    gameObject.AddComponent<BehaviourBrain>();
 
                 // Collider from the imported bounds (feet-origin model).
                 var rends = GetComponentsInChildren<Renderer>();
@@ -485,7 +488,34 @@ namespace VoxelCraft.Creatures
             smoothY = transform.position.y;
             targetYaw = Random.Range(0f, 360f);
             transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+        
+        // Shared tail of both build paths: ambient behaviours. The geo path
+        // already attached a player above; the hand-built path (fox) gets a
+        // fresh one with the species' own official clips loaded so the
+        // behaviour brain can play sit/sleep/graze.
+        {
+            // Hand-built species (fox) share the geo pipeline's animation
+            // stack: official species clips + quadruped locomotion, so the
+            // behaviour brain can play sit/sleep and the gait uses the
+            // official quadruped.walk clip.
+            var playerX = gameObject.GetComponent<BedrockAnimationPlayer>();
+            if (playerX == null)
+            {
+                playerX = gameObject.AddComponent<BedrockAnimationPlayer>();
+                foreach (var af in new[] { species, "quadruped" })
+                {
+                    var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
+                    if (ta != null) playerX.clipsJson.Add(ta);
+                }
+                playerX.LoadClips();
+                playerX.Bind(bodyRoot);
+                playerX.Play("animation.quadruped.walk");
+                geoAnimPlayer = playerX;
+            }
+            if (gameObject.GetComponent<BehaviourBrain>() == null)
+                gameObject.AddComponent<BehaviourBrain>();
         }
+}
 
         /// <summary>
         /// SkinnedBox child that stays <paramref name="size"/> in world space:

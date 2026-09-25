@@ -49,6 +49,7 @@ namespace VoxelCraft.Creatures
         {
             internal Clip clip;
             internal float time;
+            internal bool absolute; // setup/sitting-style: values are targets
         }
 
         // ---------------- public API ----------------
@@ -84,6 +85,54 @@ namespace VoxelCraft.Creatures
         /// freezing mid-swing (vanilla lerps limbSwing the same way).</summary>
         public float gaitWeight = 1f;
 
+        // Per-bone constant offsets contributed by the species ".setup" clip.
+        // Our bind pose already bakes the setup result in (geo pivots/bpr), so
+        // absolute clips ("x - this") must SUBTRACT these to get their delta.
+        private readonly Dictionary<string, Vector3> setupPos =
+            new Dictionary<string, Vector3>();
+
+        private static float SetupConst(object v)
+        {
+            if (v is double d) return (float)d;
+            if (v is long l) return l;
+            if (v is string str)
+            {
+                str = str.Trim();
+                if (float.TryParse(str, out var f)) return f;
+                if (str == "-this" || str == "this") return 0f;
+                // "X - this" / "X-this": the constant part
+                if (str.EndsWith("- this") || str.EndsWith("-this"))
+                {
+                    var head = str.Substring(0, str.LastIndexOf('-')).Trim();
+                    if (float.TryParse(head, out var h)) return h;
+                }
+            }
+            return 0f; // complex expressions: assume 0
+        }
+
+        private void IndexSetupClips()
+        {
+            setupPos.Clear();
+            foreach (var kv in clips)
+            {
+                if (!kv.Key.Contains(".setup")) continue;
+                foreach (var tr in kv.Value.tracks)
+                {
+                    if (tr.channel != "position" || tr.frames.Count == 0) continue;
+                    var kf = tr.frames[0];
+                    Vector3 v = kf.post;
+                    if (kf.expr != null)
+                    {
+                        // "-14 - this" style: per-component constant part
+                        for (int i = 0; i < 3; i++)
+                            if (kf.expr[i] != null) v[i] = SetupConst(kf.expr[i]);
+                    }
+                    string key = tr.bone.ToLowerInvariant();
+                    if (!setupPos.ContainsKey(key)) setupPos[key] = v;
+                }
+            }
+        }
+
         public void LoadClips()
         {
             clips.Clear();
@@ -92,6 +141,7 @@ namespace VoxelCraft.Creatures
                 if (ta == null) continue;
                 ParseFile(ta.text);
             }
+            IndexSetupClips();
         }
 
         public void Bind(Transform modelRoot)
@@ -103,12 +153,27 @@ namespace VoxelCraft.Creatures
         }
 
         /// <summary>Start a clip; no-op if it is already playing.</summary>
+        public int ClipCount => clips.Count;
+
         public bool Play(string clipName)
         {
+            return Play(clipName, false);
+        }
+
+        /// <summary>Play a pose-style clip (setup/sitting): channel values
+        /// are ABSOLUTE targets (bedrock "x - this" convention), applied
+        /// directly instead of as offsets from the bind pose. Exclusive per
+        /// clip; blends in over blendTime so the transition is not a snap.</summary>
+        public bool Play(string clipName, bool absolute)
+        {
             if (!clips.TryGetValue(clipName, out var clip)) return false;
+            // stop any other absolute clip (pose states are mutually exclusive)
+            for (int i = playing.Count - 1; i >= 0; i--)
+                if (playing[i].absolute && playing[i].clip != clip)
+                    Stop(playing[i].clip.name);
             for (int i = 0; i < playing.Count; i++)
                 if (playing[i].clip == clip) return true;
-            playing.Add(new Playing { clip = clip, time = 0f });
+            playing.Add(new Playing { clip = clip, time = 0f, absolute = absolute });
             return true;
         }
 
@@ -232,6 +297,12 @@ namespace VoxelCraft.Creatures
         }
 
         // ---------------- runtime ----------------
+        // Hand-built models use legacy bone names (Hip0..3, Head); official
+        // bedrock clips address bedrock names (leg0..3, head, body). Alias
+        // them at bind time so the same clips drive both build paths.
+        private static readonly string[] AliasPairs =
+            { "Hip0", "leg0", "Hip1", "leg1", "Hip2", "leg2", "Hip3", "leg3" };
+
         private void IndexRec(Transform t)
         {
             if (!boneIndex.ContainsKey(t.name))
@@ -239,6 +310,10 @@ namespace VoxelCraft.Creatures
                 boneIndex[t.name] = t;
                 restPos[t] = t.localPosition;
                 restRot[t] = t.localRotation;
+                // legacy-name -> bedrock-name alias (first occurrence wins)
+                for (int i = 0; i < AliasPairs.Length; i += 2)
+                    if (t.name == AliasPairs[i] && !boneIndex.ContainsKey(AliasPairs[i + 1]))
+                        boneIndex[AliasPairs[i + 1]] = t;
             }
             foreach (Transform c in t) IndexRec(c);
         }
@@ -288,9 +363,10 @@ namespace VoxelCraft.Creatures
                 if (maxT > 0f && p.time > maxT)
                 {
                     if (c.loop) p.time = p.time % maxT;
-                    else { playing.RemoveAt(i); continue; }
+                    else if (!p.absolute) { playing.RemoveAt(i); continue; }
+                    else p.time = maxT; // hold final pose
                 }
-                Sample(c, p.time);
+                Sample(c, p.time, p.absolute);
             }
         }
 
@@ -303,12 +379,20 @@ namespace VoxelCraft.Creatures
             return m;
         }
 
-        private void Sample(Clip c, float time)
+        private void Sample(Clip c, float time, bool absolute = false)
         {
-            float w = Mathf.Clamp01(gaitWeight);
+            float w = absolute ? 1f : Mathf.Clamp01(gaitWeight);
             foreach (var tr in c.tracks)
             {
-                if (!boneIndex.TryGetValue(tr.bone, out var bone)) continue;
+                if (!boneIndex.TryGetValue(tr.bone, out var bone))
+                {
+                    // Bedrock clip bone names are lowercase ("upperbody") but
+                    // geo bone names keep camelCase ("upperBody"): fall back
+                    // to a case-insensitive match so official clips bind.
+                    foreach (var kv in boneIndex)
+                        if (string.Compare(kv.Key, tr.bone, true) == 0) { bone = kv.Value; break; }
+                    if (bone == null) continue;
+                }
                 Vector3 v;
                 if (tr.frames.Count == 1)
                 {
@@ -317,7 +401,7 @@ namespace VoxelCraft.Creatures
                                         : kf.post;
                 }
                 else v = SampleKeyframes(tr, time);
-                if (w < 1f)
+                if (!absolute && w < 1f)
                 {
                     // Blend toward the BIND pose captured at Bind() time - a
                     // fixed target. Blending toward the bone's CURRENT value
@@ -326,7 +410,7 @@ namespace VoxelCraft.Creatures
                     Vector3 rest = RestValue(bone, tr.channel);
                     v = Vector3.Lerp(rest, v, w);
                 }
-                Apply(bone, tr.channel, v);
+                Apply(bone, tr.channel, v, absolute);
             }
         }
 
@@ -393,17 +477,55 @@ namespace VoxelCraft.Creatures
             return delta.eulerAngles[comp] > 180f ? delta.eulerAngles[comp] - 360f : delta.eulerAngles[comp];
         }
 
-        private void Apply(Transform bone, string channel, Vector3 v)
+        private void Apply(Transform bone, string channel, Vector3 v, bool absolute = false)
         {
             switch (channel)
             {
                 case "rotation":
-                    Quaternion rest = restRot.TryGetValue(bone, out var r) ? r : bone.localRotation;
-                    bone.localRotation = rest * Quaternion.Euler(-v.x, -v.y, -v.z);
+                    if (absolute)
+                    {
+                        // Bedrock "x - this" yields the FINAL bedrock angle;
+                        // our bind pose already baked the geo bind_pose_rotation
+                        // in (rest = Euler(-bpr)). Convert: Unity local =
+                        // rest * Euler(-(v_final - bindAngle)) where bindAngle
+                        // is the bedrock angle baked into rest.
+                        Quaternion rest = restRot.TryGetValue(bone, out var rr) ? rr : bone.localRotation;
+                        Vector3 re = rest.eulerAngles;
+                        Vector3 bindBedrock = new Vector3(
+                            re.x > 180f ? re.x - 360f : re.x,
+                            -(re.y > 180f ? re.y - 360f : re.y),
+                            -(re.z > 180f ? re.z - 360f : re.z));
+                        // importer convention: rest = Euler(-bprX, +bprY?, ...) —
+                        // verify: pig torso bpr [90,0,0] -> rest Euler(-90,0,0),
+                        // so bedrock angle = -restEuler per axis (y/z negated
+                        // for bedrock->unity axis flip).
+                        Vector3 target = v - bindBedrock;
+                        bone.localRotation = rest * Quaternion.Euler(-target.x, -target.y, -target.z);
+                    }
+                    else
+                    {
+                        Quaternion rest = restRot.TryGetValue(bone, out var r) ? r : bone.localRotation;
+                        bone.localRotation = rest * Quaternion.Euler(-v.x, -v.y, -v.z);
+                    }
                     break;
                 case "position":
-                    Vector3 rp = restPos.TryGetValue(bone, out var p) ? p : bone.localPosition;
-                    bone.localPosition = rp + new Vector3(-v.x, v.y, -v.z) * (1f / 16f);
+                    if (absolute)
+                    {
+                        // Bedrock absolute position = FINAL bedrock-space pivot
+                        // position (px). Our bind pose already baked the setup
+                        // clip's result in, so apply only the DELTA from the
+                        // setup constants (sitting "-18 - this" vs setup
+                        // "-14 - this" => delta -4 px).
+                        Vector3 sp = setupPos.TryGetValue(bone.name.ToLowerInvariant(), out var sv) ? sv : Vector3.zero;
+                        Vector3 delta = v - sp;
+                        Vector3 rp = restPos.TryGetValue(bone, out var p2) ? p2 : bone.localPosition;
+                        bone.localPosition = rp + new Vector3(-delta.x, delta.y, -delta.z) * (1f / 16f);
+                    }
+                    else
+                    {
+                        Vector3 rp = restPos.TryGetValue(bone, out var p) ? p : bone.localPosition;
+                        bone.localPosition = rp + new Vector3(-v.x, v.y, -v.z) * (1f / 16f);
+                    }
                     break;
                 // "scale" intentionally unsupported (boxes are unit-scaled)
             }
@@ -556,6 +678,8 @@ namespace VoxelCraft.Creatures
                         case "query.head_yaw": return ctx.headYaw;
                         case "query.life_time": return ctx.animTime;
                         case "this": return ctx.thisVal;
+                        case "query.is_baby": return 0f; // no baby variants
+                        case "query.key_frame_lerp_time": return 0f; // lerp phase; grazing head wiggle approximated as constant
                         case "true": return 1f;
                         case "false": return 0f;
                     }
