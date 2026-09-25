@@ -50,6 +50,11 @@ Shader "Voxel/UnlitTexture"
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 c = tex2D(_MainTex, i.uv);
+                // Minecraft behaviour: fully transparent texels are simply
+                // not drawn (alpha test) - they must never render as black
+                // (goat rump art ships with deliberate holes; batch snapshot
+                // shaders without this painted them black).
+                clip(c.a - 0.5);
                 c.rgb *= _VoxelDayBrightness;          // creatures dim at night too
                 c.rgb = lerp(c.rgb, _VoxelFogColor.rgb, i.fog);
                 return fixed4(c.rgb, 1.0);

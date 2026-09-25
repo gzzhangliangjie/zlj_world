@@ -58,6 +58,7 @@ namespace VoxelCraft.Editor
                 // Reset the model first: BuildModel() captures the bind pose.
                 ani.BuildModel();
                 go.transform.rotation = Quaternion.identity;
+                VerifyStructure(sp, go);
                 VerifyPose(sp, go);
                 VerifyFace(sp, go);
 
@@ -153,6 +154,134 @@ namespace VoxelCraft.Editor
 
         static bool RegexName(string s, string pattern) =>
             System.Text.RegularExpressions.Regex.IsMatch(s, pattern);
+
+        // ---- goal: structure matches vanilla geo truth ----
+        /// Batch-mode renderer.bounds can return unit-cube garbage before a
+        /// render pass; build the AABB from mesh vertices instead.
+        static Bounds VertexAabb(Renderer r)
+        {
+            var mf = r.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null) return r.bounds;
+            var verts = mf.sharedMesh.vertices;
+            var lm = r.transform.localToWorldMatrix;
+            var b = new Bounds();
+            for (int i = 0; i < verts.Length; i++)
+            {
+                var w = lm.MultiplyPoint3x4(verts[i]);
+                if (i == 0) b = new Bounds(w, Vector3.zero);
+                else b.Encapsulate(w);
+            }
+            return b;
+        }
+
+        // Two checks per species:
+        //  A) head/body seam: the head cube's rear face must reach INTO the
+        //     body (or mane) volume - a floating head is the classic "did not
+        //     diff against the reference" bug (wolf 4px gap, 2026-09-25).
+        //  B) sampled-opaque: every opaque-model face rect (mesh UV) must
+        //     sample >=95% opaque texels - transparent texels render BLACK
+        //     under the unlit shader (sheep legs, fox body padding).
+        static void VerifyStructure(string sp, GameObject go)
+        {
+            var head = go.GetComponentsInChildren<Transform>()
+                .FirstOrDefault(t => t.name.ToLowerInvariant() == "head");
+            if (head == null) { Add("struct.head_seam", sp, false, "no Head transform", 0, 0, 1); return; }
+
+            // Head world AABB. Geo path hangs meshes under CubePivot children,
+            // hand-built path puts the renderer on the Head node itself:
+            // search the head subtree either way.
+            var headRends = head.GetComponentsInChildren<Renderer>();
+            if (headRends.Length == 0)
+            { Add("struct.head_seam", sp, false, "no renderer under head", 0, 0, 1); return; }
+            var headRend = headRends[0]; // texture source (kept)
+            var bodyRends = go.GetComponentsInChildren<Renderer>()
+                .Where(r => r.name.ToLowerInvariant() != "head" &&
+                            !r.name.ToLowerInvariant().StartsWith("snout") &&
+                            !r.name.ToLowerInvariant().StartsWith("ear") &&
+                            !r.name.ToLowerInvariant().StartsWith("beak") &&
+                            !r.name.ToLowerInvariant().StartsWith("comb") &&
+                            !r.name.ToLowerInvariant().StartsWith("wattle") &&
+                            !r.name.ToLowerInvariant().StartsWith("nose") &&
+                            !r.name.ToLowerInvariant().StartsWith("horn") &&
+                            !r.name.ToLowerInvariant().StartsWith("tail") &&
+                            // legs must NOT count as the head's anchor: front
+                            // legs reaching the head rear masked the wolf's
+                            // 4px gap (fake "0mm connected" green).
+                            !RegexName(r.name, @"""^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|cube_2x8x2)$"""))
+                .ToList();
+            if (bodyRends.Count == 0)
+            { Add("struct.head_seam", sp, false, "no body renderers", 0, 0, 1); return; }
+
+            // Head AABB = union over the whole head subtree (head + snout +
+            // ears + comb): robust to geo-path mesh-per-cube ordering.
+            Vector3 hMin = Vector3.positiveInfinity, hMax = Vector3.negativeInfinity;
+            foreach (var hr in headRends)
+            {
+                var hbx = VertexAabb(hr);
+                hMin = Vector3.Min(hMin, hbx.min);
+                hMax = Vector3.Max(hMax, hbx.max);
+            }
+            var hb = new Bounds(); hb.SetMinMax(hMin, hMax);
+            // The nearest body-ish part behind the head decides the seam.
+            float bestRear = float.MinValue;
+            foreach (var r in bodyRends)
+            {
+                var b = VertexAabb(r);
+                if (b.max.z <= hb.min.z + 0.30f && b.min.z < hb.min.z) // sits behind head
+                    bestRear = Mathf.Max(bestRear, b.max.z);
+            }
+            // overlap = how deep the head rear sinks into the nearest part.
+            float overlap = bestRear == float.MinValue ? -1f : bestRear - hb.min.z;
+            // Coplanar touch (0mm) still reads as connected (cow head sits
+            // flush); only a visible GAP fails. Sinking deeper is best.
+            bool seamOk = overlap >= -0.0001f;
+            Add("struct.head_seam", sp, seamOk,
+                seamOk ? $"head/body z-overlap {overlap * 1000:F0}mm (connected)" :
+                         $"head floats: gap {(-overlap) * 1000:F0}mm behind nearest part",
+                overlap, 0f, 1f);
+
+            // B) every face rect samples opaque texels (transparent -> black)
+            var tex = headRend.sharedMaterial != null ? headRend.sharedMaterial.mainTexture as Texture2D : null;
+            if (tex == null) { Add("struct.opaque_tex", sp, false, "no texture", 0, 0, 1); return; }
+            int badFaces = 0, faces = 0;
+            var badList = new System.Collections.Generic.List<string>();
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                var uv = mf.sharedMesh.uv;
+                for (int f = 0; f < uv.Length / 4; f++)
+                {
+                    if (f == 3) continue; // -Y bottom: MC convention leaves it blank
+                    faces++;
+                    float u0 = 1e9f, u1 = -1e9f, v0 = 1e9f, v1 = -1e9f;
+                    for (int c = 0; c < 4; c++)
+                    {
+                        u0 = Mathf.Min(u0, uv[f * 4 + c].x); u1 = Mathf.Max(u1, uv[f * 4 + c].x);
+                        v0 = Mathf.Min(v0, uv[f * 4 + c].y); v1 = Mathf.Max(v1, uv[f * 4 + c].y);
+                    }
+                    int x0 = Mathf.RoundToInt(u0 * tex.width), x1 = Mathf.RoundToInt(u1 * tex.width);
+                    int y0 = Mathf.RoundToInt(v0 * tex.height), y1 = Mathf.RoundToInt(v1 * tex.height);
+                    if (x1 - x0 <= 1 || y1 - y0 <= 1) continue; // zero-width/degenerate
+                    var px = tex.GetPixels(x0, y0, x1 - x0, y1 - y0);
+                    float opaque = 0;
+                    foreach (var q in px) if (q.a > 0.5f) opaque++;
+                    if (opaque > 0 && opaque < px.Length * 0.60f) // vanilla art carries holes; <60% = real damage
+                    { // fully-transparent (0%) rects are the MC blank-face
+                      // convention - the alpha-test shader clips them away.
+                        badFaces++;
+                        if (badList.Count < 4)
+                            badList.Add($"{r.name}#{f} rect({x0},{y0} {x1 - x0}x{y1 - y0}) {opaque * 100 / px.Length}%");
+                    }
+                }
+            }
+            bool opaqOk = badFaces == 0;
+            Add("struct.opaque_tex", sp, opaqOk,
+                opaqOk ? $"all {faces} faces sample >=95% opaque" :
+                         $"{badFaces}/{faces} faces sample transparent texels (render black)",
+                badFaces, 0, 0);
+            foreach (var bf in badList) Debug.Log($"[AnimVerify] bad face {sp}/{bf}");
+        }
 
         // ---- goal: rest pose level, feet grounded, head forward ----
         static void VerifyPose(string sp, GameObject go)

@@ -164,6 +164,27 @@ llm-pi-ai:
 
 geo 声明的 UV 与贴图实际布局不符(fox/goat/sheep fleeced 都有此病)。**判定法:cube 六面矩形在贴图上必须 100% 不透明,穷举唯一解即真值**。fox.png(48x32 Java 布局,与 bedrock 逐字节同):head(1,5)[front=(7,11,8,6),眼 K 在 x7/x14 边缘]、body(24,15)[唯一全不透明解;(30,15) 采到 padding=黑白条带根因]、snout(6,18)、ears(8,1)/(15,1)[y0 行全透明]、leg(13,24)、tail(30,0)。透明像素在该 shader 下渲染为黑色。羊腿黑腿同因:合并皮缺裸腿米色区,已从 vanilla sheep.png 移植 x0..15 y24..31。
 
+### 包围盒(结构)检查标准流程(2026-09-25 固化,狼断头教训)
+
+结构 bug 的共性:**有 geo 真值却不 diff**。标准流程(AnimVerify.VerifyStructure 已落地):
+
+1. **头/身衔接 seam**:head 子树 Renderer 的 mesh 顶点世界 AABB(geo 路径 mesh 挂在 CubePivot 子节点,手建路径在 Head 节点本身——两路都要能找到)vs 头后方最近部件的 AABB。判据:`body.max.z - head.min.z >= 0`(共面算衔接,出现正间隙即 FAIL)。bedrock 原版狼头与鬃毛间就有 4px 设计间隙——照抄真值也会穿帮,衔接处必须沉入 2px 以上防 z-fight。
+2. **批模式 bounds 陷阱**:`Renderer.bounds` 在批处理无渲染帧时可能返回单位立方垃圾值——AABB 一律用 `MeshFilter.sharedMesh.vertices`×`localToWorldMatrix` 自算(VerifyStructure 的 VertexAabb)。
+3. **采样不透明检查**:每个 cube 的 6 个 UV 矩形采样贴图,统计 alpha。**分级判定**:0% 全透明=MC 留空惯例(back/bottom 面常留空),alpha-test shader 会丢弃,合法;0<不透明<60%=真损伤(采到 padding/错区);60%~95%=原版像素艺术自带镂空(goat rump 84%),合法。底面(-Y)整个豁免。
+4. **仲裁纪律**:vision 说"没有 X"≠ 真没有(狼尾白色贴白色被误报无尾)——先用 PIL 找特征色块坐标,量化分桶 ≥50 级会制造"粉紫"幻觉(202,199,200 桶成 (200,150,200)),看**原始色值**。
+5. 三视图快照(TripleViewSnapshot.cs):front(+Z)/side(+X)/top(俯视 LookAt 必须 `up=Vector3.forward`,默认 up=+Y 与 forward 平行会退化糊图)。
+
+### 透明像素处理规则(2026-09-25 定稿,多次踩坑后)
+
+**四种情况,四种处置,别混:**
+
+1. **原版贴图自带的镂空**(goat rump 84%、耳内留白):**不许补色**破坏像素艺术——shader 加 `clip(a-0.5)` alpha-test 丢弃,与 MC 引擎行为一致(已改 UnlitTextureShader)。
+2. **合并/生成贴图缺失区导致采样透明**(羊腿 y24..31 空洞):从 vanilla 源图**移植对应区域**,不用纯色填充(米色腿区直接拷贝像素)。
+3. **MC 惯例留空面**(cube -Z back、-Y bottom 常全透明):合法,验证时豁免;模型摆放时保证这些面不可见(嵌入体内)。
+4. **UV 采到贴图外/padding**(fox body (30,15) 越界到 48x32 之外的 padding):**修 UV 偏移**(六面全不透明拟合法),不是改贴图。
+
+原则:**先判定透明属于哪一类,再选处置;补色是最后手段**。验证:struct.opaque_tex 分级阈值(0% 豁免 / <60% FAIL / 中间记录),shader 端 alpha-test 兜底。
+
 ### 验证闸门
 
 - 改任何网格后必须跑 `SelfTest.RunAll`(`m9.skin_uv_nets` 逐矩形越界+像素校验;`m11.skinned_uv_sampling` 读回真实 mesh.uv 对照 MC 网格+旋转约定)全绿才算完成;流程见技能 `unity-batchmode`。

@@ -196,8 +196,14 @@ namespace VoxelCraft.Creatures
                 geoCapsule.radius = Mathf.Max(bodySize.x, 0.22f) * 0.6f;
 
                 smoothY = transform.position.y;
+                // Spawn yaw must only be applied at RUNTIME spawn: editor
+                // verification/snapshot harnesses build models at identity
+                // orientation (a random yaw rotated the wolf 90deg sideways
+                // in every snapshot - the "floating head" false alarm).
+#if !UNITY_EDITOR
                 targetYaw = Random.Range(0f, 360f);
                 transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+#endif
                 return;
             }
 
@@ -216,8 +222,11 @@ namespace VoxelCraft.Creatures
                     bodySize.z * 0.5f + headBox.z * 0.5f - 0.0625f);
             else if (species == "wolf")
                 // Vanilla wolf (bedrock geo, +Z front): head 6x6x4 spans
-                // y 7.5..13.5 px at the FRONT of the tall chest box.
-                headPos = new Vector3(0f, 0.656f, 0.4375f);
+                // y 7.5..13.5 px. Bedrock leaves a 4px gap between head
+                // rear (z 5) and mane front (z 1) - reads as a floating
+                // head, so sink the head rear 2px INTO the mane (seams
+                // must overlap, never coplanar - z-fight rule).
+                headPos = new Vector3(0f, 0.656f, 0.3125f);
             else if (species == "fox")
                 // Vanilla fox: head 8x6x6 spans y 4..10 px, sticking out
                 // in front of the leaned body pillar - a LOW head.
