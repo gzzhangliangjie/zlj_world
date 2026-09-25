@@ -16,7 +16,7 @@ namespace VoxelCraft.Editor
 
             var go = new GameObject("TripleWolf");
             var ani = go.AddComponent<BlockyAnimal>();
-            ani.species = "wolf";
+            ani.species = "fox";
             ani.BuildModel();
 
             var camGo = new GameObject("Cam");
@@ -47,7 +47,7 @@ namespace VoxelCraft.Editor
                 var tex = new Texture2D(700, 700, TextureFormat.RGBA32, false);
                 tex.ReadPixels(new Rect(0, 0, 700, 700), 0, 0);
                 tex.Apply();
-                string path = System.IO.Path.Combine(dir, $"snapshot_wolf_{name}.png");
+                string path = System.IO.Path.Combine(dir, $"snapshot_fox_{name}.png");
                 System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
                 Debug.Log($"[TripleViewSnapshot] wrote {path}");
                 RenderTexture.active = null;

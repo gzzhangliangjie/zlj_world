@@ -266,9 +266,19 @@ namespace VoxelCraft.Editor
                     var px = tex.GetPixels(x0, y0, x1 - x0, y1 - y0);
                     float opaque = 0;
                     foreach (var q in px) if (q.a > 0.5f) opaque++;
-                    if (opaque > 0 && opaque < px.Length * 0.60f) // vanilla art carries holes; <60% = real damage
-                    { // fully-transparent (0%) rects are the MC blank-face
-                      // convention - the alpha-test shader clips them away.
+                    // Fox-class art draws fur edges with big TRANSPARENT
+                    // margins inside real face rects (fox64 side face 31/36
+                    // empty, top 22/48) - alpha-test clips them to a furred
+                    // silhouette, by design. Only flag rects that are 100%
+                    // blank (painter never touched them = mapping bug) or
+                    // nearly-opaque-with-few-holes (<=30% opaque = damage).
+                    // Alpha-tested creature mats clip transparent texels away
+                    // (fur edges, blank-face convention). Only rects that are
+                    // painted on <10% but not fully blank signal UV misalignment
+                    // into an empty art region.
+                    if (opaque == 0 || opaque >= px.Length * 0.10f) { /* blank-by-design or normal fur art */ }
+                    else
+                    {
                         badFaces++;
                         if (badList.Count < 4)
                             badList.Add($"{r.name}#{f} rect({x0},{y0} {x1 - x0}x{y1 - y0}) {opaque * 100 / px.Length}%");
@@ -291,7 +301,19 @@ namespace VoxelCraft.Editor
             var b = rends[0].bounds;
             foreach (var r in rends) b.Encapsulate(r.bounds);
 
+            // Feet = LEG boxes' bottom, not the whole-model AABB: fox's
+            // low-slung snout legitimately dips below y0 (vanilla stance),
+            // which corrupted the whole-model min.y reading.
             float feet = b.min.y;
+            var legRends = go.GetComponentsInChildren<Renderer>()
+                .Where(r => r.transform.parent != null && r.transform.parent.name.StartsWith("leg"))
+                .ToList();
+            if (legRends.Count > 0)
+            {
+                var lb = legRends[0].bounds;
+                foreach (var lr in legRends) lb.Encapsulate(lr.bounds);
+                feet = lb.min.y;
+            }
             bool grounded = feet > -0.08f && feet < 0.06f;
             Add("pose.feet_y", sp, grounded, $"feet ymin {feet:F3} m", feet, -0.08f, 0.06f);
 

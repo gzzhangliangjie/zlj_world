@@ -139,10 +139,16 @@ namespace VoxelCraft.Creatures
             // Fox geo texture is 64x32 declared but padded skin shifts UVs and
             // the 45-deg pillar pose needs per-bone handling the generic
             // importer lacks - fox uses the hand-built (verified) path below.
-            bool foxHandbuilt = species == "fox";
-            float geoPitch = species == "fox" ? 45f : 0f;
+            // Fox migrated to the geo pipeline: vanilla fox.geo stores the
+            // body as an upright pillar; the classic 45-degree forward pitch
+            // (vanilla fox stance) is applied via geoPitch by the importer.
+            bool foxHandbuilt = false;
+            float geoPitch = 0f; // vanilla fox.setup = "-this": body stays as authored (vertical column)
+            // setup clip to bake (bedrock runtime applies it permanently);
+            // loaded from the species' own animation file.
+            TextAsset setupAnim = Resources.Load<TextAsset>("Anims/" + species + ".animation");
             if (!foxHandbuilt && skin != null && geoAsset != null &&
-                BedrockGeoImporter.Build(bodyRoot, geoAsset, null, skin, geoPitch,
+                BedrockGeoImporter.Build(bodyRoot, geoAsset, null, skin, geoPitch, setupAnim,
                     out var geoLegs, out var geoTail, out var geoHead, out var geoWings))
             {
                 for (int i = 0; i < 4; i++) legs[i] = geoLegs[i];

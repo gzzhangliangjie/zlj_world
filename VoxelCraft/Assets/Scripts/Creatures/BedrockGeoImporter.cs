@@ -156,9 +156,35 @@ namespace VoxelCraft.Creatures
         /// <paramref name="bodyPitchDeg"/> tips the "body" bone (and its children)
         /// about X for geos whose rest pose is a vertical pillar (fox: -45).</summary>
         public static bool Build(Transform parent, TextAsset geoJson, string geometryId,
+            Material skin, float bodyPitchDeg, TextAsset setupAnimJson,
+            out Transform[] legsOut, out Transform tailOut,
+            out Transform headOut, out Transform[] wingsOut)
+        {
+            return Build(parent, geoJson, geometryId, skin, bodyPitchDeg, setupAnimJson,
+                out legsOut, out tailOut, out headOut, out wingsOut, null);
+        }
+
+        public static bool Build(Transform parent, TextAsset geoJson, string geometryId,
             Material skin, float bodyPitchDeg,
             out Transform[] legsOut, out Transform tailOut,
             out Transform headOut, out Transform[] wingsOut)
+        {
+            return Build(parent, geoJson, geometryId, skin, bodyPitchDeg, null,
+                out legsOut, out tailOut, out headOut, out wingsOut, null);
+        }
+
+        /// <summary>Full build: imports the geo, then bakes the species'
+        /// ".setup" animation clip (bedrock runtime applies it permanently).
+        /// Bake semantics derived from vanilla data: position target "c - this"
+        /// is the final bedrock pivot; our model space already equals the
+        /// setup-applied frame, so we apply only the DELTA from the geo pivot,
+        /// skipping the uniform y-shift (v1.8 coordinate convention) when every
+        /// bone shares it. Rotation targets tilt the bone from its geo rest.</summary>
+        public static bool Build(Transform parent, TextAsset geoJson, string geometryId,
+            Material skin, float bodyPitchDeg, TextAsset setupAnimJson,
+            out Transform[] legsOut, out Transform tailOut,
+            out Transform headOut, out Transform[] wingsOut,
+            Transform geoRootOut)
         {
             legsOut = new Transform[4];
             wingsOut = new Transform[2];
@@ -366,6 +392,10 @@ namespace VoxelCraft.Creatures
             if (byName.TryGetValue("right_back_leg", out var rbl)) legsOut[3] = rbl;
             if (byName.TryGetValue("right_front_leg", out var rf2)) legsOut[1] = rf2;
             if (byName.TryGetValue("tail", out var tt)) tailOut = tt;
+            // Bedrock swaps head <-> head_sleeping when the mob sleeps; hide
+            // the sleeping variant until then (its UVs sample the closed-eye
+            // region and double every head cube).
+            if (byName.TryGetValue("head_sleeping", out var hs)) hs.gameObject.SetActive(false);
             if (byName.TryGetValue("head", out var ht)) headOut = ht;
             if (byName.TryGetValue("wing0", out var w0)) wingsOut[0] = w0;
             if (byName.TryGetValue("wing1", out var w1)) wingsOut[1] = w1;
@@ -402,7 +432,132 @@ namespace VoxelCraft.Creatures
                 }
             }
 
+            // ---- setup-clip bake (bedrock runtime applies ".setup" once) ----
+            if (setupAnimJson != null) BakeSetup(setupAnimJson.text, byName, boneNameToOriginal, modelPos);
+
             return true;
+        }
+
+        /// <summary>Parse the species' .setup clip and bake its constant
+        /// transforms into the imported skeleton. Position targets are FINAL
+        /// bedrock pivots ("c - this" with this=0); our import already sits in
+        /// the setup-applied frame for the uniform v1.8 y-shift, so only
+        /// per-bone deltas beyond that shift move bones. Rotation targets are
+        /// applied relative to the imported rest rotation.</summary>
+        private static void BakeSetup(string animJson,
+            Dictionary<string, Transform> byName,
+            Dictionary<string, string> boneNameToOriginal,
+            Dictionary<string, Vector3> modelPos)
+        {
+            var wrap = MiniJson.Deserialize(animJson) as Dictionary<string, object>;
+            if (wrap == null) return;
+            if (!(wrap.TryGetValue("animations", out object av) && av is Dictionary<string, object> anims)) return;
+
+            var posTargets = new Dictionary<string, Vector3>();
+            var rotTargets = new Dictionary<string, Vector3>();
+            foreach (var kv in anims)
+            {
+                if (!kv.Key.Contains(".setup") || kv.Key.Contains("v1.0") || kv.Key.Contains("baby")) continue;
+                if (!(kv.Value is Dictionary<string, object> clip)) continue;
+                if (!clip.TryGetValue("bones", out object bv) || !(bv is Dictionary<string, object> bs)) continue;
+                foreach (var bk in bs)
+                {
+                    if (!(bk.Value is Dictionary<string, object> ch)) continue;
+                    if (ch.TryGetValue("position", out object pv) && pv is List<object> pl && pl.Count == 3)
+                    {
+                        Vector3 t = new Vector3(ConstOf(pl[0]), ConstOf(pl[1]), ConstOf(pl[2]));
+                        posTargets[bk.Key.ToLowerInvariant()] = t;
+                    }
+                    if (ch.TryGetValue("rotation", out object rv) && rv is List<object> rl && rl.Count == 3)
+                    {
+                        Vector3 t = new Vector3(ConstOf(rl[0]), ConstOf(rl[1]), ConstOf(rl[2]));
+                        rotTargets[bk.Key.ToLowerInvariant()] = t;
+                    }
+                }
+            }
+            // Sheep's setup.v2 head position ("0, -6-this, 0") moves the head
+            // 8px BACK into the body in our frame - pixel-verified wrong; the
+            // v1.8 geo head pivot already sits correct. Wolf's mane z-5 IS
+            // correct. Species whose setup positions are known-bad:
+            if (animJson.Contains("sheep.setup")) posTargets.Clear();
+
+            if (posTargets.Count == 0 && rotTargets.Count == 0) return;
+
+            // Uniform y-shift detection: bedrock v1.8 geos sit 24px higher in
+            // author space; a setup that lowers EVERY bone by the same amount
+            // is a coordinate-convention shift our import already absorbed.
+            float uniformY = float.NaN;
+            bool allSameY = posTargets.Count > 0;
+            foreach (var kv in posTargets)
+            {
+                // pivot lookup by original (un-SafeName'd) bone name
+                Vector3 bp = Vector3.zero; bool found = false;
+                foreach (var mp in modelPos)
+                    if (mp.Key.ToLowerInvariant() == kv.Key)
+                    { bp = new Vector3(-mp.Value.x, mp.Value.y, -mp.Value.z) / Px; found = true; break; }
+                if (!found) { allSameY = false; break; }
+                float dy = kv.Value.y - bp.y;
+                if (float.IsNaN(uniformY)) uniformY = dy;
+                else if (Mathf.Abs(dy - uniformY) > 0.01f) { allSameY = false; break; }
+            }
+            float skipY = allSameY ? uniformY : 0f;
+
+            foreach (var kv in posTargets)
+            {
+                Transform bone = null;
+                foreach (var bn in byName)
+                    if (bn.Key.ToLowerInvariant() == kv.Key) { bone = bn.Value; break; }
+                if (bone == null) continue;
+                Vector3 bp = Vector3.zero;
+                foreach (var mp in modelPos)
+                    if (mp.Key.ToLowerInvariant() == kv.Key)
+                    { bp = new Vector3(-mp.Value.x, mp.Value.y, -mp.Value.z) / Px; break; }
+                Vector3 target = kv.Value;
+                Vector3 delta = target - bp;
+                delta.y -= skipY;
+                if (delta.sqrMagnitude < 1e-6f) continue;
+                // bedrock x/z flip: our model x'=-x, z'=-z
+                bone.localPosition += new Vector3(-delta.x, delta.y, -delta.z) * Px;
+                Debug.Log($"[BakeSetup] pos {bone.name}: bp={bp} target={target} skipY={skipY} applied={new Vector3(-delta.x, delta.y, -delta.z) * Px}");
+            }
+            foreach (var kv in rotTargets)
+            {
+                Transform bone = null;
+                foreach (var bn in byName)
+                    if (bn.Key.ToLowerInvariant() == kv.Key) { bone = bn.Value; break; }
+                if (bone == null) continue;
+                Vector3 r = kv.Value;
+                if (r.sqrMagnitude < 1e-6f) continue;
+                // Empirically grounded sign: bedrock Rx(+90) tips the upright
+                // pillar onto its back the same way geo bind_pose_rotation
+                // does (cube-level Euler(+90) - verified by the grid-searched
+                // wolf: body must land at z -0.563..0 covering the hind legs).
+                bone.localRotation = Quaternion.Euler(r.x, r.y, r.z) * bone.localRotation;
+                Debug.Log($"[BakeSetup] rot {bone.name}: target={r}");
+            }
+        }
+
+        private static float ConstOf(object o)
+        {
+            if (o is double d) return (float)d;
+            if (o is long l) return l;
+            if (o is string str)
+            {
+                str = str.Trim();
+                if (float.TryParse(str, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var f)) return f;
+                if (str == "-this" || str == "this" || str == "query.is_baby ? 0.0 : -this") return 0f;
+                // "c - this" (also "query.is_baby ? 0.0 : (c - this)")
+                int cut = str.LastIndexOf('-');
+                while (cut > 0)
+                {
+                    var head = str.Substring(0, cut).Trim();
+                    if (float.TryParse(head, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var h)) return h;
+                    cut = str.LastIndexOf('-', cut - 1);
+                }
+            }
+            return 0f;
         }
 
         private static string SafeName(string s) => string.IsNullOrEmpty(s) ? "bone" : s.Replace(':', '_');

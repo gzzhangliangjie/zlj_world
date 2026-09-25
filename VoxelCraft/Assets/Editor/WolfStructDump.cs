@@ -15,7 +15,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             var sb = new StringBuilder();
-            foreach (var sp in new[] { "wolf" })
+            foreach (var sp in new[] { "sheep", "fox" })
             {
                 var go = new GameObject("dump_" + sp);
                 var ani = go.AddComponent<BlockyAnimal>();
