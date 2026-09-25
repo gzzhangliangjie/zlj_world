@@ -85,13 +85,19 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 18, 2, 8, 2);
                     break;
                 case "fox":
-                    // Vanilla fox (bedrock, 48x32 sheet padded to 64):
-                    // body 6x11x6 uv(30,15), head 8x6x6 uv(0,0), snout
-                    // 4x2x3 uv(0,24), legs 2x6x2 uv(14,24)/(22,24),
-                    // tail 4x9x5 uv(28,0).
-                    body = BoxBuilder.McNet(30, 15, 6, 11, 6);
-                    head = BoxBuilder.McNet(0, 0, 8, 6, 6);
-                    leg = BoxBuilder.McNet(14, 24, 2, 6, 2);
+                    // Vanilla fox (Java-layout 48x32 sheet padded to 64).
+                    // ALL offsets are pixel-fitted: each cube's six face
+                    // rects must be 100% opaque in fox.png (unique fits).
+                    // head (1,5): front=(7,11,8,6) - K eyes at x7/x14 edges,
+                    // white chin y16, orange brow; body (24,15) - the ONLY
+                    // fully-opaque 6x11x6 net (old (30,15) sampled padding
+                    // junk = the black/white bands regression); snout (6,18):
+                    // front=(9,21,4,2) white muzzle WKKW + black nose;
+                    // ears (8,1)/(15,1) (y0 row is transparent); legs (13,24)
+                    // with KK paw pixels; tail (30,0) with white tip top face.
+                    body = BoxBuilder.McNet(24, 15, 6, 11, 6);
+                    head = BoxBuilder.McNet(1, 5, 8, 6, 6);
+                    leg = BoxBuilder.McNet(13, 24, 2, 6, 2);
                     break;
                 case "goat":
                     // Vanilla goat (bedrock geo, 64x64 sheet): neck+chest
@@ -315,20 +321,21 @@ namespace VoxelCraft.Creatures
 
                 if (species == "fox")
                 {
-                    // Vanilla fox extras (bedrock fox.geo.json, z flipped for
-                    // +Z front): snout 4x2x3 uv(0,24), ears 2x2x1 uv(0,0)/
-                    // (22,0) on the head top, bushy tail 4x9x5 uv(28,0)
-                    // sweeping back and down from the body rear (z 4..9 px).
+                    // Vanilla fox extras - offsets pixel-fitted to fox.png:
+                    // snout (6,18): front=(9,21,4,2) white muzzle + black
+                    // nose; ears (8,1)/(15,1) - y0 row is transparent so the
+                    // geo-declared (0,0)/(22,0) sampled blank; tail (30,0):
+                    // top face holds the white tip.
                     AddSkinnedChild(head, "Snout",
                         new Vector3(0f, -headBox.y * 0.2f, headBox.z * 0.5f + 0.09375f),
-                        new Vector3(0.25f, 0.125f, 0.1875f), skin, BoxBuilder.McNet(0, 24, 4, 2, 3));
+                        new Vector3(0.25f, 0.125f, 0.1875f), skin, BoxBuilder.McNet(6, 18, 4, 2, 3));
                     for (int e = 0; e < 2; e++)
                     {
                         float es = e == 0 ? -0.1875f : 0.1875f;
                         AddSkinnedChild(head, "Ear" + e,
                             new Vector3(es, headBox.y * 0.5f + 0.0625f, -0.03125f),
                             new Vector3(0.125f, 0.125f, 0.0625f), skin,
-                            BoxBuilder.McNet(e == 0 ? 0 : 22, 0, 2, 2, 1));
+                            BoxBuilder.McNet(e == 0 ? 8 : 15, 1, 2, 2, 1));
                     }
                     // Tail hinges where it meets the body rear so Update()
                     // can sway it.
@@ -338,7 +345,7 @@ namespace VoxelCraft.Creatures
                     foxTailGo.transform.localRotation = Quaternion.Euler(100f, 0f, 0f);
                     AddSkinnedChild(foxTailGo.transform, "Tail",
                         new Vector3(0f, -0.28125f + 0.03125f, 0f),
-                        new Vector3(0.25f, 0.5625f, 0.3125f), skin, BoxBuilder.McNet(28, 0, 4, 9, 5));
+                        new Vector3(0.25f, 0.5625f, 0.3125f), skin, BoxBuilder.McNet(30, 0, 4, 9, 5));
                     tail = foxTailGo.transform;
                     tailBaseRot = foxTailGo.transform.localRotation;
                 }

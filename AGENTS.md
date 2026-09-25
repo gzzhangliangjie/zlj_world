@@ -154,6 +154,16 @@ llm-pi-ai:
 - **版本号 `Game.BuildId`**(如 2026-09-13d)显示在 HUD 右下角——GitHub Pages 对 index.html 也有 ≤10 分钟缓存,玩家报"改了没生效"先让其 Ctrl+F5 并核对角落 build 号。
 - `publish-webgl.ps1` 里**所有 git 命令段都要降 EAP=Continue**(git 的 LF/CRLF warning 走 stderr,PS5.1 在 EAP=Stop 下会把它变成终止错误;调用方若再套 `2>&1` 更必炸)。commit+push 已拆成段内局部降级,新增 git 步骤记得照做。
 
+### 渲染验证三大坑(2026-09-25 狐狸/羊修复轮固化)
+
+1. 💣 **自建相机快照全黑 = shader 全局三件套缺一不可**:皮肤 shader `Voxel/UnlitTexture` 乘 `_VoxelDayBrightness`(默认 0 → 全黑)且按 `_VoxelFogRange` 雾化(默认 (0,0) → range=0.001 → 距离>0 即 fog=1 → 全部替换成 `_VoxelFogColor`,默认黑)。**只设 brightness 不设 fog 依然全黑**。开相机前必须:`SetGlobalFloat("_VoxelDayBrightness",1f)` + `SetGlobalVector("_VoxelFogRange",(100,300,0,0))` + `SetGlobalColor("_VoxelFogColor",浅蓝)`(照抄 `ModelSnapshot.Run` 开头)。
+2. 💣 **贴图空间检查过 ≠ 渲染对**:AnimVerify 的 face 检查读的是贴图像素矩形,UV 错位的模型照样全绿(狐脸黑白条带轮:80/80 PASS 但渲染是花的)。**闭环 = 贴图检查 + mesh UV dump + 渲染快照三件套**;`FoxFaceDebug.cs`(mesh UV 角点→png 像素坐标)是 UV 仲裁工具。
+3. **验证结果必须发图给用户二次确认**(2026-09-25 用户约定):每轮验证跑完 `ModelSnapshot.Run`/`SoloHeadSnapshot.Run`,把关键 PNG 用 MEDIA: 发到飞书群,别只报数字。
+
+### fox 贴图真值(像素拟合法定稿,2026-09-25)
+
+geo 声明的 UV 与贴图实际布局不符(fox/goat/sheep fleeced 都有此病)。**判定法:cube 六面矩形在贴图上必须 100% 不透明,穷举唯一解即真值**。fox.png(48x32 Java 布局,与 bedrock 逐字节同):head(1,5)[front=(7,11,8,6),眼 K 在 x7/x14 边缘]、body(24,15)[唯一全不透明解;(30,15) 采到 padding=黑白条带根因]、snout(6,18)、ears(8,1)/(15,1)[y0 行全透明]、leg(13,24)、tail(30,0)。透明像素在该 shader 下渲染为黑色。羊腿黑腿同因:合并皮缺裸腿米色区,已从 vanilla sheep.png 移植 x0..15 y24..31。
+
 ### 验证闸门
 
 - 改任何网格后必须跑 `SelfTest.RunAll`(`m9.skin_uv_nets` 逐矩形越界+像素校验;`m11.skinned_uv_sampling` 读回真实 mesh.uv 对照 MC 网格+旋转约定)全绿才算完成;流程见技能 `unity-batchmode`。

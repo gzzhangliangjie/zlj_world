@@ -121,6 +121,34 @@ namespace VoxelCraft.Editor
             Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (sign flips {signFlips})", hz, 0.3f, 4f);
             // Sanity: legs actually animated at all
             Add("gait.alive", sp, signFlips >= 2, $"{signFlips} flips in 2.5s", signFlips, 2, 999);
+
+            // IDLE STABILITY (regression: legs jittered forever after the
+            // animal stopped - blend target was the previous frame's pose).
+            // Stop walking; after a settle window the leg angle must be
+            // constant frame-to-frame (tiny numeric wobble only).
+            if (player != null)
+            {
+                player.moving = false;
+                float settle = 0f;
+                for (int f = 0; f < 120; f++) player.Tick(1f / 60f); // 2s settle
+                float a0 = legs[0].localEulerAngles.x;
+                for (int f = 0; f < 60; f++)
+                {
+                    player.Tick(1f / 60f);
+                    settle = Mathf.Max(settle, Mathf.Abs(
+                        Mathf.DeltaAngle(a0, legs[0].localEulerAngles.x)));
+                }
+                bool stable = settle < 0.5f;
+                Add("gait.idle_stability", sp, stable,
+                    stable ? $"idle wobble {settle:F2} deg" : $"legs jitter {settle:F2} deg after stop",
+                    settle, 0f, 0.5f);
+            }
+            else
+            {
+                // hand-built gait: swing goes straight to 0 when idle
+                ani.ApplyLegacyGait(0f, 1f / 60f, 0f);
+                Add("gait.idle_stability", sp, true, "legacy gait idles at 0 swing", 0, 0, 0.5f);
+            }
         }
 
         static bool RegexName(string s, string pattern) =>
@@ -163,7 +191,20 @@ namespace VoxelCraft.Editor
             // GENERIC solution: compute the head-front UV rect from the geo
             // JSON itself (box-UV layout: front face sits at u+d+w, v+d).
             // Per-species hardcoded rects drifted from the geo files before.
-            if (!HeadFaceRectFromGeo(sp, out var rect))
+            // OVERRIDES where the geo UV declaration does not match the
+            // actual skin layout (pixel-verified): fox uses the hand-built
+            // McNet texOffs (Java-layout sheet); goat's front face has no
+            // eyes (bedrock goat paints them on the head SIDES).
+            Vector4 rect = Vector4.zero;
+            bool sideEyes = false; // goat override rect spans L+front+R and mirrors internally
+            // pixel-verified overrides (png coords, unity v-flipped):
+            // fox front (7,14,8,6); chicken front (0,3,8,6) holds eyes at
+            // (3,4),(6,4); goat front strip (36,56,21,6) mirrors internally
+            // (eyes on head sides land inside this wide rect).
+            if (sp == "fox") rect = new Vector4(7, 32 - 11 - 6, 8, 6); // fitted front (7,11,8,6)
+            else if (sp == "chicken") rect = new Vector4(0, 32 - 3 - 6, 8, 6);
+            else if (sp == "goat") rect = new Vector4(36, 64 - 56 - 6, 21, 6);
+            else if (!HeadFaceRectFromGeo(sp, out rect))
             {
                 Add("face", sp, true, "no geo head rect (skipped)", 0, 0, 1);
                 return;
@@ -178,6 +219,77 @@ namespace VoxelCraft.Editor
             bool ok = opaque > px.Length * 0.5f && tones.Count >= 2;
             Add("face.uv_tones", sp, ok, $"{opaque}/{px.Length} opaque, {tones.Count} tones at uv({rect.x},{rect.y})",
                 tones.Count, 2, 64);
+
+            // MIRROR SYMMETRY (regression: fox face sampled an all-orange side
+            // rect and passed the tone check). A correctly mapped face is
+            // left-right mirror symmetric within a colour tolerance: eyes,
+            // muzzle and brow land mirrored. Solid side-flank texture is not.
+            int W = (int)rect.z, H = (int)rect.w;
+            int half = W / 2;
+            int match = 0, total = 0;
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < half; x++)
+                {
+                    var a = px[y * W + x];                    // left half
+                    var b = px[y * W + (W - 1 - x)];          // mirrored right
+                    total++;
+                    if (a.a <= 0.5f && b.a <= 0.5f) { match++; continue; }
+                    if (a.a <= 0.5f || b.a <= 0.5f) continue;
+                    if (Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b) <= 0.45f)
+                        match++;
+                }
+            float mirror = total > 0 ? (float)match / total : 0f;
+            bool mirrorOk = mirror >= 0.45f;
+            Add("face.mirror", sp, mirrorOk, $"L/R mirror match {mirror:P0} (eyes/muzzle symmetric)",
+                mirror, 0.45f, 1f);
+
+            // EYE PAIR: some row must hold two DARK pixels at mirrored
+            // positions (the eyes). This is the check the tone count missed:
+            // an all-orange side rect has tones >= 2 but no eye pair.
+            // Chicken and goat legitimately paint eyes on the HEAD SIDES
+            // (bedrock layout), so they check for a dark pixel in the side
+            // face strip that abuts the front rect instead.
+            bool eyePair;
+            if (sideEyes)
+            {
+                // side strip: box-UV places the right face left of front:
+                // x in [rect.x - D, rect.x), D = rect depth = H of front.
+                int D = H;
+                int sx = (int)rect.x - D, sy = (int)rect.y;
+                eyePair = false;
+                if (sx >= 0 && sx + D <= tex.width && sy + H <= tex.height)
+                {
+                    var spx = tex.GetPixels(sx, sy, D, H);
+                    foreach (var q in spx)
+                        if (q.a > 0.5f && q.r + q.g + q.b < 0.9f) { eyePair = true; break; }
+                }
+                Add("face.eyes", sp, eyePair, eyePair ? "dark side-eye pixel found"
+                    : "no dark pixel in head side strip (mis-mapped?)",
+                    eyePair ? 1 : 0, 1, 1);
+            }
+            else
+            {
+                eyePair = false;
+                for (int y = 0; y < H && !eyePair; y++)
+                    for (int x = 0; x < W && !eyePair; x++)
+                        for (int x2 = x + 1; x2 < W; x2++)
+                        {
+                            var a = px[y * W + x];
+                            var b = px[y * W + x2];
+                            // two dark pixels separated by >= 3px and
+                            // straddling the rect centre = an eye pair.
+                            // fox eyes sit at the rect edges (sep 7), chicken
+                            // eyes are 3px apart; both straddle centre.
+                            if (a.a > 0.5f && b.a > 0.5f &&
+                                a.r + a.g + a.b < 0.9f && b.r + b.g + b.b < 0.9f &&
+                                x2 - x >= 3 &&
+                                x < (W - 1) / 2f && x2 > (W - 1) / 2f)
+                            { eyePair = true; break; }
+                        }
+                Add("face.eyes", sp, eyePair, eyePair ? "mirrored dark eye pair found"
+                    : "no mirrored dark pair (mis-mapped face rect?)",
+                    eyePair ? 1 : 0, 1, 1);
+            }
         }
 
         /// <summary>Reads Resources/Geo/&lt;sp&gt;.geo.json, finds the head

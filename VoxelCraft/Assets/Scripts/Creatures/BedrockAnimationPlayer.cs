@@ -319,7 +319,10 @@ namespace VoxelCraft.Creatures
                 else v = SampleKeyframes(tr, time);
                 if (w < 1f)
                 {
-                    // Blend toward the captured rest pose as gaitWeight -> 0
+                    // Blend toward the BIND pose captured at Bind() time - a
+                    // fixed target. Blending toward the bone's CURRENT value
+                    // (previous frame's output) is a feedback loop: the pose
+                    // never settles and the legs visibly jitter when idle.
                     Vector3 rest = RestValue(bone, tr.channel);
                     v = Vector3.Lerp(rest, v, w);
                 }
@@ -331,8 +334,14 @@ namespace VoxelCraft.Creatures
         {
             switch (channel)
             {
-                case "rotation": return bone.localRotation.eulerAngles;
-                case "position": return bone.localPosition;
+                // Euler of the bind quaternion (Apply() re-composes with the
+                // same convention: rest * Euler(-v)), so Lerp(rest, v, 1) == v.
+                case "rotation":
+                    return (restRot.TryGetValue(bone, out var r) ? r : bone.localRotation).eulerAngles;
+                case "position":
+                    return restPos.TryGetValue(bone, out var p)
+                        ? p * 16f  // restPos is in metres; channel values are px
+                        : bone.localPosition * 16f;
                 default: return Vector3.zero;
             }
         }
