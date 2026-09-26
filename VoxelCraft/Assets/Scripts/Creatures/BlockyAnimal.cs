@@ -122,6 +122,21 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 13, 6, 5, 7);
                     leg = BoxBuilder.McNet(48, 21, 4, 11, 4);
                     break;
+                case "rabbit":
+                    // geometry.rabbit (64x32 sheet): body 6x5x10 uv(0,0),
+                    // head 5x4x5 uv(32,0), front legs 2x7x2 uv(8,15)/uv(0,15),
+                    // haunch 2x4x5 uv(16,15), rear foot 2x1x7 uv(8,24).
+                    body = BoxBuilder.McNet(0, 0, 6, 5, 10);
+                    head = BoxBuilder.McNet(32, 0, 5, 4, 5);
+                    leg = BoxBuilder.McNet(8, 15, 2, 7, 2);
+                    break;
+                case "panda":
+                    // geometry.panda (64x64 sheet): body 19x26x13 uv(0,25),
+                    // head 13x10x9 uv(0,6), legs 6x9x6 uv(40,0) all four.
+                    body = BoxBuilder.McNet(0, 25, 19, 26, 13);
+                    head = BoxBuilder.McNet(0, 6, 13, 10, 9);
+                    leg = BoxBuilder.McNet(40, 0, 6, 9, 6);
+                    break;
                 case "armadillo":
                     // Bedrock armadillo geo (64x64 sheet): body 8x8x12
                     // uv(0,20) (second shell cube uv(0,40)), head 3x5x2
@@ -274,6 +289,7 @@ namespace VoxelCraft.Creatures
                         case "goat": case "var:tcos": animPlayer.goatGait = true; break;
                         case "creeper": case "var:leg_rot": animPlayer.creeperGait = true; break;
                         case "horse": case "var:leg_x_rot_anim": animPlayer.horseGait = true; break;
+                        case "rabbit": case "var:jump_rotation": animPlayer.rabbitGait = true; break;
                         case "steve": case "var:tcos0": animPlayer.steveGait = true; break;
                     }
                     if (reg.gait != "none" && reg.gait != "dist-cos")

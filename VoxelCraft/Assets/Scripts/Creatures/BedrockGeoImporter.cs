@@ -311,8 +311,8 @@ namespace VoxelCraft.Creatures
                 // authored in the final (lying-down) frame. We therefore keep
                 // bone localRotation identity here and rotate the bone's cubes
                 // individually in pass 3 (see bindRot lookup). Explicit
-                // "rotation" is an animation-time rest offset and still
-                // applies to the transform.
+                // "rotation" is an animation-time rest offset and
+                // still applies to the transform.
                 if (bone.TryGetValue("rotation", out object rv) && rv is List<object> rl && rl.Count == 3)
                 {
                     t.localRotation = Quaternion.Euler(
@@ -445,6 +445,11 @@ namespace VoxelCraft.Creatures
             if (byName.TryGetValue("LegFR", out var hfr)) legsOut[1] = hfr;
             if (byName.TryGetValue("LegBL", out var hbl)) legsOut[2] = hbl;
             if (byName.TryGetValue("LegBR", out var hbr)) legsOut[3] = hbr;
+            // rabbit geo: frontLegL/R + haunchL/R (rear thigh) + rearFootL/R
+            if (byName.TryGetValue("frontLegLeft", out var rfl2)) legsOut[0] = rfl2;
+            if (byName.TryGetValue("frontLegRight", out var rfr2)) legsOut[1] = rfr2;
+            if (byName.TryGetValue("haunchLeft", out var rhl)) legsOut[2] = rhl;
+            if (byName.TryGetValue("haunchRight", out var rhr)) legsOut[3] = rhr;
             if (byName.TryGetValue("right_front_leg", out var rf2)) legsOut[1] = rf2;
             // ocelot tail chain: tail1 is the root hinge
             if (byName.TryGetValue("tail", out var tt)) tailOut = tt;
@@ -453,6 +458,11 @@ namespace VoxelCraft.Creatures
             // the sleeping variant until then (its UVs sample the closed-eye
             // region and double every head cube).
             if (byName.TryGetValue("head_sleeping", out var hs)) hs.gameObject.SetActive(false);
+            // armadillo.render_controllers part_visibility: body_rolled_up
+            // (10x10x10 ball shell) shows ONLY when variable.use_rolled_up_model
+            // is true; walking armadillos keep the 8x8x12 body + legs. Left
+            // visible it swallows the whole body and hides the legs.
+            if (byName.TryGetValue("body_rolled_up", out var bru)) bru.gameObject.SetActive(false);
             if (byName.TryGetValue("head", out var ht)) headOut = ht;
             if (byName.TryGetValue("wing0", out var w0)) wingsOut[0] = w0;
             if (byName.TryGetValue("wing1", out var w1)) wingsOut[1] = w1;

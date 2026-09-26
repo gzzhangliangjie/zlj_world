@@ -132,6 +132,20 @@
       "locomotion": "walk",
       "gait": "var:leg_x_rot_anim"
     },
+    "rabbit": {
+      "walkClip": "animation.rabbit.move",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "var:jump_rotation"
+    },
+    "panda": {
+      "walkClip": "animation.quadruped.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
     "armadillo": {
       "walkClip": "animation.armadillo.walk",
       "behaviours": [],

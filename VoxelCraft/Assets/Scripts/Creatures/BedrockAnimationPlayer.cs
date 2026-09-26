@@ -94,6 +94,10 @@ namespace VoxelCraft.Creatures
         /// computes them from the locomotion clock. stand_anim stays 0
         /// (walking), rear/eat behaviours would drive it.</summary>
         public bool horseGait;
+        /// <summary>Rabbit move clip reads variable.jump_rotation
+        /// (engine skip-hop variable, behavior layer drives it in vanilla);
+        /// Tick synthesizes the hop cycle 0..1 from the locomotion clock.</summary>
+        public bool rabbitGait;
         /// <summary>Player/steve move clips read variable.tcos0
         /// (player.entity.json pre_animation); Tick computes it from the
         /// locomotion clock. gliding_speed_value engine default = 0.6.</summary>
@@ -465,6 +469,17 @@ namespace VoxelCraft.Creatures
                 // leg_stand_factor in the walk clip; legs use
                 // leg_walk_factor*28.6*speed.
                 variables["leg_walk_factor"] = lsf;
+            }
+            // rabbit.entity.json: variable.jump_rotation is the engine hop
+            // variable (0 grounded .. 1 tucked mid-hop; movement.skip). Legs
+            // fold as it rises. Synthesize a hop cycle at the same cadence
+            // as the cos gaits (dist*38.38*0.25), gated by walk speed so idle
+            // returns to the grounded pose (jump_rotation = 0).
+            if (rabbitGait)
+            {
+                float rspeed = Mathf.Clamp01(walkSpeedRef);
+                variables["jump_rotation"] =
+                    Mathf.Max(0f, Mathf.Cos(distanceMoved * 38.38f * 0.25f)) * rspeed;
             }
             // player.entity.json pre_animation (walking):
             //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(0.6) * 57.3

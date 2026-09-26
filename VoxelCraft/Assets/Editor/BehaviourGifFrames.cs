@@ -62,6 +62,8 @@ namespace VoxelCraft.Editor
                 ("creeper", null, false, "walk"),
                 ("horse", null, false, "walk"),
                 ("donkey", null, false, "walk"),
+                ("rabbit", null, false, "walk"),
+                ("panda", null, false, "walk"),
                 ("armadillo", null, false, "walk"),
                 ("llama", null, false, "walk"),
                 ("steve", null, false, "walk"),
