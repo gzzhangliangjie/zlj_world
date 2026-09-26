@@ -61,6 +61,8 @@ namespace VoxelCraft.Editor
                 ("ocelot", "animation.ocelot.sit", false, "sit"),
                 ("creeper", null, false, "walk"),
                 ("horse", null, false, "walk"),
+                ("donkey", null, false, "walk"),
+                ("armadillo", null, false, "walk"),
                 ("llama", null, false, "walk"),
                 ("steve", null, false, "walk"),
                 ("bee", null, false, "walk"),

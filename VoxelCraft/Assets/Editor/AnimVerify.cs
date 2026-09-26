@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" };
 
             foreach (var sp in speciesList)
             {
@@ -77,7 +77,7 @@ namespace VoxelCraft.Editor
             // (goat: left_front_leg etc.; ocelot: backLegL/R + frontLegL/R);
             // hand-built path uses Hip0..3.
             var legs = go.GetComponentsInChildren<Transform>()
-                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg)$"))
+                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg|Leg1A|Leg2A|Leg3A|Leg4A)$"))
                          .OrderBy(t => t.name)
                          .Take(4).ToArray();
             // Flyers (bee/bat): wings flap, legs don't cadence (bedrock bee

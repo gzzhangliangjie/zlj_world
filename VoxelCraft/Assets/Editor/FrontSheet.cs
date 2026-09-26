@@ -21,8 +21,9 @@ namespace VoxelCraft.Editor
             cam.clearFlags = CameraClearFlags.SolidColor;
             try
             {
-                foreach (string sp in new[] { "zombie", "skeleton", "villager" })
+                foreach (string sp in new[] { "zombie", "skeleton", "villager", "bee", "donkey", "armadillo" })
                 {
+                    float yaw = sp == "bee" ? -144f : 180f;
                     var go = new GameObject("FS_" + sp);
                     var ani = go.AddComponent<Creatures.BlockyAnimal>();
                     ani.species = sp;
@@ -40,7 +41,7 @@ namespace VoxelCraft.Editor
                     foreach (var r in rends) b.Encapsulate(r.bounds);
                     float maxDim = Mathf.Max(b.size.x, b.size.y, b.size.z);
                     float dist = maxDim * 2.2f + 0.5f;
-                    Vector3 dir = Quaternion.Euler(0f, 180f, 0f) * new Vector3(1.6f, 0.35f, -2.2f).normalized;
+                    Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * new Vector3(1.6f, 0.35f, -2.2f).normalized;
                     cam.transform.position = b.center + dir * dist;
                     cam.transform.LookAt(b.center);
                     cam.orthographicSize = maxDim * 0.62f;

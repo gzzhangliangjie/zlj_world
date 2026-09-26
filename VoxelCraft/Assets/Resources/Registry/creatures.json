@@ -125,6 +125,20 @@
       "locomotion": "walk",
       "gait": "var:leg_x_rot_anim"
     },
+    "donkey": {
+      "walkClip": "animation.horse.v3.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "var:leg_x_rot_anim"
+    },
+    "armadillo": {
+      "walkClip": "animation.armadillo.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
     "llama": {
       "walkClip": "animation.quadruped.walk",
       "behaviours": [],
@@ -252,6 +266,12 @@
       46,
       8,
       10
+    ],
+    "armadillo": [
+      43,
+      42,
+      7,
+      5
     ]
   },
   "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."

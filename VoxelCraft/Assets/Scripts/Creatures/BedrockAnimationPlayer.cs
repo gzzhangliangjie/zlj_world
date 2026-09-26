@@ -46,6 +46,7 @@ namespace VoxelCraft.Creatures
             public float length = -1f;    // -1 = derive from max keyframe time
             public bool loop = true;
             public bool timeFromDistance; // anim_time_update = modified_distance_moved
+            public bool timeFromWalkVar;  // anim_time_update = variable.walk_anim_time_update (armadillo)
             public List<Track> tracks = new List<Track>();
         }
 
@@ -314,6 +315,15 @@ namespace VoxelCraft.Creatures
                 if (a.TryGetValue("anim_time_update", out object atu) &&
                     atu is string atus && atus.Contains("modified_distance_moved"))
                     clip.timeFromDistance = true;
+                // Armadillo-family: anim_time_update = variable.walk_anim_time_update
+                // (entity pre_anim advances t by lerp(2,5,speed)*dt while WALKING;
+                // the walk controller stops it when idle). Vanilla time rate at
+                // mid speed = 3x realtime; our dist clock * 0.25 matches the
+                // 38.17rad/m cos gaits, so use 0.75 = 0.25 * 3 for the
+                // keyframed armadillo loop (1.4583s cycle at 1.4 m/s).
+                if (a.TryGetValue("anim_time_update", out object atu2) &&
+                    atu2 is string atus2 && atus2.Contains("variable.walk_anim_time_update"))
+                    clip.timeFromWalkVar = true;
 
                 if (!(a.TryGetValue("bones", out object bv) &&
                       bv is Dictionary<string, object> bones)) continue;
@@ -451,6 +461,10 @@ namespace VoxelCraft.Creatures
                 variables["leg_stand_factor"] = lsf;
                 variables["leg_x_rot_anim"] = lsf * 45.8f * hspeed;
                 variables["stand_anim"] = 0f;
+                // horse_v1 (donkey_v1): leg_walk_factor replaces
+                // leg_stand_factor in the walk clip; legs use
+                // leg_walk_factor*28.6*speed.
+                variables["leg_walk_factor"] = lsf;
             }
             // player.entity.json pre_animation (walking):
             //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(0.6) * 57.3
@@ -481,6 +495,10 @@ namespace VoxelCraft.Creatures
                     // game scale, so scale to keep the vanilla step cadence
                     // (raw 38.17 rad/m is ~8 Hz at 1.4 m/s - comically fast).
                     p.time = distanceMoved * 0.25f;
+                else if (c.timeFromWalkVar)
+                    // armadillo: vanilla advances t by lerp(2,5,speed)*dt
+                    // (~3x realtime at mid speed) - 0.75 = 0.25 * 3.
+                    p.time = distanceMoved * 0.75f;
                 else p.time += dt;
                 if (maxT > 0f && p.time > maxT)
                 {
@@ -507,7 +525,7 @@ namespace VoxelCraft.Creatures
             // way: anim_time_update = modified_distance_moved). Behaviour pose
             // clips (graze/sit/sleep) must hold full weight - blending them
             // toward rest washed the poses out while idle.
-            float w = absolute ? 1f : (c.timeFromDistance ? Mathf.Clamp01(gaitWeight) : 1f);
+            float w = absolute ? 1f : ((c.timeFromDistance || c.timeFromWalkVar) ? Mathf.Clamp01(gaitWeight) : 1f);
             foreach (var tr in c.tracks)
             {
                 if (!boneIndex.TryGetValue(tr.bone, out var bone))

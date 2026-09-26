@@ -115,6 +115,21 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 13, 6, 5, 7);
                     leg = BoxBuilder.McNet(48, 21, 4, 11, 4);
                     break;
+                case "donkey":
+                    // horse_v3 geo family (donkey_v3 entity -> geometry.horse.v3,
+                    // textures/entity/horse2/donkey.png 64x64). Same nets as horse.
+                    body = BoxBuilder.McNet(0, 32, 10, 10, 22);
+                    head = BoxBuilder.McNet(0, 13, 6, 5, 7);
+                    leg = BoxBuilder.McNet(48, 21, 4, 11, 4);
+                    break;
+                case "armadillo":
+                    // Bedrock armadillo geo (64x64 sheet): body 8x8x12
+                    // uv(0,20) (second shell cube uv(0,40)), head 3x5x2
+                    // uv(43,15), legs 2x3x2 uv(51,31)/(42,31).
+                    body = BoxBuilder.McNet(0, 20, 8, 8, 12);
+                    head = BoxBuilder.McNet(43, 15, 3, 5, 2);
+                    leg = BoxBuilder.McNet(51, 31, 2, 3, 2);
+                    break;
                 case "ocelot":
                     // Bedrock ocelot geo (64x32 sheet): head 5x4x5 uv(0,0),
                     // body 4x16x6 uv(20,0), front legs 2x10x2 uv(40,0),
