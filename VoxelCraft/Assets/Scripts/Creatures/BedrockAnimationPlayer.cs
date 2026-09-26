@@ -10,7 +10,11 @@ namespace VoxelCraft.Creatures
     /// *.animation.json) on a transform tree built by BedrockGeoImporter.
     ///
     /// Coordinate convention (matches BedrockGeoImporter): bedrock rotation
-    /// [rx,ry,rz] -> Unity Euler(-rx,-ry,-rz) applied AFTER the bone's rest
+    /// [rx,ry,rz] -> Unity Euler(rx,-ry,-rz) applied AFTER the bone's rest
+    /// (X identity: pixel-verified by BakeSetup wolf body +90 (wolfdump7) and
+    /// hd1 fox-sit direction probe; Y/Z negated under the importer's mirrored
+    /// frame x'=-x, z'=-z. Blockbench import inverts x,y in ITS frame;
+    /// mirrored through M=diag(-1,1,1... ours keeps z negated, y negated.)
     /// rotation; bedrock position [x,y,z] -> Unity (-x, y, -z) * (1/16).
     ///
     /// Molang-lite subset (covers the vanilla animal clips):
@@ -50,6 +54,11 @@ namespace VoxelCraft.Creatures
             internal Clip clip;
             internal float time;
             internal bool absolute; // setup/sitting-style: values are targets
+            // Frozen `this` per rotation track, captured at Play() time.
+            // Bedrock reads the channel's value when the clip STARTS; a live
+            // per-frame reading oscillates (45-this -> -45, next frame reads
+            // -45 -> +90 ... the pose never settles).
+            internal Dictionary<string, Vector3> thisVals;
         }
 
         // ---------------- public API ----------------
@@ -173,7 +182,25 @@ namespace VoxelCraft.Creatures
                     Stop(playing[i].clip.name);
             for (int i = 0; i < playing.Count; i++)
                 if (playing[i].clip == clip) return true;
-            playing.Add(new Playing { clip = clip, time = 0f, absolute = absolute });
+            // Freeze `this` per rotation track at clip start (bedrock reads
+            // the channel's pre-clip value once; live reads oscillate).
+            var tv = new Dictionary<string, Vector3>();
+            foreach (var tr in clip.tracks)
+            {
+                if (tr.channel != "rotation" && tr.channel != "position") continue;
+                Transform bone = null;
+                if (boneIndex.TryGetValue(tr.bone, out var b0)) bone = b0;
+                else
+                    foreach (var kv in boneIndex)
+                        if (string.Compare(kv.Key, tr.bone, true) == 0) { bone = kv.Value; break; }
+                if (bone == null) continue;
+                tv[tr.bone.ToLowerInvariant() + "|" + tr.channel] = new Vector3(
+                    ThisValue(bone, tr.channel, 0),
+                    ThisValue(bone, tr.channel, 1),
+                    ThisValue(bone, tr.channel, 2));
+            }
+            playing.Add(new Playing { clip = clip, time = 0f, absolute = absolute, thisVals = tv });
+            if (IsSleepClip(clipName)) ApplySleepVisibility(true);
             return true;
         }
 
@@ -189,6 +216,7 @@ namespace VoxelCraft.Creatures
                 }
             }
             if (c == null) return;
+            if (IsSleepClip(c.name)) ApplySleepVisibility(false);
             // restore rest pose on the bones this clip drove
             foreach (var tr in c.tracks)
             {
@@ -200,9 +228,54 @@ namespace VoxelCraft.Creatures
 
         public void StopAll()
         {
+            bool hadSleep = false;
+            foreach (var p in playing) if (IsSleepClip(p.clip.name)) hadSleep = true;
             playing.Clear();
+            if (hadSleep) ApplySleepVisibility(false);
             foreach (var kv in restPos) kv.Key.localPosition = kv.Value;
             foreach (var kv in restRot) kv.Key.localRotation = kv.Value;
+        }
+
+        // ---- render_controller part_visibility (fox.render_controllers.json):
+        //   leg* = !query.is_sleeping, head = !query.is_sleeping,
+        //   head_sleeping = query.is_sleeping.
+        // We map "a *.sleep clip is playing" to query.is_sleeping=true.
+        // Cube-level only: head_sleeping is a CHILD of head, so bone-level
+        // SetActive would kill the sleeping head along with the awake one.
+        private static bool IsSleepClip(string name) => name.EndsWith(".sleep");
+
+        private void ApplySleepVisibility(bool sleeping)
+        {
+            foreach (var kv in boneIndex)
+            {
+                string n = kv.Key.ToLowerInvariant();
+                bool? vis = null;
+                if (n == "head") vis = !sleeping;
+                else if (n == "head_sleeping") vis = sleeping;
+                else if (n.Length > 3 && n.StartsWith("leg")) vis = !sleeping;
+                if (vis == null) continue;
+                if (n == "head_sleeping") kv.Value.gameObject.SetActive(sleeping);
+                SetCubesVisible(kv.Value, vis.Value);
+            }
+            Debug.Log($"[PartVis] sleeping={sleeping} applied");
+        }
+
+        /// Toggle only cube GameObjects ("cube_*" / "CubePivot"), never child
+        /// bones, so hiding "head" leaves head_sleeping's cubes reachable.
+        /// Descends through nested pivots but stops at child BONES (they own
+        /// their own visibility in this pass).</summary>
+        private static void SetCubesVisible(Transform node, bool vis, bool root = true)
+        {
+            foreach (Transform c in node)
+            {
+                if (c.name.StartsWith("cube_"))
+                {
+                    var r = c.GetComponent<Renderer>();
+                    if (r != null) r.enabled = vis;
+                }
+                else if (c.name == "CubePivot") SetCubesVisible(c, vis, false);
+                // child bones: skipped - visibility is per-bone
+            }
         }
 
         // ---------------- parsing ----------------
@@ -348,10 +421,16 @@ namespace VoxelCraft.Creatures
                 variables["tcos_right_side"] = tcos;
                 variables["tcos_left_side"] = -tcos;
             }
-            for (int i = playing.Count - 1; i >= 0; i--)
+            for (int i = 0; i < playing.Count; i++)
             {
                 var p = playing[i];
                 var c = p.clip;
+                // Gait weight eases here with the SAME dt the batch harness
+                // passes in (BlockyAnimal.Update's Time.deltaTime-based lerp
+                // never runs in editor batch mode - the weight froze at 1.0
+                // and walk swung legs at the full authored 80 degrees).
+                gaitWeight = Mathf.MoveTowards(
+                    gaitWeight, moving ? 0.3f : 0f, dt * 2.5f);
                 float maxT = c.length > 0f ? c.length : MaxTrackTime(c);
                 if (c.timeFromDistance)
                     // Bedrock distance is in blocks with a gait period of
@@ -366,7 +445,7 @@ namespace VoxelCraft.Creatures
                     else if (!p.absolute) { playing.RemoveAt(i); continue; }
                     else p.time = maxT; // hold final pose
                 }
-                Sample(c, p.time, p.absolute);
+                Sample(c, p.time, p.absolute, p.thisVals);
             }
         }
 
@@ -379,9 +458,13 @@ namespace VoxelCraft.Creatures
             return m;
         }
 
-        private void Sample(Clip c, float time, bool absolute = false)
+        private void Sample(Clip c, float time, bool absolute = false, Dictionary<string, Vector3> thisVals = null)
         {
-            float w = absolute ? 1f : Mathf.Clamp01(gaitWeight);
+            // Gait weight scales ONLY locomotion clips (identified the vanilla
+            // way: anim_time_update = modified_distance_moved). Behaviour pose
+            // clips (graze/sit/sleep) must hold full weight - blending them
+            // toward rest washed the poses out while idle.
+            float w = absolute ? 1f : (c.timeFromDistance ? Mathf.Clamp01(gaitWeight) : 1f);
             foreach (var tr in c.tracks)
             {
                 if (!boneIndex.TryGetValue(tr.bone, out var bone))
@@ -397,10 +480,10 @@ namespace VoxelCraft.Creatures
                 if (tr.frames.Count == 1)
                 {
                     var kf = tr.frames[0];
-                    v = kf.expr != null ? EvalExpr(kf.expr, bone, tr.channel, time)
+                    v = kf.expr != null ? EvalExpr(kf.expr, bone, tr.channel, time, tr.bone.ToLowerInvariant() + "|" + tr.channel, thisVals, kf.post)
                                         : kf.post;
                 }
-                else v = SampleKeyframes(tr, time);
+                else v = SampleKeyframes(tr, time, thisVals, tr.bone.ToLowerInvariant() + "|" + tr.channel);
                 if (!absolute && w < 1f)
                 {
                     // Blend toward the BIND pose captured at Bind() time - a
@@ -430,51 +513,93 @@ namespace VoxelCraft.Creatures
             }
         }
 
-        private Vector3 EvalExpr(string[] exprs, Transform bone, string channel, float time)
+        private Vector3 EvalExpr(string[] exprs, Transform bone, string channel, float time,
+            string boneName = null, Dictionary<string, Vector3> frozenThis = null, Vector3 fallback = default)
         {
             var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved, headYaw = headYawDeg, vars = variables };
-            var v = Vector3.zero;
+            // Start from the PARSED CONSTANTS (kf.post) - Fill() stores plain
+            // numbers there even when sibling components are expressions, so
+            // "0, -115, expr" keeps its -115 constant y while z evaluates.
+            var v = fallback;
+            Vector3? frozen = null;
+            if (frozenThis != null && boneName != null && frozenThis.TryGetValue(boneName.ToLowerInvariant(), out var fv))
+                frozen = fv;
             for (int i = 0; i < 3; i++)
             {
                 if (exprs[i] == null) continue;
-                ctx.thisVal = ThisValue(bone, channel, i);
+                ctx.thisVal = frozen != null ? frozen.Value[i] : ThisValue(bone, channel, i);
                 v[i] = Molang.Eval(exprs[i], ctx);
             }
             return v;
         }
 
-        private Vector3 SampleKeyframes(Track tr, float t)
+        private Vector3 SampleKeyframes(Track tr, float t, Dictionary<string, Vector3> frozenThis = null, string boneName = null)
         {
+            Vector3 At(Keyframe kf) => EvalKf(kf, t, frozenThis, boneName);
             var f = tr.frames;
-            if (t <= f[0].time) return EvalKf(f[0], t);
-            if (t >= f[f.Count - 1].time) return EvalKf(f[f.Count - 1], t);
+            if (t <= f[0].time) return At(f[0]);
+            if (t >= f[f.Count - 1].time) return At(f[f.Count - 1]);
             for (int i = 0; i < f.Count - 1; i++)
             {
                 if (t >= f[i].time && t <= f[i + 1].time)
                 {
                     float u = (t - f[i].time) / Mathf.Max(1e-5f, f[i + 1].time - f[i].time);
-                    return Vector3.Lerp(EvalKf(f[i], t), EvalKf(f[i + 1], t), u);
+                    return Vector3.Lerp(At(f[i]), At(f[i + 1]), u);
                 }
             }
-            return EvalKf(f[f.Count - 1], t);
+            return At(f[f.Count - 1]);
         }
 
-        private Vector3 EvalKf(Keyframe kf, float time)
+        private Vector3 EvalKf(Keyframe kf, float time, Dictionary<string, Vector3> frozenThis = null, string boneName = null)
         {
             if (kf.expr == null) return kf.post;
             var v = kf.post;
             var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved, headYaw = headYawDeg, vars = variables };
+            Vector3? frozen = null;
+            if (frozenThis != null && boneName != null && frozenThis.TryGetValue(boneName.ToLowerInvariant(), out var fv))
+                frozen = fv;
             for (int i = 0; i < 3; i++)
-                if (kf.expr[i] != null) v[i] = Molang.Eval(kf.expr[i], ctx);
+                if (kf.expr[i] != null)
+                {
+                    ctx.thisVal = frozen != null ? frozen.Value[i] : ThisValue(null, "rotation", i);
+                    v[i] = Molang.Eval(kf.expr[i], ctx);
+                }
             return v;
         }
 
         private float ThisValue(Transform bone, string channel, int comp)
         {
+            if (bone == null) return 0f;
+            if (channel == "position")
+            {
+                // Bedrock `this` for the position channel is the channel's
+                // own PRE-CLIP value - for a fresh bind that is the setup
+                // constant (setupPos), NOT the bind pivot: subtracting the
+                // full rest over-shifted wolf sitting off-screen.
+                string key = bone.name.ToLowerInvariant();
+                if (setupPos.TryGetValue(key, out var sv))
+                    return sv[comp];
+                return 0f;
+            }
             if (channel != "rotation") return 0f;
             if (!restRot.TryGetValue(bone, out var rest)) return 0f;
-            Quaternion delta = Quaternion.Inverse(rest) * bone.localRotation;
-            return delta.eulerAngles[comp] > 180f ? delta.eulerAngles[comp] - 360f : delta.eulerAngles[comp];
+            // Bedrock `this` = the channel's CURRENT TOTAL bedrock angle
+            // (e.g. wolf setup drove body to 90; sitting's "45 - this" must
+            // see 90 so the pose lands at total -45 = chest-up sit). Total =
+            // angle baked into rest (setup) + delta currently applied.
+            Quaternion dq = Quaternion.Inverse(rest) * bone.localRotation;
+            Vector3 de = dq.eulerAngles;
+            Vector3 deltaBedrock = new Vector3(
+                de.x > 180f ? de.x - 360f : de.x,
+                -(de.y > 180f ? de.y - 360f : de.y),
+                -(de.z > 180f ? de.z - 360f : de.z));
+            Vector3 re = rest.eulerAngles;
+            Vector3 bindBedrock = new Vector3(
+                re.x > 180f ? re.x - 360f : re.x,
+                -(re.y > 180f ? re.y - 360f : re.y),
+                -(re.z > 180f ? re.z - 360f : re.z));
+            Vector3 total = bindBedrock + deltaBedrock;
+            return total[comp];
         }
 
         private void Apply(Transform bone, string channel, Vector3 v, bool absolute = false)
@@ -487,7 +612,7 @@ namespace VoxelCraft.Creatures
                         // Bedrock "x - this" yields the FINAL bedrock angle;
                         // our bind pose already baked the geo bind_pose_rotation
                         // in (rest = Euler(-bpr)). Convert: Unity local =
-                        // rest * Euler(-(v_final - bindAngle)) where bindAngle
+                        // rest * Euler(v_final - bindAngle) where bindAngle
                         // is the bedrock angle baked into rest.
                         Quaternion rest = restRot.TryGetValue(bone, out var rr) ? rr : bone.localRotation;
                         Vector3 re = rest.eulerAngles;
@@ -495,17 +620,16 @@ namespace VoxelCraft.Creatures
                             re.x > 180f ? re.x - 360f : re.x,
                             -(re.y > 180f ? re.y - 360f : re.y),
                             -(re.z > 180f ? re.z - 360f : re.z));
-                        // importer convention: rest = Euler(-bprX, +bprY?, ...) —
-                        // verify: pig torso bpr [90,0,0] -> rest Euler(-90,0,0),
-                        // so bedrock angle = -restEuler per axis (y/z negated
-                        // for bedrock->unity axis flip).
+                        // Same convention as the relative branch: bedrock x/z
+                        // map identity, y negated (Ry(pi)-conjugated frame;
+                        // z-negation was a bug - fox.sleep head curled away).
                         Vector3 target = v - bindBedrock;
-                        bone.localRotation = rest * Quaternion.Euler(-target.x, -target.y, -target.z);
+                        bone.localRotation = rest * Quaternion.Euler(target.x, -target.y, target.z);
                     }
                     else
                     {
                         Quaternion rest = restRot.TryGetValue(bone, out var r) ? r : bone.localRotation;
-                        bone.localRotation = rest * Quaternion.Euler(-v.x, -v.y, -v.z);
+                        bone.localRotation = rest * Quaternion.Euler(v.x, -v.y, v.z);
                     }
                     break;
                 case "position":

@@ -262,30 +262,34 @@ namespace VoxelCraft.Creatures
             // model-space positions of the bone origin). localPos is derived
             // from model-space pivots so rotated parents still place bones
             // exactly at their model-space pivot.
+            // Split into 2a/2b/2c because FILE ORDER IS NOT PARENT-FIRST:
+            // legacy 1.8 fox geo lists head BEFORE its parent body, so the
+            // old single loop fell back to ABSOLUTE placement for head
+            // (floating half a unit up - the fox/sit two-domain split).
             var modelPos = new Dictionary<string, Vector3>();
+            // 2a: collect model-space pivots + bind rotations for ALL bones.
             foreach (var kv in boneMeta)
             {
-                string name = kv.Key;
-                var bone = kv.Value;
-                var t = byName[name];
-                string parentName = bone.TryGetValue("parent", out object p) && p is string ps ? ps : null;
-                Transform pt = parentName != null && byName.TryGetValue(parentName, out var ptFound) ? ptFound : null;
-                t.SetParent(pt != null ? pt : root, false);
-
                 Vector3 pos = Vector3.zero;
-                if (bone.TryGetValue("pivot", out object pv) && pv is List<object> pl && pl.Count == 3)
+                if (kv.Value.TryGetValue("pivot", out object pv) && pv is List<object> pl && pl.Count == 3)
                 {
                     pos = new Vector3(-ToFloat(pl[0]) * Px, ToFloat(pl[1]) * Px, -ToFloat(pl[2]) * Px);
                 }
-                modelPos[name] = pos;
-                if (pt != null && modelPos.TryGetValue(parentName, out var pp))
+                modelPos[kv.Key] = pos;
+                if (kv.Value.TryGetValue("bind_pose_rotation", out object bpv) && bpv is List<object> bpl && bpl.Count == 3)
                 {
-                    t.localPosition = Quaternion.Inverse(pt.localRotation) * (pos - pp);
+                    boneBind[kv.Key] = new Vector3(ToFloat(bpl[0]), ToFloat(bpl[1]), ToFloat(bpl[2]));
                 }
-                else
-                {
-                    t.localPosition = pos;
-                }
+            }
+            // 2b: build the hierarchy + explicit rest rotations (children in
+            // 2c must read the FINAL parent rotation when rebasing).
+            foreach (var kv in boneMeta)
+            {
+                var bone = kv.Value;
+                var t = byName[kv.Key];
+                string parentName = bone.TryGetValue("parent", out object p) && p is string ps ? ps : null;
+                Transform pt = parentName != null && byName.TryGetValue(parentName, out var ptFound) ? ptFound : null;
+                t.SetParent(pt != null ? pt : root, false);
                 // 1.8 files store the torso UPRIGHT and tip it horizontal via
                 // bind_pose_rotation. Semantics per bedrock runtime: the bind
                 // rotation reorients THIS BONE'S OWN CUBES around its pivot
@@ -300,13 +304,22 @@ namespace VoxelCraft.Creatures
                     t.localRotation = Quaternion.Euler(
                         -ToFloat(rl[0]), -ToFloat(rl[1]), -ToFloat(rl[2]));
                 }
-                if (bone.TryGetValue("bind_pose_rotation", out object bpv) && bpv is List<object> bpl && bpl.Count == 3)
+            }
+            // 2c: rebase pivots - every parent's pivot AND rotation is known,
+            // so file order no longer matters.
+            foreach (var kv in boneMeta)
+            {
+                string name = kv.Key;
+                string parentName = kv.Value.TryGetValue("parent", out object p2) && p2 is string ps2 ? ps2 : null;
+                Transform pt = parentName != null && byName.TryGetValue(parentName, out var ptFound2) ? ptFound2 : null;
+                var t = byName[name];
+                if (pt != null && modelPos.TryGetValue(parentName, out var pp))
                 {
-                    // Store for cube-level application; ALSO bake it into the
-                    // transform so children authored in the final frame stay
-                    // correct: pivot math below already handles rotated
-                    // parents via Inverse(parent.localRotation).
-                    boneBind[name] = new Vector3(ToFloat(bpl[0]), ToFloat(bpl[1]), ToFloat(bpl[2]));
+                    t.localPosition = Quaternion.Inverse(pt.localRotation) * (modelPos[name] - pp);
+                }
+                else
+                {
+                    t.localPosition = modelPos[name];
                 }
             }
 
@@ -345,9 +358,18 @@ namespace VoxelCraft.Creatures
                     // bones are NOT affected (their pivots are already final).
                     if (boneBind.TryGetValue(name, out Vector3 bindDeg))
                     {
-                        // Bedrock Rx(-theta) lands the pillar on its back in
-                        // our flipped frame; verified: pig torso must sit at
-                        // y 6..14 px meeting the 6 px legs.
+                        // SIGN PINNED NUMERICALLY (bpr_sign_unity.py):
+                        // bedrock-frame ground truth for fox body bpr[90,0,0]
+                        // is Rx(-90) @pivot[0,8,0] -> body z -3..+8 (front
+                        // edge meets head back at z=-3, covers tail pivot
+                        // z=+7 and both leg rows z=-1..6; tail Rx(-80)
+                        // sweeps back z +7.6..17.3). Conjugating through the
+                        // frame flip F=diag(-1,1,-1): F*Rx(t)*F = Rx(-t), so
+                        // bedrock Rx(-90) == Unity Euler(+90) == Euler(+bpr.x)
+                        // (F preserves Y sign, flips Z). The anim convention
+                        // (bx,-by,bz) does NOT apply here - it has no frame
+                        // conjugation. Empirical: gif12 walk 40/40 with +;
+                        // SV8 with - (vs orientation + below) = 45deg legs.
                         Quaternion bindRot = Quaternion.Euler(bindDeg.x, bindDeg.y, bindDeg.z);
                         Vector3 pivot = modelPos[name];
                         // Rotate around the bone pivot in model space.
@@ -406,31 +428,14 @@ namespace VoxelCraft.Creatures
             {
                 bodyBone.localRotation = Quaternion.Euler(bodyPitchDeg, 0f, 0f) * bodyBone.localRotation;
             }
-            // Legs parented under a rotated body (fox body pitch, 1.8 torso
-            // bind rotation) inherit a tilted frame: re-parent them to the
-            // root at their model-space pivot with an upright rotation, so
-            // the walk swing axis stays vertical and feet stay planted.
-            for (int i = 0; i < 4; i++)
-            {
-                var lt = legsOut[i];
-                if (lt == null) continue;
-                if (lt.parent != null && lt.parent.name != "GeoRoot")
-                {
-                    // Re-derive the model-space pivot (stored in modelPos
-                    // during pass 2) instead of trusting the pitched world
-                    // position: SetParent(root, worldPositionStays) also
-                    // bakes the parent pitch into localRotation, which flips
-                    // legs sideways. Parent with stays=false and reset pose.
-                    // (No child compensation needed: with cube-level bind
-                    // rotation no leg bone carries a rotated frame, and the
-                    // fox body pitch must NOT be baked into its legs.)
-                    string legName = boneNameToOriginal != null && boneNameToOriginal.TryGetValue(lt.name, out var orig) ? orig : lt.name;
-                    Vector3 mp = modelPos.TryGetValue(legName, out var lp) ? lp : lt.localPosition;
-                    lt.SetParent(root, false);
-                    lt.localPosition = mp;
-                    lt.localRotation = Quaternion.identity;
-                }
-            }
+            // Hierarchy stays EXACTLY as bedrock authored it: legs/tail/head
+            // remain children of body. When an official clip rotates the body
+            // (fox.sleep rolls -90, fox.sit pitches -60, wolf sitting) the
+            // whole subtree follows and the clip's own leg channels compensate
+            // - the same math the vanilla runtime runs. (An earlier hack
+            // re-rooted legs to the root for a tilted-frame walk swing; it
+            // planted the feet but DECOUPLED them from the body, so any body
+            // rotation split the model apart mid-animation.)
 
             // ---- setup-clip bake (bedrock runtime applies ".setup" once) ----
             if (setupAnimJson != null) BakeSetup(setupAnimJson.text, byName, boneNameToOriginal, modelPos);

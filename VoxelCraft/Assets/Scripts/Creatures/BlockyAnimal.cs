@@ -85,19 +85,17 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 18, 2, 8, 2);
                     break;
                 case "fox":
-                    // Vanilla fox (Java-layout 48x32 sheet padded to 64).
-                    // ALL offsets are pixel-fitted: each cube's six face
-                    // rects must be 100% opaque in fox.png (unique fits).
-                    // head (1,5): front=(7,11,8,6) - K eyes at x7/x14 edges,
-                    // white chin y16, orange brow; body (24,15) - the ONLY
-                    // fully-opaque 6x11x6 net (old (30,15) sampled padding
-                    // junk = the black/white bands regression); snout (6,18):
-                    // front=(9,21,4,2) white muzzle WKKW + black nose;
-                    // ears (8,1)/(15,1) (y0 row is transparent); legs (13,24)
-                    // with KK paw pixels; tail (30,0) with white tip top face.
-                    body = BoxBuilder.McNet(24, 15, 6, 11, 6);
-                    head = BoxBuilder.McNet(1, 5, 8, 6, 6);
-                    leg = BoxBuilder.McNet(13, 24, 2, 6, 2);
+                    // Bedrock-layout sheet (bedrock-samples v1.21.80.3
+                    // fox.png, 64x32): offsets are the geo-declared UVs -
+                    // head uv(0,0) 8x6x6 (front rect(6,6,8,6) with K eyes
+                    // at x0/x7), body uv(30,15) 6x11x6, legs uv(14,24)/
+                    // (22,24) 2x6x2. The old Java-layout offsets (24,15)/
+                    // (1,5) sampled transparent padding on the bedrock
+                    // sheet. Rendering itself uses the geo pipeline; these
+                    // nets feed the SelfTest m9 uv validation.
+                    body = BoxBuilder.McNet(30, 15, 6, 11, 6);
+                    head = BoxBuilder.McNet(0, 0, 8, 6, 6);
+                    leg = BoxBuilder.McNet(14, 24, 2, 6, 2);
                     break;
                 case "goat":
                     // Vanilla goat (bedrock geo, 64x64 sheet): neck+chest
@@ -522,6 +520,12 @@ namespace VoxelCraft.Creatures
                 playerX.Play("animation.quadruped.walk");
                 geoAnimPlayer = playerX;
             }
+            // v1.21 geos (fox) are authored UPRIGHT; the vanilla entity layer
+            // keeps ".setup" resident, but its "-this" semantics means ZERO
+            // net change on an already-clean bind - playing it absolutely
+            // here would double-subtract the bind angle. The quadruped walk
+            // + behaviour clips position the body correctly on their own.
+            // (Verified: hd2 bind pose is the vanilla upright rest.)
             if (gameObject.GetComponent<BehaviourBrain>() == null)
                 gameObject.AddComponent<BehaviourBrain>();
         }
@@ -717,12 +721,15 @@ namespace VoxelCraft.Creatures
             if (geoAnimPlayer != null)
             {
                 // Locomotion drives the gait clock; idle animals ease back to
-                // the rest pose instead of freezing mid-swing.
+                // the rest pose instead of freezing mid-swing. Vanilla gates
+                // walk by query.modified_move_speed (~0.25 while walking) and
+                // EXCLUDES it entirely in sit/sleep states - full-weight
+                // swing was flinging legs at 80 deg.
                 geoAnimPlayer.moving = walking && move > 0f;
                 geoAnimPlayer.walkSpeedRef = walkSpeed;
                 geoAnimPlayer.gaitWeight = Mathf.Lerp(
                     geoAnimPlayer.gaitWeight,
-                    geoAnimPlayer.moving ? 1f : 0f,
+                    geoAnimPlayer.moving ? 0.3f : 0f,
                     Time.deltaTime * 4f);
                 // Feed the wing-flap variable the legacy flap value so the
                 // official chicken.general clip can use it.
