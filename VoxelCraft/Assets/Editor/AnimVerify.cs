@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" };
 
             foreach (var sp in speciesList)
             {
@@ -422,14 +422,20 @@ namespace VoxelCraft.Editor
             else
                 Add("pose.feet_y", sp, grounded, $"feet ymin {feet:F3} m", feet, -0.08f, 0.06f);
 
-            // Head in front of body centre (+Z is our forward)
+            // Head in front of body centre (+Z is our forward).
+            // Reference = TORSO bone (body/waist), not whole-model AABB:
+            // zombie's vanilla forward-held arms extend the z bounds and
+            // made the head read 0.11 m "behind" the arms-inflated centre.
             var head = go.GetComponentsInChildren<Transform>()
                         .FirstOrDefault(t => t.name == "head" || t.name == "Head");
+            var torso = go.GetComponentsInChildren<Transform>()
+                        .FirstOrDefault(t => t.name == "body" || t.name == "Body" || t.name == "waist");
+            float refZ = (torso != null ? torso.position.z : b.center.z);
             if (head != null)
             {
-                bool fwd = head.position.z > b.center.z - 0.1f;
-                Add("pose.head_fwd", sp, fwd, $"head z {head.position.z:F2} vs centre {b.center.z:F2}",
-                    head.position.z - b.center.z, -0.1f, 2f);
+                bool fwd = head.position.z > refZ - 0.1f;
+                Add("pose.head_fwd", sp, fwd, $"head z {head.position.z:F2} vs centre {refZ:F2}",
+                    head.position.z - refZ, -0.1f, 2f);
             }
 
             // Nothing below ground or absurdly tall

@@ -65,6 +65,9 @@ namespace VoxelCraft.Editor
                 ("steve", null, false, "walk"),
                 ("bee", null, false, "walk"),
                 ("bat", null, false, "walk"),
+                ("zombie", null, false, "walk"),
+                ("skeleton", null, false, "walk"),
+                ("villager", null, false, "walk"),
             };
 
             foreach (var (sp, clip, absolute, tag) in jobs)

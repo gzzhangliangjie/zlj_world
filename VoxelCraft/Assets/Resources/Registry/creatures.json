@@ -144,6 +144,39 @@
       "locomotion": "walk",
       "gait": "var:tcos0"
     },
+    "zombie": {
+      "walkClip": "animation.humanoid.move",
+      "biped": true,
+      "extraClips": [
+        "animation.humanoid.base_pose",
+        "animation.zombie.attack_bare_hand"
+      ],
+      "behaviours": [],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "var:tcos0"
+    },
+    "skeleton": {
+      "walkClip": "animation.humanoid.move",
+      "biped": true,
+      "extraClips": [
+        "animation.humanoid.base_pose"
+      ],
+      "behaviours": [],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "var:tcos0"
+    },
+    "villager": {
+      "walkClip": "animation.villager.move",
+      "biped": true,
+      "extraClips": [
+        "animation.villager.general"
+      ],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
     "bee": {
       "walkClip": "animation.bee.flying",
       "archetype": "insect",
@@ -201,6 +234,24 @@
       47,
       7,
       7
+    ],
+    "zombie": [
+      8,
+      16,
+      8,
+      8
+    ],
+    "skeleton": [
+      8,
+      16,
+      8,
+      8
+    ],
+    "villager": [
+      8,
+      46,
+      8,
+      10
     ]
   },
   "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."

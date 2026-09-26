@@ -160,6 +160,30 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 8, 8, 8);
                     leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
                     break;
+                case "zombie":
+                    // Bedrock humanoid 1.8 geo (64x32 sheet): body 8x12x4
+                    // uv(16,16), head 8x8x8 uv(0,0), arm 4x12x4 uv(40,16),
+                    // leg 4x12x4 uv(0,16).
+                    body = BoxBuilder.McNet(16, 16, 8, 12, 4);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
+                    break;
+                case "skeleton":
+                    // Bedrock skeleton 1.8 geo (64x32 sheet): same layout as
+                    // zombie but limbs are 2x12x2 sticks - leg uv(0,16),
+                    // arm uv(40,16). The 2px-wide rects are fully painted.
+                    body = BoxBuilder.McNet(16, 16, 8, 12, 4);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(0, 16, 2, 12, 2);
+                    break;
+                case "villager":
+                    // Bedrock villager v1.8 geo (64x64 sheet): head 8x10x8
+                    // uv(0,0), robe body 8x12x6 uv(16,20), arms folded
+                    // 8x4x4 uv(40,38), legs 4x12x4 uv(0,22).
+                    body = BoxBuilder.McNet(16, 20, 8, 12, 6);
+                    head = BoxBuilder.McNet(0, 0, 8, 10, 8);
+                    leg = BoxBuilder.McNet(0, 22, 4, 12, 4);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -213,7 +237,7 @@ namespace VoxelCraft.Creatures
                 var animPlayer = gameObject.GetComponent<BedrockAnimationPlayer>();
                 if (animPlayer == null) animPlayer = gameObject.AddComponent<BedrockAnimationPlayer>();
                 animPlayer.clipsJson.Clear();
-                foreach (var af in new[] { species, "quadruped", "wolf", "humanoid", "player" })
+                foreach (var af in new[] { species, "quadruped", "wolf", "humanoid", "player", "villager" })
                 {
                     var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
                     if (ta != null) animPlayer.clipsJson.Add(ta);

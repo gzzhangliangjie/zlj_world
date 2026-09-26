@@ -395,7 +395,7 @@ namespace VoxelCraft.Editor
 
             // ----- M7C: creature skins, models, surface query -----
             bool creatureMats = true;
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" })
             {
                 foreach (string part in new[] { "body", "face", "leg" })
                 {
@@ -534,7 +534,7 @@ namespace VoxelCraft.Editor
             // Geo importer: every species with a Geo/<species>.geo.json asset
             // must build a non-trivial tree (>= 6 bones/cubes) with all legs.
             bool geoOk = true; string geoBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" })
             {
                 var asset = Resources.Load<TextAsset>("Geo/" + sp + ".geo");
                 if (asset == null) continue;
@@ -551,7 +551,7 @@ namespace VoxelCraft.Editor
             // Official bedrock animation clips load and the Molang walk
             // formula evaluates (cos walk = 80deg at t=0).
             bool animOk = true; string animBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" })
             {
                 var apgo = new GameObject("AnimTest_" + sp);
                 var ap = apgo.AddComponent<Creatures.BedrockAnimationPlayer>();
@@ -586,7 +586,7 @@ namespace VoxelCraft.Editor
             // regressions like mismatched MC-rotated torso nets).
             bool uvOk = true;
             string uvBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" })
             {
                 var spSkin = CreatureTextureFactory.GetSkinMaterial(sp + "_skin");
                 var spTex = spSkin != null ? spSkin.mainTexture as Texture2D : null;
@@ -599,7 +599,11 @@ namespace VoxelCraft.Editor
                 Creatures.BlockyAnimal.GetSpeciesNets(sp, out var bodyNet, out _, out var headNet, out var legNet);
                 // bee/bat leg/wing nets are thin plates - see NetHasPixels.
                 bool plateLegs = sp == "bee" || sp == "bat";
-                if (!NetHasPixels(spTex, bodyNet) || !NetHasPixels(spTex, headNet)
+                // skeleton skin leaves the torso TOP rect empty (vanilla art:
+                // only flanks/front/back painted on the ribcage) - the plate
+                // rule (any-face) applies, not all-faces.
+                bool plateBody = sp == "skeleton";
+                if (!NetHasPixels(spTex, bodyNet, !plateBody) || !NetHasPixels(spTex, headNet)
                     || !NetHasPixels(spTex, legNet, !plateLegs))
                 {
                     uvOk = false;
