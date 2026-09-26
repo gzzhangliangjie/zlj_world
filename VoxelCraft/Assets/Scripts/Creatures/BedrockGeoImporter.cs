@@ -345,6 +345,7 @@ namespace VoxelCraft.Creatures
                 string name = kv.Key;
                 if (!kv.Value.TryGetValue("cubes", out object cv) || !(cv is List<object> cubes)) continue;
                 var bone = byName[name];
+                bool boneMirror = kv.Value.TryGetValue("mirror", out object mv) && mv is bool mb && mb;
                 // Accumulated parent scale on this bone is 1 (we never scale
                 // bones), so world-space sizes pass straight through.
                 foreach (var c in cubes)
@@ -400,9 +401,10 @@ namespace VoxelCraft.Creatures
                     if (bone.parent != null && bone.parent != root)
                         local = Quaternion.Inverse(bone.parent.localRotation) * local;
 
-                    Vector4[] net = BuildNet(u, v, W, H, D);
+                    Vector4[] net = BuildNet(u, v, W, H, D, boneMirror);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
-                        local, new Vector3(Mathf.Max(sx, 0.5f) * Px, Mathf.Max(sy, 0.5f) * Px, Mathf.Max(sz, 0.5f) * Px), skin, net, texW, texH);
+                        local, new Vector3(Mathf.Max(sx, 0.5f) * Px, Mathf.Max(sy, 0.5f) * Px, Mathf.Max(sz, 0.5f) * Px), skin, net, texW, texH,
+                        null, boneMirror ? MirrorFlips : null);
                     // A bind-rotated cube also changes ORIENTATION (upright
                     // pillar -> horizontal torso), not just position.
                     if (boneBind.TryGetValue(name, out Vector3 bd2))
@@ -615,11 +617,11 @@ namespace VoxelCraft.Creatures
         /// top/bottom WxD at v, front (+Z ours) and back WxH at v+D. Mirrored
         /// x flips left/right nets; v runs top-down.
         /// </summary>
-        private static Vector4[] BuildNet(int u, int v, int W, int H, int D)
+        private static Vector4[] BuildNet(int u, int v, int W, int H, int D, bool mirror = false)
         {
             // same layout as BoxBuilder.McNet but with the +Z/-Z rects swapped
             // for the flipped-frame front: our +Z face shows the bedrock front.
-            return new Vector4[]
+            var net = new Vector4[]
             {
                 new Vector4(u, v + D, D, H),                 // +X (our east)
                 new Vector4(u + D + W, v + D, D, H),         // -X (our west)
@@ -628,6 +630,18 @@ namespace VoxelCraft.Creatures
                 new Vector4(u + D, v + D, W, H),             // +Z our FRONT (bedrock front)
                 new Vector4(u + 2 * D + W, v + D, W, H),     // -Z our BACK (bedrock back)
             };
+            if (mirror)
+            {
+                // Bedrock "mirror": true on a BONE flips its cubes' unwrap
+                // horizontally: the +X/-X flank rects swap places and every
+                // face samples its rect with u reversed (handled by the
+                // faceFlip array in SkinnedBox). Bat wings/ears and humanoid
+                // left limbs share uv with the right side and rely on this.
+                var t = net[0]; net[0] = net[1]; net[1] = t;
+            }
+            return net;
         }
+
+        private static readonly bool[] MirrorFlips = { true, true, true, true, true, true };
     }
 }

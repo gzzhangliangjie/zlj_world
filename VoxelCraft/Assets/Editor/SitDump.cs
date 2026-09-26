@@ -19,6 +19,29 @@ namespace VoxelCraft.Editor
             ani.species = sp;
             ani.BuildModel();
             var player = go.GetComponent<Creatures.BedrockAnimationPlayer>();
+            if (clip == "wingtrace")
+            {
+                player.moving = true;
+                var wn = go.GetComponentsInChildren<Transform>()
+                    .Where(t => t.name.ToLowerInvariant().Contains("wing"))
+                    .OrderBy(t => t.name).ToArray();
+                var sbw = new System.Text.StringBuilder();
+                sbw.AppendLine("frame " + string.Join(" ", wn.Select(w => w.name)));
+                for (int f = 0; f < 40; f++)
+                {
+                    player.Tick(1f / 30f);
+                    sbw.Append($"f{f}");
+                    foreach (var w in wn)
+                    {
+                        var e = w.localEulerAngles;
+                        sbw.Append($" {w.name}({e.x:0.0},{e.y:0.0},{e.z:0.0})");
+                    }
+                    sbw.AppendLine();
+                }
+                System.IO.File.WriteAllText(@"D:\zlj world\_logs\wingtrace_" + sp + ".txt", sbw.ToString());
+                UnityEngine.Object.DestroyImmediate(go);
+                return;
+            }
             if (clip == "walktrace")
             {
                 player.moving = true;

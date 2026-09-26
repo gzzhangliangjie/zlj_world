@@ -34,7 +34,7 @@ namespace VoxelCraft.Art
         /// degree steps counter-clockwise, for boxes stored rotated in the skin.
         /// </summary>
         public static GameObject SkinnedBox(Transform parent, string name, Vector3 localPosition, Vector3 size,
-            Material material, Vector4[] faceUvPx, int texW, int texH, int[] faceRot = null)
+            Material material, Vector4[] faceUvPx, int texW, int texH, int[] faceRot = null, bool[] faceFlip = null)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -74,8 +74,11 @@ namespace VoxelCraft.Art
                     // the CreatePrimitive convention Box() relies on).
                     verts[vi] = corners[f][c] - new Vector3(0.5f, 0.5f, 0.5f);
                     Vector2 s = RotateUvQuarter(rot, cornerUv[c].x, cornerUv[c].y);
+                    // faceFlip: mirror the face's texture horizontally (bedrock
+                    // bone "mirror": true) - u runs the other way in the rect.
+                    float su = faceFlip != null && faceFlip.Length > f && faceFlip[f] ? 1f - s.x : s.x;
                     uvs[vi] = new Vector2(
-                        Mathf.Lerp(u0, u1, s.x),
+                        Mathf.Lerp(u0, u1, su),
                         Mathf.Lerp(v0, v1, s.y));
                 }
                 int b = f * 4;
