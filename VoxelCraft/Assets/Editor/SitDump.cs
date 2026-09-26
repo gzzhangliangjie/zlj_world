@@ -34,7 +34,10 @@ namespace VoxelCraft.Editor
                     foreach (var w in wn)
                     {
                         var e = w.localEulerAngles;
-                        sbw.Append($" {w.name}({e.x:0.0},{e.y:0.0},{e.z:0.0})");
+                        // World-space pivot (px) of each wing bone: a detached
+                        // or hierarchy-broken tip only shows in world space.
+                        var wp = w.position;
+                        sbw.Append($" {w.name}({e.x:0.0},{e.y:0.0},{e.z:0.0})@({wp.x*16f:0.00},{wp.y*16f:0.00},{wp.z*16f:0.00})");
                     }
                     sbw.AppendLine();
                 }

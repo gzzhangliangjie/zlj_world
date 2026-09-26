@@ -12,6 +12,11 @@ Shader "Voxel/UnlitTexture"
         Tags { "RenderType"="Opaque" "Queue"="Geometry" }
         Pass
         {
+            // Vanilla renders entity faces double-sided (bat/bee wing
+            // membranes are single-sided textures: the back rect is empty,
+            // so with default Cull Back a folded wing's textured face is
+            // culled and the wing visually breaks mid-flap).
+            Cull Off
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
