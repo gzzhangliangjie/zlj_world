@@ -85,6 +85,18 @@ namespace VoxelCraft.Creatures
         /// <summary>Goat: compute tcos gait vars from the entity-layer
         /// pre_animation script (goat.entity.json) each tick.</summary>
         public bool goatGait;
+        /// <summary>Creeper legs clip reads variable.leg_rot (entity layer
+        /// pre_animation); Tick computes it from the locomotion clock.</summary>
+        public bool creeperGait;
+        /// <summary>Horse v3 walk reads variable.leg_x_rot_anim /
+        /// leg_stand_factor (horse_v3.entity.json pre_animation); Tick
+        /// computes them from the locomotion clock. stand_anim stays 0
+        /// (walking), rear/eat behaviours would drive it.</summary>
+        public bool horseGait;
+        /// <summary>Player/steve move clips read variable.tcos0
+        /// (player.entity.json pre_animation); Tick computes it from the
+        /// locomotion clock. gliding_speed_value engine default = 0.6.</summary>
+        public bool steveGait;
 
         /// <summary>Locomotion speed (m/s) feeding gait variable math.</summary>
         public float walkSpeedRef = 1.4f;
@@ -421,6 +433,37 @@ namespace VoxelCraft.Creatures
                 variables["tcos_right_side"] = tcos;
                 variables["tcos_left_side"] = -tcos;
             }
+            // creeper.entity.json pre_animation:
+            // variable.leg_rot = cos(dist * 38.17326) * 80.22 * move_speed
+            if (creeperGait)
+            {
+                float cspeed = Mathf.Clamp01(walkSpeedRef);
+                variables["leg_rot"] = Mathf.Cos(distanceMoved * 38.17326f * 0.25f) *
+                                       80.22f * cspeed;
+            }
+            // horse_v3.entity.json pre_animation (walking: stand_anim=0):
+            //   leg_stand_factor = cos(dist * 38.38 + 180)
+            //   leg_x_rot_anim   = leg_stand_factor * 45.8 * move_speed
+            if (horseGait)
+            {
+                float hspeed = Mathf.Clamp01(walkSpeedRef);
+                float lsf = Mathf.Cos(distanceMoved * 38.38f * 0.25f + Mathf.PI);
+                variables["leg_stand_factor"] = lsf;
+                variables["leg_x_rot_anim"] = lsf * 45.8f * hspeed;
+                variables["stand_anim"] = 0f;
+            }
+            // player.entity.json pre_animation (walking):
+            //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(0.6) * 57.3
+            if (steveGait)
+            {
+                // query.modified_move_speed is engine-normalised (~0.25
+                // walking, see BlockyAnimal gait note); feeding raw 1.4 made
+                // legs swing 134 deg - vanilla Java biped walk peaks ~40 deg
+                // (1.4 rad * limbSwingAmount ~0.6 at sprint).
+                float ms = Mathf.Clamp01(walkSpeedRef) * 0.25f;
+                variables["tcos0"] = Mathf.Cos(distanceMoved * 38.17f * 0.25f) *
+                                     (ms / 0.6f) * 57.3f;
+            }
             for (int i = 0; i < playing.Count; i++)
             {
                 var p = playing[i];
@@ -516,7 +559,10 @@ namespace VoxelCraft.Creatures
         private Vector3 EvalExpr(string[] exprs, Transform bone, string channel, float time,
             string boneName = null, Dictionary<string, Vector3> frozenThis = null, Vector3 fallback = default)
         {
-            var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved, headYaw = headYawDeg, vars = variables };
+            // 38.17 rad/m raw is ~8Hz at 1.4 m/s (comically fast); all vanilla
+                // gait clips in this project use a 0.25 beat scale on the distance
+                // clock (calibrated on sheep/goat, applied species-wide).
+                var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved * 0.25f, headYaw = headYawDeg, vars = variables, moveSpeed = Mathf.Clamp01(walkSpeedRef) };
             // Start from the PARSED CONSTANTS (kf.post) - Fill() stores plain
             // numbers there even when sibling components are expressions, so
             // "0, -115, expr" keeps its -115 constant y while z evaluates.
@@ -554,7 +600,10 @@ namespace VoxelCraft.Creatures
         {
             if (kf.expr == null) return kf.post;
             var v = kf.post;
-            var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved, headYaw = headYawDeg, vars = variables };
+            // 38.17 rad/m raw is ~8Hz at 1.4 m/s (comically fast); all vanilla
+                // gait clips in this project use a 0.25 beat scale on the distance
+                // clock (calibrated on sheep/goat, applied species-wide).
+                var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved * 0.25f, headYaw = headYawDeg, vars = variables, moveSpeed = Mathf.Clamp01(walkSpeedRef) };
             Vector3? frozen = null;
             if (frozenThis != null && boneName != null && frozenThis.TryGetValue(boneName.ToLowerInvariant(), out var fv))
                 frozen = fv;
@@ -648,6 +697,11 @@ namespace VoxelCraft.Creatures
                     else
                     {
                         Vector3 rp = restPos.TryGetValue(bone, out var p) ? p : bone.localPosition;
+                        // z sign: -v.z (validated by wolf/fox sit + all walk
+                        // GIFs). The +v.z experiment fixed ocelot's back paws
+                        // but buried the front ones (-0.199m) - neither sign
+                        // matches vanilla's planted sit; open issue, see
+                        // sitdump_ocelot analysis 2026-09-26.
                         bone.localPosition = rp + new Vector3(-v.x, v.y, -v.z) * (1f / 16f);
                     }
                     break;
@@ -660,7 +714,7 @@ namespace VoxelCraft.Creatures
         {
             public struct Ctx
             {
-                public float animTime, distance, headYaw, thisVal;
+                public float animTime, distance, headYaw, thisVal, moveSpeed;
                 internal Dictionary<string, float> vars;
             }
 
@@ -799,6 +853,7 @@ namespace VoxelCraft.Creatures
                     {
                         case "query.anim_time": return ctx.animTime;
                         case "query.modified_distance_moved": return ctx.distance;
+                        case "query.modified_move_speed": return ctx.moveSpeed;
                         case "query.head_yaw": return ctx.headYaw;
                         case "query.life_time": return ctx.animTime;
                         case "this": return ctx.thisVal;

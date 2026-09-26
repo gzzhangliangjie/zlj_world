@@ -24,8 +24,10 @@ namespace VoxelCraft.Creatures
             public string walkClip = "animation.quadruped.walk";
             public List<string> extraClips;      // played permanently alongside walk
             public Dictionary<string, float> extraVariables;
-            public string gait;                  // "goat" = goatGait entity-layer vars
+            public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
             public bool biped;
+            public string archetype;              // quadruped|biped|insect|flyer-membrane
+            public string locomotion;             // walk|fly
             public List<BehaviourDef> behaviours;
         }
 
@@ -71,6 +73,8 @@ namespace VoxelCraft.Creatures
                     var def = new SpeciesDef();
                     if (o.TryGetValue("walkClip", out var wc) && wc is string wcs) def.walkClip = wcs;
                     if (o.TryGetValue("gait", out var g) && g is string gs) def.gait = gs;
+                    if (o.TryGetValue("archetype", out var ar) && ar is string ars) def.archetype = ars;
+                    if (o.TryGetValue("locomotion", out var lo) && lo is string los) def.locomotion = los;
                     if (o.TryGetValue("biped", out var bp) && bp is bool bpb) def.biped = bpb;
                     if (o.TryGetValue("extraClips", out var ec) && ec is List<object> ecl && ecl.Count > 0)
                     {

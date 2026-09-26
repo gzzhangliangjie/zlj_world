@@ -10,11 +10,17 @@
         "wing_flap": 0
       },
       "biped": true,
-      "behaviours": []
+      "behaviours": [],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "cow": {
       "walkClip": "animation.quadruped.walk",
-      "behaviours": []
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "fox": {
       "walkClip": "animation.quadruped.walk",
@@ -31,20 +37,31 @@
           "minT": 8,
           "maxT": 16
         }
-      ]
+      ],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "goat": {
       "walkClip": "animation.goat.walk",
-      "gait": "goat",
-      "behaviours": []
+      "gait": "var:tcos",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk"
     },
     "mooshroom": {
       "walkClip": "animation.quadruped.walk",
-      "behaviours": []
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "pig": {
       "walkClip": "animation.quadruped.walk",
-      "behaviours": []
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "sheep": {
       "walkClip": "animation.quadruped.walk",
@@ -55,7 +72,10 @@
           "minT": 4,
           "maxT": 9
         }
-      ]
+      ],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
     },
     "wolf": {
       "walkClip": "animation.quadruped.walk",
@@ -72,7 +92,76 @@
           "minT": 2.5,
           "maxT": 4
         }
-      ]
+      ],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
+    "ocelot": {
+      "walkClip": "animation.ocelot.walk",
+      "behaviours": [
+        {
+          "clip": "animation.ocelot.sit",
+          "absolute": false,
+          "minT": 6,
+          "maxT": 14
+        }
+      ],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
+    "creeper": {
+      "walkClip": "animation.creeper.legs",
+      "behaviours": [],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "var:leg_rot"
+    },
+    "horse": {
+      "walkClip": "animation.horse.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "var:leg_x_rot_anim"
+    },
+    "llama": {
+      "walkClip": "animation.quadruped.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos"
+    },
+    "steve": {
+      "walkClip": "animation.player.move.arms",
+      "biped": true,
+      "extraClips": [
+        "animation.player.move.legs",
+        "animation.humanoid.base_pose"
+      ],
+      "behaviours": [],
+      "archetype": "biped",
+      "locomotion": "walk",
+      "gait": "var:tcos0"
+    },
+    "bee": {
+      "walkClip": "animation.bee.flying",
+      "archetype": "insect",
+      "locomotion": "fly",
+      "gait": "none",
+      "biped": false,
+      "extraClips": [
+        "animation.bee.fly.bobbing"
+      ],
+      "behaviours": []
+    },
+    "bat": {
+      "walkClip": "animation.bat.flying",
+      "archetype": "flyer-membrane",
+      "locomotion": "fly",
+      "gait": "none",
+      "biped": false,
+      "behaviours": []
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
@@ -88,6 +177,31 @@
       2,
       21,
       6
+    ],
+    "llama": [
+      6,
+      36,
+      8,
+      8
+    ],
+    "steve": [
+      8,
+      48,
+      8,
+      8
+    ],
+    "bat": [
+      6,
+      52,
+      6,
+      6
+    ],
+    "bee": [
+      10,
+      47,
+      7,
+      7
     ]
-  }
+  },
+  "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."
 }

@@ -395,7 +395,7 @@ namespace VoxelCraft.Editor
 
             // ----- M7C: creature skins, models, surface query -----
             bool creatureMats = true;
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
             {
                 foreach (string part in new[] { "body", "face", "leg" })
                 {
@@ -534,7 +534,7 @@ namespace VoxelCraft.Editor
             // Geo importer: every species with a Geo/<species>.geo.json asset
             // must build a non-trivial tree (>= 6 bones/cubes) with all legs.
             bool geoOk = true; string geoBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
             {
                 var asset = Resources.Load<TextAsset>("Geo/" + sp + ".geo");
                 if (asset == null) continue;
@@ -551,7 +551,7 @@ namespace VoxelCraft.Editor
             // Official bedrock animation clips load and the Molang walk
             // formula evaluates (cos walk = 80deg at t=0).
             bool animOk = true; string animBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
             {
                 var apgo = new GameObject("AnimTest_" + sp);
                 var ap = apgo.AddComponent<Creatures.BedrockAnimationPlayer>();
@@ -586,7 +586,7 @@ namespace VoxelCraft.Editor
             // regressions like mismatched MC-rotated torso nets).
             bool uvOk = true;
             string uvBad = "";
-            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" })
+            foreach (string sp in new[] { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" })
             {
                 var spSkin = CreatureTextureFactory.GetSkinMaterial(sp + "_skin");
                 var spTex = spSkin != null ? spSkin.mainTexture as Texture2D : null;
@@ -597,7 +597,10 @@ namespace VoxelCraft.Editor
                     break;
                 }
                 Creatures.BlockyAnimal.GetSpeciesNets(sp, out var bodyNet, out _, out var headNet, out var legNet);
-                if (!NetHasPixels(spTex, bodyNet) || !NetHasPixels(spTex, headNet) || !NetHasPixels(spTex, legNet))
+                // bee/bat leg/wing nets are thin plates - see NetHasPixels.
+                bool plateLegs = sp == "bee" || sp == "bat";
+                if (!NetHasPixels(spTex, bodyNet) || !NetHasPixels(spTex, headNet)
+                    || !NetHasPixels(spTex, legNet, !plateLegs))
                 {
                     uvOk = false;
                     uvBad = "empty or out-of-bounds rect in " + sp + " nets";
@@ -792,12 +795,13 @@ namespace VoxelCraft.Editor
         /// bottom face (index 3) only needs to be in-bounds: MC artists often
         /// leave those hidden faces fully transparent (e.g. chicken head).
         /// </summary>
-        private static bool NetHasPixels(Texture2D tex, Vector4[] net)
+        private static bool NetHasPixels(Texture2D tex, Vector4[] net, bool allFaces = true)
         {
             if (tex == null)
             {
                 return false;
             }
+            bool anyFace = false;
             for (int i = 0; i < net.Length; i++)
             {
                 var r = net[i];
@@ -822,12 +826,16 @@ namespace VoxelCraft.Editor
                         any = true;
                     }
                 }
-                if (!any)
+                if (any) anyFace = true;
+                if (!any && allFaces)
                 {
                     return false;
                 }
             }
-            return true;
+            // Thin-plate cubes (bee legs 7x2x0, bat wings 10x16x1): vanilla
+            // paints only the front strip; side faces are legitimately
+            // transparent. Gate = at least one painted face.
+            return anyFace;
         }
 
         private static TextureFactory.AtlasResult SafeBuildAtlas()

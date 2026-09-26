@@ -39,8 +39,10 @@ namespace VoxelCraft.Editor
             cam.backgroundColor = new Color(0.55f, 0.72f, 0.9f);
             cam.fieldOfView = 30f;
             cam.nearClipPlane = 0.05f;
-            cam.farClipPlane = 20f;
-            cam.enabled = false;
+            cam.farClipPlane = 40f;
+            cam.orthographic = true;   // wrap-free silhouette: a perspective
+            cam.enabled = false;       // camera splits a flush limb from the
+                                       // torso mid-swing (steve arm +22px)
 
             // (species, clip-or-null-for-walk, absolute, tag) - wolf pose
             // clips are "x - this" expression clips (self-absolute); playing
@@ -55,6 +57,14 @@ namespace VoxelCraft.Editor
                 ("fox", null, false, "walk"),
                 ("fox", "animation.fox.sit", false, "sit"),
                 ("fox", "animation.fox.sleep", false, "sleep"),
+                ("ocelot", null, false, "walk"),
+                ("ocelot", "animation.ocelot.sit", false, "sit"),
+                ("creeper", null, false, "walk"),
+                ("horse", null, false, "walk"),
+                ("llama", null, false, "walk"),
+                ("steve", null, false, "walk"),
+                ("bee", null, false, "walk"),
+                ("bat", null, false, "walk"),
             };
 
             foreach (var (sp, clip, absolute, tag) in jobs)
@@ -152,9 +162,17 @@ namespace VoxelCraft.Editor
             var b = rends[0].bounds;
             foreach (var r in rends) b.Encapsulate(r.bounds);
             Vector3 center = b.center;
-            Vector3 pos = center + new Vector3(1.6f, 0.35f, -2.2f).normalized * 2.6f;
-            cam.transform.position = pos;
+            // Fit the model's bounds: the fixed 2.6m distance framed 0.65m
+            // quadrupeds and cropped steve (2m) / sitting ocelot (1.03m).
+            float maxDim = Mathf.Max(b.size.x, b.size.y, b.size.z);
+            float dist = maxDim * 2.2f + 0.5f;
+            float yaw = 0f;
+            string yawEnv = System.Environment.GetEnvironmentVariable("GIF_YAW");
+            if (!string.IsNullOrEmpty(yawEnv)) float.TryParse(yawEnv, out yaw);
+            Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * new Vector3(1.6f, 0.35f, -2.2f).normalized;
+            cam.transform.position = center + dir * dist;
             cam.transform.LookAt(center);
+            cam.orthographicSize = maxDim * 0.62f;
             var rt = new RenderTexture(360, 360, 24, RenderTextureFormat.ARGB32);
             cam.targetTexture = rt;
             cam.Render(); cam.Render();

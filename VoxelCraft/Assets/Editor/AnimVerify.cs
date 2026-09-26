@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "llama", "steve", "bee", "bat" };
 
             foreach (var sp in speciesList)
             {
@@ -74,11 +74,43 @@ namespace VoxelCraft.Editor
         {
             var player = go.GetComponent<Creatures.BedrockAnimationPlayer>();
             // Leg bones: geo path names them leg0..3 / descriptive names
-            // (goat: left_front_leg etc.); hand-built path uses Hip0..3.
+            // (goat: left_front_leg etc.; ocelot: backLegL/R + frontLegL/R);
+            // hand-built path uses Hip0..3.
             var legs = go.GetComponentsInChildren<Transform>()
-                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg)$"))
+                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg)$"))
                          .OrderBy(t => t.name)
                          .Take(4).ToArray();
+            // Flyers (bee/bat): wings flap, legs don't cadence (bedrock bee
+            // geo has no leg BONES - legs are static cubes on the body).
+            var reg0 = Creatures.CreatureRegistry.Get(sp);
+            bool flyer = reg0 != null && reg0.locomotion == "fly";
+            if (flyer)
+            {
+                var wings = go.GetComponentsInChildren<Transform>()
+                    .Where(t => t.name.ToLowerInvariant().Contains("wing") && !t.name.ToLowerInvariant().Contains("tip"))
+                    .ToArray();
+                var w0 = wings.Length > 0 ? wings[0] : null;
+                // Quaternion total deflection (bat flaps about Y, bee about Z):
+                // measure full rotation magnitude, not one euler axis.
+                float maxDefl = 0f; var wb0 = w0 != null ? w0.localRotation : Quaternion.identity;
+                var anif = go.GetComponent<Creatures.BlockyAnimal>();
+                anif.walking = true;
+                for (int f = 0; f < 150; f++)
+                {
+                    foreach (var bp in go.GetComponentsInChildren<Creatures.BedrockAnimationPlayer>())
+                        { bp.moving = true; bp.Tick(1f / 60f); }
+                    if (f > 30 && w0 != null)
+                    {
+                        float d = Quaternion.Angle(wb0, w0.localRotation); // deg
+                        if (d > maxDefl) maxDefl = d;
+                        wb0 = w0.localRotation;
+                    }
+                }
+                anif.walking = false;
+                bool flapOk = maxDefl > 5f && maxDefl < 180f;
+                Add("gait.wing_deg", sp, flapOk, $"wing z deflection {maxDefl:F0} deg (flyer)", maxDefl, 5f, 180f);
+                return; // flyers: no leg cadence/idle checks
+            }
             if (legs.Length == 0)
             {
                 Add("gait", sp, false, "no leg bones found", 0, 1, 4);
@@ -88,6 +120,9 @@ namespace VoxelCraft.Editor
             // Simulate locomotion: advance time manually, move forward, tick.
             float dt = 1f / 60f;
             float[] angles0 = new float[legs.Length];
+            var centerBuf = new List<float>();
+            float center = 0f; bool centerDone = false;
+            Quaternion restQ0 = Quaternion.identity;
             float maxSwing = 0f;
             int signFlips = 0;
             float prevDelta = 0f;
@@ -95,7 +130,21 @@ namespace VoxelCraft.Editor
             ani.walking = true; // force locomotion for the measurement window
             for (int f = 0; f < 180; f++) // 3 seconds
             {
-                if (f == 30) for (int i = 0; i < legs.Length; i++) angles0[i] = legs[i].localEulerAngles.x;
+                if (f == 30)
+                {
+                    for (int i = 0; i < legs.Length; i++) angles0[i] = legs[i].localEulerAngles.x;
+                    // Rest quaternion for a wrap-free signed X-angle: euler.x
+                    // flips representation past ±90° (Unity picks the 180-x
+                    // equivalent), which faked double sign flips on steve's
+                    // 134° swings. The quaternion angle is representation-free.
+                    restQ0 = legs[0].localRotation;
+                }
+                // angles0 is a MID-SWING snapshot, not the oscillation centre.
+                // Steves swing ±134°; reference+amplitude can exceed 180° and
+                // DeltaAngle wrap double-counts sign flips (21 counted vs 11
+                // true). Track the median of the pre-window as the centre.
+                if (f < 30) centerBuf.Add(legs[0].localEulerAngles.x);
+
                 // simulate walking: geo animals tick the bedrock player; the
                 // hand-built fallback (fox) uses the public gait method.
                 if (player != null)
@@ -107,7 +156,22 @@ namespace VoxelCraft.Editor
                 else ani.ApplyLegacyGait(ani.walkSpeed, dt, f * dt * (4f + ani.walkSpeed * 3f));
                 if (f > 30)
                 {
-                    float delta = Mathf.DeltaAngle(0f, legs[0].localEulerAngles.x - angles0[0]);
+                    // Circular median of the pre-window = oscillation centre.
+                    // Raw euler is bimodal across the 0/360 wrap (quadruped
+                    // legs sit at 336..24), so a plain median lands randomly
+                    // inside a cluster. Unwrap first, then median.
+                    if (!centerDone)
+                    {
+                        centerDone = true;
+                        float u = centerBuf[0];
+                        var ub = new List<float> { u };
+                        for (int ci = 1; ci < centerBuf.Count; ci++)
+                        { u += Mathf.DeltaAngle(centerBuf[ci - 1], centerBuf[ci]); ub.Add(u); }
+                        ub.Sort();
+                        center = ub[ub.Count / 2];
+                    }
+                    Quaternion dq = Quaternion.Inverse(restQ0) * legs[0].localRotation;
+                    float delta = 2f * Mathf.Atan2(dq.x, dq.w) * Mathf.Rad2Deg;
                     samples.Add(delta);
                     if (Mathf.Abs(delta) > maxSwing) maxSwing = Mathf.Abs(delta);
                     if (prevDelta != 0f && Mathf.Sign(delta) != Mathf.Sign(prevDelta)) signFlips++;
@@ -186,7 +250,16 @@ namespace VoxelCraft.Editor
         {
             var head = go.GetComponentsInChildren<Transform>()
                 .FirstOrDefault(t => t.name.ToLowerInvariant() == "head");
-            if (head == null) { Add("struct.head_seam", sp, false, "no Head transform", 0, 0, 1); return; }
+            // bee: vanilla geo fuses head+body (single body bone with face
+            // texels) - head_seam is undefined, not broken. Only gate species
+            // whose archetype HAS a separate head (all but fused-body flyers).
+            if (head == null)
+            {
+                var reg = Creatures.CreatureRegistry.Get(sp);
+                bool fusedHead = reg != null && reg.archetype == "insect";
+                if (!fusedHead) { Add("struct.head_seam", sp, false, "no Head transform", 0, 0, 1); return; }
+                return; // fused-head flyers: head_seam not applicable
+            }
 
             // Head world AABB. Geo path hangs meshes under CubePivot children,
             // hand-built path puts the renderer on the Head node itself:
@@ -231,6 +304,23 @@ namespace VoxelCraft.Editor
                 if (b.max.z <= hb.min.z + 0.30f && b.min.z < hb.min.z) // sits behind head
                     bestRear = Mathf.Max(bestRear, b.max.z);
             }
+            // BIPEDS (steve): the head sits ON TOP of the body with fully
+            // overlapping z ranges (vanilla humanoid: head y24..32, body
+            // y12..24, flush at y24). No body part sits "behind" the head.
+            // Vertical stacking is the vanilla layout: measure y-overlap of
+            // the head bottom against the tallest body part underneath.
+            if (bestRear == float.MinValue && hb.min.y > 0.05f)
+            {
+                float bestTop = float.MinValue;
+                foreach (var r in bodyRends)
+                {
+                    var b = VertexAabb(r);
+                    bool zOver = b.min.z < hb.max.z - 0.02f && b.max.z > hb.min.z + 0.02f;
+                    if (zOver && b.max.y <= hb.min.y + 0.30f && b.max.y > bestTop)
+                        bestTop = b.max.y;
+                }
+                if (bestTop != float.MinValue) bestRear = hb.min.z + (bestTop - hb.min.y);
+            }
             // overlap = how deep the head rear sinks into the nearest part.
             float overlap = bestRear == float.MinValue ? -1f : bestRear - hb.min.z;
             // Coplanar touch (0mm) still reads as connected (cow head sits
@@ -263,6 +353,10 @@ namespace VoxelCraft.Editor
                     }
                     int x0 = Mathf.RoundToInt(u0 * tex.width), x1 = Mathf.RoundToInt(u1 * tex.width);
                     int y0 = Mathf.RoundToInt(v0 * tex.height), y1 = Mathf.RoundToInt(v1 * tex.height);
+                    // Clamp to the sheet: UVs that graze the border (llama's
+                    // 128x64 sheet) would push GetPixels out of bounds.
+                    x0 = Mathf.Clamp(x0, 0, tex.width - 1); x1 = Mathf.Clamp(x1, x0 + 1, tex.width);
+                    y0 = Mathf.Clamp(y0, 0, tex.height - 1); y1 = Mathf.Clamp(y1, y0 + 1, tex.height);
                     if (x1 - x0 <= 1 || y1 - y0 <= 1) continue; // zero-width/degenerate
                     var px = tex.GetPixels(x0, y0, x1 - x0, y1 - y0);
                     float opaque = 0;
@@ -316,7 +410,17 @@ namespace VoxelCraft.Editor
                 feet = lb.min.y;
             }
             bool grounded = feet > -0.08f && feet < 0.06f;
-            Add("pose.feet_y", sp, grounded, $"feet ymin {feet:F3} m", feet, -0.08f, 0.06f);
+            // Flyers hover - feet-on-ground is a walker rule. Gate flyers on
+            // hover band instead: body must float above ground (bat rest
+            // hangs wings to y -0.5, bee hovers ~0.3-1 m up).
+            var regF = Creatures.CreatureRegistry.Get(sp);
+            if (regF != null && regF.locomotion == "fly")
+            {
+                bool hover = feet > -1.2f && feet < 1.2f; // air posture, not terrain-clamped
+                Add("pose.fly_y", sp, hover, $"flyer feet ymin {feet:F3} m (air posture)", feet, -1.2f, 1.2f);
+            }
+            else
+                Add("pose.feet_y", sp, grounded, $"feet ymin {feet:F3} m", feet, -0.08f, 0.06f);
 
             // Head in front of body centre (+Z is our forward)
             var head = go.GetComponentsInChildren<Transform>()
@@ -420,19 +524,24 @@ namespace VoxelCraft.Editor
             else
             {
                 eyePair = false;
+                // Min separation scales with face width: the sep>=3 floor
+                // was calibrated on 8px faces; vanilla narrow faces (ocelot
+                // 5px, eyes at local x1/x3 sep 2) legitimately sit closer.
+                // The mirror-straddle requirement stays: inner eye must
+                // cross the rect centre line.
+                int minSep = Mathf.Max(2, (W - 1) / 2);
                 for (int y = 0; y < H && !eyePair; y++)
                     for (int x = 0; x < W && !eyePair; x++)
                         for (int x2 = x + 1; x2 < W; x2++)
                         {
                             var a = px[y * W + x];
                             var b = px[y * W + x2];
-                            // two dark pixels separated by >= 3px and
+                            // two dark pixels separated by >= minSep and
                             // straddling the rect centre = an eye pair.
-                            // fox eyes sit at the rect edges (sep 7), chicken
-                            // eyes are 3px apart; both straddle centre.
+                            // chicken eyes are 3px apart; both straddle centre.
                             if (a.a > 0.5f && b.a > 0.5f &&
                                 a.r + a.g + a.b < 0.9f && b.r + b.g + b.b < 0.9f &&
-                                x2 - x >= 3 &&
+                                x2 - x >= minSep &&
                                 x < (W - 1) / 2f && x2 > (W - 1) / 2f)
                             { eyePair = true; break; }
                         }

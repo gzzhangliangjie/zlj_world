@@ -106,6 +106,60 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(34, 46, 5, 7, 10);
                     leg = BoxBuilder.McNet(35, 2, 3, 10, 3);
                     break;
+                case "horse":
+                    // Bedrock horse_v3 geo (64x64 sheet): body 10x10x22
+                    // uv(0,32), head 6x5x7 uv(0,13), legs 4x11x4 uv(48,21).
+                    // Feeds SelfTest m9 uv validation; rendering is the geo
+                    // pipeline.
+                    body = BoxBuilder.McNet(0, 32, 10, 10, 22);
+                    head = BoxBuilder.McNet(0, 13, 6, 5, 7);
+                    leg = BoxBuilder.McNet(48, 21, 4, 11, 4);
+                    break;
+                case "ocelot":
+                    // Bedrock ocelot geo (64x32 sheet): head 5x4x5 uv(0,0),
+                    // body 4x16x6 uv(20,0), front legs 2x10x2 uv(40,0),
+                    // back legs 2x6x2 uv(8,13). Feeds SelfTest m9.
+                    body = BoxBuilder.McNet(20, 0, 4, 16, 6);
+                    head = BoxBuilder.McNet(0, 0, 5, 4, 5);
+                    leg = BoxBuilder.McNet(40, 0, 2, 10, 2);
+                    break;
+                case "creeper":
+                    // Bedrock creeper geo (64x32 sheet): head 8x8x8 uv(0,0),
+                    // body 8x12x4 uv(16,16), legs 4x6x4 uv(0,16).
+                    // McNet(w,h,d) mirrors the standard creeper layout.
+                    body = BoxBuilder.McNet(16, 16, 8, 12, 4);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(0, 16, 4, 6, 4);
+                    break;
+                case "llama":
+                    // Bedrock llama geo (128x64 sheet): head 8x18x6 uv(0,14),
+                    // body 12x18x10 uv(29,0), legs 4x14x4 uv(29,29).
+                    body = BoxBuilder.McNet(29, 0, 12, 18, 10);
+                    head = BoxBuilder.McNet(0, 14, 8, 18, 6);
+                    leg = BoxBuilder.McNet(29, 29, 4, 14, 4);
+                    break;
+                case "bee":
+                    // Bedrock bee geo (64x64 sheet): body 7x7x10 uv(0,0),
+                    // wing plates 9x1x6 uv(0,18)/(9,24), legs 7x2x1 uv(26,1+).
+                    body = BoxBuilder.McNet(0, 0, 7, 7, 10);
+                    head = BoxBuilder.McNet(0, 0, 7, 7, 10);
+                    leg = BoxBuilder.McNet(26, 1, 7, 2, 1);
+                    break;
+                case "bat":
+                    // Bedrock bat geo (64x64 sheet): head 6x6x6 uv(0,0),
+                    // body 6x12x6 uv(0,16), wing plates 10x16x1 uv(42,0).
+                    body = BoxBuilder.McNet(0, 16, 6, 12, 6);
+                    head = BoxBuilder.McNet(0, 0, 6, 6, 6);
+                    leg = BoxBuilder.McNet(42, 0, 10, 16, 1);
+                    break;
+                case "steve":
+                    // Bedrock geometry.humanoid.custom (64x64 sheet):
+                    // body 8x12x4 uv(16,16), head 8x8x8 uv(0,0),
+                    // arm 4x12x4 uv(40,16), leg 4x12x4 uv(0,16).
+                    body = BoxBuilder.McNet(16, 16, 8, 12, 4);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(0, 16, 4, 12, 4);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -114,7 +168,7 @@ namespace VoxelCraft.Creatures
                     leg = BoxBuilder.McNet(0, 16, 4, 6, 4);
                     break;
             }
-            bodyRot = (kind == "sheep" || kind == "wolf" || kind == "fox" || kind == "goat")
+            bodyRot = (kind == "sheep" || kind == "wolf" || kind == "fox" || kind == "goat" || kind == "horse")
                 ? new int[] { 0, 0, 0, 0, 0, 0 }
                 : BoxBuilder.QuadrupedBodyRots;
         }
@@ -159,7 +213,7 @@ namespace VoxelCraft.Creatures
                 var animPlayer = gameObject.GetComponent<BedrockAnimationPlayer>();
                 if (animPlayer == null) animPlayer = gameObject.AddComponent<BedrockAnimationPlayer>();
                 animPlayer.clipsJson.Clear();
-                foreach (var af in new[] { species, "quadruped", "wolf" })
+                foreach (var af in new[] { species, "quadruped", "wolf", "humanoid", "player" })
                 {
                     var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
                     if (ta != null) animPlayer.clipsJson.Add(ta);
@@ -170,12 +224,21 @@ namespace VoxelCraft.Creatures
                 // comes from the data registry - no per-species code.
                 var reg = CreatureRegistry.Get(species);
                 string walkClip = reg != null ? reg.walkClip : "animation.quadruped.walk";
-                if (reg != null && reg.gait == "goat")
+                // Gait variable injection is registry-driven: the gait field
+                // names the ENTITY-layer pre_animation family (goat tcos_*,
+                // creeper leg_rot, horse leg_x_rot_anim, steve tcos0). New
+                // species with a known gait need zero code here.
+                if (reg != null && !string.IsNullOrEmpty(reg.gait))
                 {
-                    // Goat gait variables come from the ENTITY layer
-                    // (goat.entity.json pre_animation), not the animation file.
-                    animPlayer.goatGait = true;
-                    animPlayer.walkSpeedRef = walkSpeed;
+                    switch (reg.gait)
+                    {
+                        case "goat": case "var:tcos": animPlayer.goatGait = true; break;
+                        case "creeper": case "var:leg_rot": animPlayer.creeperGait = true; break;
+                        case "horse": case "var:leg_x_rot_anim": animPlayer.horseGait = true; break;
+                        case "steve": case "var:tcos0": animPlayer.steveGait = true; break;
+                    }
+                    if (reg.gait != "none" && reg.gait != "dist-cos")
+                        animPlayer.walkSpeedRef = walkSpeed;
                 }
                 animPlayer.Play(walkClip);
                 if (reg != null && reg.extraVariables != null)

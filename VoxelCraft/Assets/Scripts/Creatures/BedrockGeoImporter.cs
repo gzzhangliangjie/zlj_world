@@ -239,6 +239,20 @@ namespace VoxelCraft.Creatures
             }
             if (bones == null) return false;
 
+            // 1.8 mobs.json (humanoid.custom) declares NO texturewidth/
+            // textureheight - the default 64x32 halves every v coordinate on
+            // a 64x64 skin (steve: face sampled the torso band). Fall back to
+            // the actual skin dimensions when the geo is silent.
+            if (skin != null && skin.mainTexture != null)
+            {
+                if (texW == 64 && texH == 32 &&
+                    (skin.mainTexture.width != 64 || skin.mainTexture.height != 32))
+                {
+                    texW = skin.mainTexture.width;
+                    texH = skin.mainTexture.height;
+                }
+            }
+
             var root = new GameObject("GeoRoot").transform;
             root.SetParent(parent, false);
 
@@ -343,6 +357,10 @@ namespace VoxelCraft.Creatures
                     int v = uv != null ? (int)ToFloat(uv[1]) : 0;
                     float sx = ToFloat(size[0]), sy = ToFloat(size[1]), sz = ToFloat(size[2]);
                     int W = (int)sx, H = (int)sy, D = (int)sz;
+                    // Zero-thickness plates (bee wing 9x0x6, legs 7x2x0):
+                    // clamp to 1 px so the UV rect doesn't collapse (a
+                    // degenerate u0==u1 rect samples a 1-texel line).
+                    if (W < 1) W = 1; if (H < 1) H = 1; if (D < 1) D = 1;
 
                     // Flipped frame: x' = -x, z' = -z. Bedrock origin is the
                     // (-x, +y-bottom, -z-front) corner; after flipping x/z the
@@ -384,7 +402,7 @@ namespace VoxelCraft.Creatures
 
                     Vector4[] net = BuildNet(u, v, W, H, D);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
-                        local, new Vector3(sx * Px, sy * Px, sz * Px), skin, net, texW, texH);
+                        local, new Vector3(Mathf.Max(sx, 0.5f) * Px, Mathf.Max(sy, 0.5f) * Px, Mathf.Max(sz, 0.5f) * Px), skin, net, texW, texH);
                     // A bind-rotated cube also changes ORIENTATION (upright
                     // pillar -> horizontal torso), not just position.
                     if (boneBind.TryGetValue(name, out Vector3 bd2))
@@ -407,13 +425,28 @@ namespace VoxelCraft.Creatures
             // Expose animation handles by bedrock naming convention.
             for (int i = 0; i < 4; i++)
                 if (byName.TryGetValue("leg" + i, out var lt) && legsOut[i] == null) legsOut[i] = lt;
+            // humanoid (steve): leftLeg/rightLeg; map [0]=left [1]=right
+            if (byName.TryGetValue("leftLeg", out var sll)) legsOut[0] = sll;
+            if (byName.TryGetValue("rightLeg", out var slr)) legsOut[1] = slr;
             // goat uses named legs; map them too
             if (byName.TryGetValue("left_front_leg", out var lfl)) legsOut[0] = lfl;
             if (byName.TryGetValue("right_front_leg", out var rfl)) legsOut[1] = rfl;
             if (byName.TryGetValue("left_back_leg", out var lbl)) legsOut[2] = lbl;
             if (byName.TryGetValue("right_back_leg", out var rbl)) legsOut[3] = rbl;
+            // ocelot (1.8 geo) uses backLegL/R + frontLegL/R
+            if (byName.TryGetValue("frontLegL", out var fll)) legsOut[0] = fll;
+            if (byName.TryGetValue("frontLegR", out var flr)) legsOut[1] = flr;
+            if (byName.TryGetValue("backLegL", out var bll)) legsOut[2] = bll;
+            if (byName.TryGetValue("backLegR", out var blr)) legsOut[3] = blr;
+            // horse v3 geo: LegBL/LegBR (back) + LegFL/LegFR (front)
+            if (byName.TryGetValue("LegFL", out var hfl)) legsOut[0] = hfl;
+            if (byName.TryGetValue("LegFR", out var hfr)) legsOut[1] = hfr;
+            if (byName.TryGetValue("LegBL", out var hbl)) legsOut[2] = hbl;
+            if (byName.TryGetValue("LegBR", out var hbr)) legsOut[3] = hbr;
             if (byName.TryGetValue("right_front_leg", out var rf2)) legsOut[1] = rf2;
+            // ocelot tail chain: tail1 is the root hinge
             if (byName.TryGetValue("tail", out var tt)) tailOut = tt;
+            if (tailOut == null && byName.TryGetValue("tail1", out var t1)) tailOut = t1;
             // Bedrock swaps head <-> head_sleeping when the mob sleeps; hide
             // the sleeping variant until then (its UVs sample the closed-eye
             // region and double every head cube).
@@ -421,6 +454,14 @@ namespace VoxelCraft.Creatures
             if (byName.TryGetValue("head", out var ht)) headOut = ht;
             if (byName.TryGetValue("wing0", out var w0)) wingsOut[0] = w0;
             if (byName.TryGetValue("wing1", out var w1)) wingsOut[1] = w1;
+            // bee: leftwing_bone/rightwing_bone; bat: leftWing/rightWing.
+            // Archetype-driven naming: match <side>wing* case-insensitively.
+            foreach (var kv in byName)
+            {
+                string n = kv.Key.ToLowerInvariant();
+                if (n.StartsWith("leftwing")) wingsOut[0] = kv.Value;
+                else if (n.StartsWith("rightwing")) wingsOut[1] = kv.Value;
+            }
 
             // Optional body pitch for pillar-rest-pose geos (fox) and leg
             // re-rooting so walk swings stay vertical.
