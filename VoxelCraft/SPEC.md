@@ -57,7 +57,27 @@
 ## 五、已删的特殊字段(机制化的胜利,勿再发明)
 - ~~absoluteExtraClips~~ → M3 relative_to 自解析(2026-09-28,av57 全绿删)
 
-## 六、开放项
-- animation controllers 状态机未解析(当前用 walk 常驻+extras+behaviours 近似);B 方案完整解 = controllers+molang 条件求值
+## 六、特殊配置的 vanilla 出处(它们本是框架测试用例)
+
+每个"特殊字段"都是对 vanilla 控制器状态机某条数据的手工翻译。出处(资产+源码双证):
+
+| 我们的配置 | vanilla 机制(资产证据) | 引擎参考实现(源码证据) |
+|---|---|---|
+| `extraClips:["standing"]` (parrot) | `controller.animation.parrot.move` standing 态播 `moving+standing` | eyelib `BrControllerExecutor.java:161` `currState.animations().forEach(...)` 逐动画 blendValue |
+| `bakedSetupClips:["base"]` (parrot) | `controller.animation.parrot.setup` default 态**永久播** `look_at_target+base` | 同上;`-this` 归零语义=blockbench keyframe.js:121 |
+| `bakedSetupClips/Pos:["move"]` (polar_bear) | `controller.animation.polarbear.move` default 态同帧播 `walk+move+look_at_target`(累加) | eyelib `BrClipExecutor.java` rotation.add 逐通道累加 |
+| `gaitWeight:"0.3"` (spider) | 控制器动画条目的 **blend value**:`{'walk':'query.modified_move_speed'}`(polar_bear 同款) | `BrControllerExecutor.java:161` `blendValue.eval(scope)` molang 求值 |
+| `behaviours`(sit/shake/attack) | 控制器 states + molang transitions(如 hoglin attack 态 `variable.has_target && variable.attack_time>=0`) | `BrControllerExecutor.java:49-57` transitions evalAsBool→switchState |
+
+**结论**:全部收敛到同一个未实现机制 = **控制器状态机**(states×animations×molang 条件×blend)。实现它以后,上表字段全部可删,物种接线回到 `walkClip+controllers` 两个文件级引用。
+
+### B 方案参考实现要点(eyelib BrControllerExecutor.java,已读)
+- tick:先按 initial/current state → 逐 transition `evalAsBool` 切态 → blend
+- blend:`blendProgress = clamp(stateTimeSec/blendTransition)`;每动画权重=`blendProgress × blendValue.eval(scope)`(状态切换期新旧态动画**交叉淡化**同播)
+- 状态切换时:两态共有的动画**不重启**(line 89-90 `if (currState.animations().containsKey(animName)) continue`);旧态独有动画 onFinish
+- 我们已有的绝对/累加/`-this` 采样语义(M1-M3)是它的下层,可直接复用
+
+## 七、开放项
+- animation controllers 状态机未解析(当前用 walk 常驻+extras+behaviours 近似);B 方案完整解 = controllers+molang 条件求值(参考实现要点见上节)
 - ocelot/sit 两域 open;zombie 耳朵细节
 - Molang 引擎 query 覆盖率低(target_y_rotation 等=0)
