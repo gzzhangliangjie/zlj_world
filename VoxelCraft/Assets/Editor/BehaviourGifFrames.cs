@@ -66,6 +66,13 @@ namespace VoxelCraft.Editor
                 ("rabbit", null, false, "walk"),
                 ("panda", null, false, "walk"),
                 ("armadillo", null, false, "walk"),
+                ("armadillo", "animation.armadillo.roll_up", false, "rollup"),
+                ("armadillo", "animation.armadillo.rolled_up", false, "rolled"),
+                // chained: vanilla controller plays roll_up -> rolled_up ->
+                // unroll back-to-back; unroll keyframes are authored FROM the
+                // tucked pose, so a standalone unroll from rest splits the
+                // shell from the body mid-clip.
+                ("armadillo", "animation.armadillo.roll_up|0.5|animation.armadillo.rolled_up|1.0|animation.armadillo.unroll|1.5", false, "rollcycle"),
                 ("llama", null, false, "walk"),
                 ("steve", null, false, "walk"),
                 ("bee", null, false, "walk"),
@@ -103,11 +110,20 @@ namespace VoxelCraft.Editor
                     }
                     else
                     {
-                        // behaviour clip: start once, then hold ticking
+                        // behaviour clip: start once, then hold ticking.
+                        // "clip|t1|clip2|t2|..." = chained pose sequence:
+                        // switch clips at the given cumulative seconds.
                         if (i == 0 && player != null)
                         {
                             ani.walking = false;
-                            player.Play(clip, absolute);
+                            StartChainedOrSingle(player, clip, absolute);
+                        }
+                        else if (player != null && clip != null && clip.Contains('|'))
+                        {
+                            float tNow = i / (float)Fps;
+                            var seg = ChainedSegmentAt(clip, tNow);
+                            if (seg != player.CurrentClipName)
+                                StartChainedOrSingle(player, clip, absolute, seg);
                         }
                         ani.walking = false;
                     }
@@ -168,6 +184,34 @@ namespace VoxelCraft.Editor
             var t = typeof(BlockyAnimal).GetMethod("Tick",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (t != null && t.GetParameters().Length == 1) t.Invoke(ani, new object[] { dt });
+        }
+
+        /// <summary>"clip|t1|clip2|t2|..." chained pose sequences: play the
+        /// segment active at tNow; plain clip names pass through unchanged.
+        /// Cumulative switch times: clip plays [0,t1), clip2 [t1,t2), ...</summary>
+        static string ChainedSegmentAt(string spec, float tNow)
+        {
+            var parts = spec.Split('|');
+            string seg = parts[0];
+            for (int i = 1; i + 1 < parts.Length; i += 2)
+            {
+                if (float.TryParse(parts[i + 1], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float t) && tNow >= t)
+                    seg = parts[i];
+                else break;
+            }
+            return seg;
+        }
+
+        static void StartChainedOrSingle(BedrockAnimationPlayer player, string clip, bool absolute, string forceSeg = null)
+        {
+            if (clip.Contains('|'))
+            {
+                // start (or switch to) a chained segment
+                string seg = forceSeg ?? ChainedSegmentAt(clip, 0f);
+                player.Play(seg, absolute);
+            }
+            else player.Play(clip, absolute);
         }
 
         static Texture2D Shoot(Camera cam, GameObject go)

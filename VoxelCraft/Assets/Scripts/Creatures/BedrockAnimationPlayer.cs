@@ -45,6 +45,7 @@ namespace VoxelCraft.Creatures
             public string name;
             public float length = -1f;    // -1 = derive from max keyframe time
             public bool loop = true;
+            public bool holdOnLast;       // loop:"hold_on_last_frame" (roll_up family)
             public bool timeFromDistance; // anim_time_update = modified_distance_moved
             public bool timeFromWalkVar;  // anim_time_update = variable.walk_anim_time_update (armadillo)
             public List<Track> tracks = new List<Track>();
@@ -186,6 +187,10 @@ namespace VoxelCraft.Creatures
             return Play(clipName, false);
         }
 
+        /// <summary>Name of the most recently played clip (null if none) -
+        /// lets batch harnesses detect a chained-segment switch.</summary>
+        public string CurrentClipName => playing.Count > 0 ? playing[playing.Count - 1].clip.name : null;
+
         /// <summary>Play a pose-style clip (setup/sitting): channel values
         /// are ABSOLUTE targets (bedrock "x - this" convention), applied
         /// directly instead of as offsets from the bind pose. Exclusive per
@@ -197,6 +202,17 @@ namespace VoxelCraft.Creatures
             for (int i = playing.Count - 1; i >= 0; i--)
                 if (playing[i].absolute && playing[i].clip != clip)
                     Stop(playing[i].clip.name);
+            // roll-family pose states are ALSO mutually exclusive, but they
+            // chain (roll_up ends tucked = rolled_up starts tucked = unroll
+            // starts tucked). Stop WITHOUT the rest-restore so the next clip
+            // drives the same bones from the tucked pose.
+            if (IsRollUpClip(clipName))
+                for (int i = playing.Count - 1; i >= 0; i--)
+                    if (IsRollUpClip(playing[i].clip.name) && playing[i].clip != clip)
+                    {
+                        rollUpStates.Remove(playing[i].clip.name);
+                        playing.RemoveAt(i);
+                    }
             for (int i = 0; i < playing.Count; i++)
                 if (playing[i].clip == clip) return true;
             // Freeze `this` per rotation track at clip start (bedrock reads
@@ -218,6 +234,7 @@ namespace VoxelCraft.Creatures
             }
             playing.Add(new Playing { clip = clip, time = 0f, absolute = absolute, thisVals = tv });
             if (IsSleepClip(clipName)) ApplySleepVisibility(true);
+            if (IsRollUpClip(clipName)) rollUpStates[clipName] = new RollUpState { t = 0f, shellShown = false };
             return true;
         }
 
@@ -234,6 +251,11 @@ namespace VoxelCraft.Creatures
             }
             if (c == null) return;
             if (IsSleepClip(c.name)) ApplySleepVisibility(false);
+            // leaving a roll-family clip: restore the normal body unless
+            // another roll-family clip is still playing (roll_up -> rolled_up)
+            rollUpStates.Remove(clipName);
+            if (!StillRolledUp())
+                ApplyRolledUpVisibility(false);
             // restore rest pose on the bones this clip drove
             foreach (var tr in c.tracks)
             {
@@ -260,6 +282,58 @@ namespace VoxelCraft.Creatures
         // Cube-level only: head_sleeping is a CHILD of head, so bone-level
         // SetActive would kill the sleeping head along with the awake one.
         private static bool IsSleepClip(string name) => name.EndsWith(".sleep");
+
+        // armadillo.render_controllers part_visibility:
+        //   body/tail/hind legs = !variable.use_rolled_up_model,
+        //   body_rolled_up      =  variable.use_rolled_up_model.
+        // The entity layer flips use_rolled_up_model 0.2083s into roll_up
+        // (rolled_up_time >= 5 frames at 24fps). We map "a .roll_up/.rolled_up
+        // clip is playing past that point" to the same swap; unroll restores
+        // as soon as its clip starts (vanilla: unrolling_time > 1.25 OR
+        // rolled_up_time < 0.2083 shows the normal body).
+        private static bool IsRollUpClip(string name) =>
+            name.EndsWith(".roll_up") || name.EndsWith(".rolled_up") || name.EndsWith(".unroll") ||
+            name.EndsWith(".unroll_fast") || name.EndsWith(".peek");
+        private const float RollUpShellDelay = 0.2083f;
+
+        private class RollUpState { public float t; public bool shellShown; }
+        private readonly Dictionary<string, RollUpState> rollUpStates = new Dictionary<string, RollUpState>();
+
+        private void ApplyRolledUpVisibility(bool rolled)
+        {
+            foreach (var kv in boneIndex)
+            {
+                string n = kv.Key.ToLowerInvariant();
+                bool? vis = null;
+                if (n == "body" || n == "tail" || n.EndsWith("_hind_leg")) vis = !rolled;
+                else if (n == "body_rolled_up") vis = rolled;
+                if (vis == null) continue;
+                if (n == "body_rolled_up") kv.Value.gameObject.SetActive(rolled);
+                SetCubesVisible(kv.Value, vis.Value);
+            }
+            // head/front legs stay visible either way (vanilla tucks them
+            // with keyframes, not visibility).
+            Debug.Log($"[PartVis] rolled_up={rolled} applied");
+        }
+
+        private void TickRollUpVisibility(string clipName, float dt)
+        {
+            if (!rollUpStates.TryGetValue(clipName, out var st)) return;
+            st.t += dt;
+            bool want = clipName.EndsWith(".rolled_up") || clipName.EndsWith(".peek") ||
+                        (st.t >= RollUpShellDelay && !clipName.EndsWith(".unroll") && !clipName.EndsWith(".unroll_fast"));
+            if (want != st.shellShown) { st.shellShown = want; ApplyRolledUpVisibility(want); }
+        }
+
+        private bool StillRolledUp()
+        {
+            foreach (var kv in rollUpStates)
+            {
+                if (kv.Key.EndsWith(".rolled_up") || kv.Key.EndsWith(".peek")) return true;
+                if (!kv.Key.EndsWith(".unroll") && !kv.Key.EndsWith(".unroll_fast") && kv.Value.t >= RollUpShellDelay) return true;
+            }
+            return false;
+        }
 
         private void ApplySleepVisibility(bool sleeping)
         {
@@ -315,7 +389,16 @@ namespace VoxelCraft.Creatures
                     if (ls != null && float.TryParse(ls, NumberStyles.Float,
                         CultureInfo.InvariantCulture, out var len)) clip.length = len;
                 }
-                if (a.TryGetValue("loop", out object lp) && lp is bool lb) clip.loop = lb;
+                if (a.TryGetValue("loop", out object lp))
+                {
+                    // bedrock: true | false | "hold_on_last_frame"
+                    if (lp is bool lb) clip.loop = lb;
+                    else if (lp is string ls)
+                    {
+                        clip.loop = false;
+                        clip.holdOnLast = ls.Contains("hold");
+                    }
+                }
                 if (a.TryGetValue("anim_time_update", out object atu) &&
                     atu is string atus && atus.Contains("modified_distance_moved"))
                     clip.timeFromDistance = true;
@@ -515,11 +598,12 @@ namespace VoxelCraft.Creatures
                     // (~3x realtime at mid speed) - 0.75 = 0.25 * 3.
                     p.time = distanceMoved * 0.75f;
                 else p.time += dt;
+                TickRollUpVisibility(c.name, dt);
                 if (maxT > 0f && p.time > maxT)
                 {
                     if (c.loop) p.time = p.time % maxT;
-                    else if (!p.absolute) { playing.RemoveAt(i); continue; }
-                    else p.time = maxT; // hold final pose
+                    else if (c.holdOnLast || p.absolute) p.time = maxT; // hold final pose
+                    else { playing.RemoveAt(i); continue; }
                 }
                 Sample(c, p.time, p.absolute, p.thisVals);
             }
