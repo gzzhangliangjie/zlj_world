@@ -251,7 +251,6 @@
     "parrot": {
       "walkClip": "animation.parrot.moving",
       "extraClips": [
-        "animation.parrot.base",
         "animation.parrot.standing"
       ],
       "extraVariables": {
@@ -265,7 +264,11 @@
           "clip": "animation.parrot.sitting",
           "absolute": false
         }
-      ]
+      ],
+      "bakedSetupClips": [
+        "animation.parrot.base"
+      ],
+      "groundOffset": "+0.375"
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",

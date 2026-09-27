@@ -116,6 +116,11 @@ namespace VoxelCraft.Creatures
         // 0.3 default was calibrated on quadruped clips that author 80 deg.
         // Registry 'gait' may override this per species.
         public float gaitWeightTarget = 0.3f;
+        // Clips baked into the REST pose at Bind (vanilla "setup" controller
+        // plays them once; keeping them as looping extraClips would overwrite
+        // the locomotion clip's channels every tick - parrot base zeroed the
+        // walk clip's wing flap).
+        public List<string> bakedSetupClips;
 
         // Per-bone constant offsets contributed by the species ".setup" clip.
         // Our bind pose already bakes the setup result in (geo pivots/bpr), so
@@ -196,10 +201,13 @@ namespace VoxelCraft.Creatures
         {
             foreach (var kv in clips)
             {
-                if (!kv.Key.EndsWith(".default_leg_pose")) continue;
+                bool bake = kv.Key.EndsWith(".default_leg_pose") ||
+                            (bakedSetupClips != null && bakedSetupClips.Contains(kv.Key));
+                if (!bake) continue;
                 foreach (var tr in kv.Value.tracks)
                 {
-                    if (tr.channel != "rotation" || tr.frames.Count == 0) continue;
+                    if ((tr.channel != "rotation" && tr.channel != "position")
+                        || tr.frames.Count == 0) continue;
                     Transform bone = null;
                     if (!boneIndex.TryGetValue(tr.bone, out bone))
                         foreach (var b2 in boneIndex)
@@ -210,13 +218,28 @@ namespace VoxelCraft.Creatures
                     if (kf.expr != null)
                         for (int i = 0; i < 3; i++)
                             if (kf.expr[i] != null) v[i] = SetupConst(kf.expr[i]);
-                    // bedrock "X - this" absolute target. These are ANIMATION
-                    // rotation values (not geo bone rotations), so they follow
-                    // the clip convention Unity Euler = (bx, -by, bz). The geo
-                    // rest convention (-bx,-by,-bz) flipped the spider's legs
-                    // up over the body instead of down to the ground.
-                    bone.localRotation = Quaternion.Euler(v.x, -v.y, v.z) * bone.localRotation;
-                    restRot[bone] = bone.localRotation;
+                    if (tr.channel == "rotation")
+                    {
+                        // bedrock "X - this" absolute target. These are ANIMATION
+                        // rotation values (not geo bone rotations), so they follow
+                        // the clip convention Unity Euler = (bx, -by, bz). The geo
+                        // rest convention (-bx,-by,-bz) flipped the spider's legs
+                        // up over the body instead of down to the ground.
+                        bone.localRotation = Quaternion.Euler(v.x, -v.y, v.z) * bone.localRotation;
+                        restRot[bone] = bone.localRotation;
+                    }
+                    else
+                    {
+                        // Same "X - this" absolutes for position: final bedrock
+                        // pivot offset in px (parrot base drops the legs 6px so
+                        // the body clears them, swings the wings out 1.5px).
+                        // Frame convention identical to the relative-position
+                        // Apply(): (-x, +y, -z) / 16. groundOffset calibrations
+                        // (av44 parrot +0.31) were done WITH these applied.
+                        Vector3 rp = restPos.TryGetValue(bone, out var bp) ? bp : bone.localPosition;
+                        bone.localPosition = rp + new Vector3(-v.x, v.y, -v.z) * (1f / 16f);
+                        restPos[bone] = bone.localPosition;
+                    }
                 }
             }
         }

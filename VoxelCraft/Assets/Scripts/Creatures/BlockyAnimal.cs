@@ -288,10 +288,13 @@ namespace VoxelCraft.Creatures
                     if (ta != null) animPlayer.clipsJson.Add(ta);
                 }
                 animPlayer.LoadClips();
-                animPlayer.Bind(bodyRoot);
-                // Species config (walk clip, gait, extra clips/variables)
-                // comes from the data registry - no per-species code.
+                // Setup clips (parrot "base") must be known BEFORE Bind():
+                // Bind bakes them into the REST pose (BakeDefaultLegPose),
+                // so the push has to happen before the bake runs.
                 var reg = CreatureRegistry.Get(species);
+                if (reg != null && reg.bakedSetupClips != null && reg.bakedSetupClips.Count > 0)
+                    animPlayer.bakedSetupClips = new System.Collections.Generic.List<string>(reg.bakedSetupClips);
+                animPlayer.Bind(bodyRoot);
                 string walkClip = reg != null ? reg.walkClip : "animation.quadruped.walk";
                 // Per-species ground offset (spider geo pivots sit ~0.53m
                 // above the leg contact point; data-driven correction).
@@ -332,7 +335,16 @@ namespace VoxelCraft.Creatures
                         System.Globalization.CultureInfo.InvariantCulture);
                 if (reg != null && reg.extraClips != null)
                     foreach (var extra in reg.extraClips)
+                    {
+                        // Setup clips (parrot "base") are baked into the REST
+                        // pose, not played: a looping extraClip re-applies its
+                        // constant channels every tick and overwrites the walk
+                        // clip (parrot wings frozen, legs buried by -6px).
+                        if (reg.bakedSetupClips != null && reg.bakedSetupClips.Contains(extra))
+                            continue;
                         animPlayer.Play(extra);
+                    }
+
                 // NOTE: species ".setup" clips (wolf/pig "-this" re-roots) are
                 // NOT played: they exist to convert bedrock's 1.8 bind pose,
                 // which BedrockGeoImporter already applies via

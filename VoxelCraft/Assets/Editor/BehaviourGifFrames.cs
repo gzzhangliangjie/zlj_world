@@ -80,6 +80,10 @@ namespace VoxelCraft.Editor
                 ("spider", null, false, "walk"),
                 ("parrot", null, false, "walk"),
                 ("parrot", "animation.parrot.sitting", false, "sit"),
+                // vanilla flying state = moving + flying; wing_flap drives the
+                // flap (pre_anim: (sin(pos*57.3)+1)*speed). GIF pipeline: the
+                // flying clip itself drives legs cos*80, wings via wing_flap.
+                ("parrot", "animation.parrot.flying", false, "fly"),
                 ("zombie", null, false, "walk"),
                 ("skeleton", null, false, "walk"),
                 ("villager", null, false, "walk"),
@@ -99,8 +103,17 @@ namespace VoxelCraft.Editor
                 ani.BuildModel();
                 var player = go.GetComponent<BedrockAnimationPlayer>();
                 var regH = Creatures.CreatureRegistry.Get(sp);
-                float hopperFlap = regH != null && regH.archetype == "hopper" ? 0f : -1f;
-                float flapPhase = 0f;
+                // Flying hoppers (parrot): the wing flap lives in the MOVING
+                // clip's channels (-5 - wing_flap*57.3) but the variable is
+                // engine-driven (query.wing_flap_position/speed advance only
+                // while airborne). Drive it here for the flying job ONLY -
+                // on the ground vanilla keeps wing_flap=0 (folded wings).
+                // Rate 3 Hz in RADIANS (2*PI*3*t): the old code multiplied
+                // degrees by 57.3 inside Sin -> 182 Hz -> seizure aliasing.
+                bool flap = regH != null && regH.archetype == "hopper"
+                            && clip != null && clip.Contains("flying");
+                float flapT = 0f;
+
 
                 // ---- frame capture ----
                 int total = Mathf.CeilToInt((clip == null ? WalkSeconds : PoseSeconds) * Fps);
@@ -135,13 +148,14 @@ namespace VoxelCraft.Editor
                     }
                     if (player != null) player.Tick(dt);
                     if (ani != null) DriveBlockyTick(ani, dt);
-                    // Hoppers (parrot): vanilla pre_animation computes
-                    // variable.wing_flap every frame; batch mode never runs
-                    // Update, so drive it here: (sin(t*57.3*w)+1)*speed.
-                    if (hopperFlap >= 0f && player != null)
+                    if (flap && player != null)
+                    {
+                        // vanilla pre_anim: (sin(pos*57.3)+1)*speed, pos
+                        // advances one cycle per flap; speed ~0.5 airborne.
                         player.variables["wing_flap"] =
-                            (Mathf.Sin(flapPhase * 57.3f * 20f) + 1f) * 0.5f;
-                    if (hopperFlap >= 0f) flapPhase += dt;
+                            (Mathf.Sin(flapT * Mathf.PI * 2f * 3f) + 1f) * 0.5f;
+                        flapT += dt;
+                    }
 
                     var tex = Shoot(cam, go);
                     frames.Add(tex);

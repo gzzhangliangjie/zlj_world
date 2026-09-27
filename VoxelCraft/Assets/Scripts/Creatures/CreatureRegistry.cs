@@ -23,6 +23,7 @@ namespace VoxelCraft.Creatures
         {
             public string walkClip = "animation.quadruped.walk";
             public List<string> extraClips;      // played permanently alongside walk
+            public List<string> bakedSetupClips;  // baked into REST at Bind (vanilla setup controller, played once)
             public Dictionary<string, float> extraVariables;
             public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
             public bool biped;
@@ -86,6 +87,11 @@ namespace VoxelCraft.Creatures
                     {
                         def.extraClips = new List<string>();
                         foreach (var c in ecl) if (c is string cs) def.extraClips.Add(cs);
+                    }
+                    if (o.TryGetValue("bakedSetupClips", out var bs) && bs is List<object> bsl && bsl.Count > 0)
+                    {
+                        def.bakedSetupClips = new List<string>();
+                        foreach (var c in bsl) if (c is string cs) def.bakedSetupClips.Add(cs);
                     }
                     if (o.TryGetValue("extraVariables", out var ev) && ev is Dictionary<string, object> evd)
                     {
