@@ -123,18 +123,20 @@
       "controllers": true
     },
     "horse": {
-      "walkClip": "animation.horse.walk",
+      "walkClip": "animation.horse.v3.walk",
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "var:leg_x_rot_anim"
+      "gait": "var:leg_x_rot_anim",
+      "controllers": true
     },
     "donkey": {
       "walkClip": "animation.horse.v3.walk",
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "var:leg_x_rot_anim"
+      "gait": "var:leg_x_rot_anim",
+      "controllers": true
     },
     "rabbit": {
       "walkClip": "animation.rabbit.move",
@@ -170,7 +172,8 @@
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "llama": {
       "walkClip": "animation.quadruped.walk",
@@ -190,7 +193,8 @@
       "behaviours": [],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "var:tcos0"
+      "gait": "var:tcos0",
+      "controllers": true
     },
     "zombie": {
       "walkClip": "animation.humanoid.move",
@@ -202,7 +206,8 @@
       "behaviours": [],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "var:tcos0"
+      "gait": "var:tcos0",
+      "controllers": true
     },
     "skeleton": {
       "walkClip": "animation.humanoid.move",
@@ -213,7 +218,8 @@
       "behaviours": [],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "var:tcos0"
+      "gait": "var:tcos0",
+      "controllers": true
     },
     "villager": {
       "walkClip": "animation.villager.move",

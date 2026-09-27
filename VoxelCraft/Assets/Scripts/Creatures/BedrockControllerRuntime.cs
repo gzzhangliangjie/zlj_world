@@ -95,8 +95,31 @@ namespace VoxelCraft.Creatures
             // vanilla client plays ALL controllers in the species' ac file
             // (they self-gate via transitions) - e.g. hoglin/wolf/parrot.
             if (rootAnimate.Count == 0)
+            {
                 foreach (var c in controllers.Keys)
                     rootAnimate.Add(new AnimRef { shortName = c });
+                // Engine role (vanilla C++ base-class renderer): if the anims
+                // map declares "move"/"look_at_target*" but NO controller in
+                // the ac file references them (zombie/skeleton: only attack/
+                // swimming controllers exist), the vanilla client drives them
+                // from the humanoid base renderer - move weighted by
+                // modified_move_speed, look_at always resident. Add them as
+                // root entries so the generic path owns this too.
+                bool anyRef = false;
+                foreach (var c in controllers.Values)
+                    foreach (var st in c.states.Values)
+                        foreach (var a in st.animations)
+                            if (a.shortName == "move" || a.shortName.StartsWith("look_at"))
+                            { anyRef = true; break; }
+                if (!anyRef)
+                {
+                    if (entityAnims.ContainsKey("move"))
+                        rootAnimate.Add(new AnimRef { shortName = "move", weightExpr = "query.modified_move_speed" });
+                    foreach (var kv in entityAnims)
+                        if (kv.Key.StartsWith("look_at"))
+                        { rootAnimate.Add(new AnimRef { shortName = kv.Key }); break; }
+                }
+            }
 
             // Derive skipClips: full names ending ".setup" mapped in the
             // entity animations table are 1.8 bind-conversion clips the

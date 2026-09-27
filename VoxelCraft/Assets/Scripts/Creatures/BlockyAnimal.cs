@@ -315,7 +315,38 @@ namespace VoxelCraft.Creatures
                 var animPlayer = gameObject.GetComponent<BedrockAnimationPlayer>();
                 if (animPlayer == null) animPlayer = gameObject.AddComponent<BedrockAnimationPlayer>();
                 animPlayer.clipsJson.Clear();
-                foreach (var af in new[] { species, "quadruped", "wolf", "humanoid", "player", "villager" })
+                // Clip library: the species file plus the shared families.
+                // horse_v3 family: the horse/donkey entities reference
+                // animation.horse.v3.* clips which live in horse_v3.animation
+                // .json, not in horse.animation.json (legacy names). Load the
+                // entity-referenced family files too - the entity json is the
+                // single source of truth for clip names.
+                var animFamily = new List<string> { species, "quadruped", "wolf", "humanoid", "player", "villager" };
+                var edTa = Resources.Load<TextAsset>("EntityDefs/" + species + ".entity");
+                if (edTa != null)
+                {
+                    object eo0 = null; try { eo0 = MiniJson.Deserialize(edTa.text); } catch { }
+                    if (eo0 is Dictionary<string, object> ej && ej.TryGetValue("minecraft:client_entity", out var ce) &&
+                        ce is Dictionary<string, object> ced && ced.TryGetValue("description", out var desc) &&
+                        desc is Dictionary<string, object> dd && dd.TryGetValue("animations", out var am) &&
+                        am is Dictionary<string, object> amd)
+                        foreach (var clipName0 in amd.Values)
+                        {
+                            if (!(clipName0 is string clipName)) continue;
+                            // animation.horse.v3.walk -> horse_v3 (family file)
+                            if (!clipName.StartsWith("animation.", System.StringComparison.Ordinal)) continue;
+                            var parts = clipName.Substring("animation.".Length).Split('.');
+                            // animation.horse.v3.walk: family "horse",
+                            // versioned sub-family "horse_v3" (the actual
+                            // file on disk when vanilla splits versions).
+                            for (int pi = 0; pi < parts.Length - 1; pi++)
+                            {
+                                var fam = string.Join("_", parts, 0, pi + 1);
+                                if (!animFamily.Contains(fam)) animFamily.Add(fam);
+                            }
+                        }
+                }
+                foreach (var af in animFamily)
                 {
                     var ta = Resources.Load<TextAsset>("Anims/" + af + ".animation");
                     if (ta != null) animPlayer.clipsJson.Add(ta);
@@ -443,7 +474,19 @@ namespace VoxelCraft.Creatures
                         if (scd.TryGetValue("pre_animation", out object pre) && pre is List<object> preList)
                             foreach (var pl in preList)
                                 if (pl is string pls && !string.IsNullOrWhiteSpace(pls))
+                                {
+                                    // String-property comparisons become the
+                                    // numeric property_eq(key,val) (Molang has
+                                    // no string values; the ENGINE owns the
+                                    // current property string). Default state
+                                    // table lives in the entity-role registrar.
+                                    pls = System.Text.RegularExpressions.Regex.Replace(pls,
+                                        @"query\.property\('([^']+)'\)\s*([!=]=)\s*'([^']+)'",
+                                        m => (m.Groups[2].Value == "=="
+                                            ? $"property_eq('{m.Groups[1].Value}','{m.Groups[3].Value}')"
+                                            : $"(1 - property_eq('{m.Groups[1].Value}','{m.Groups[3].Value}'))"));
                                     animPlayer.preAnimation.Add(pls);
+                                }
                         // scripts.initialize: constant seeds run ONCE (vanilla
                         // semantics), not per-frame - parse "variable.x = num;"
                         // and seed the player variable store.

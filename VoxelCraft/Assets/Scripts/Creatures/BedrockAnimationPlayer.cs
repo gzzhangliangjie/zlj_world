@@ -43,6 +43,8 @@ namespace VoxelCraft.Creatures
             // bone's parent"). Numerically identical to the "-this" absolute
             // convention when no parent rotates, which holds for body->head.
             public bool entitySpace;
+            // expressions containing "-this" read the live accumulated value
+            public bool finalByThis;
             public List<Keyframe> frames = new List<Keyframe>();
         }
 
@@ -569,6 +571,15 @@ namespace VoxelCraft.Creatures
                         if (ch.Key != "position" && ch.Key != "rotation" && ch.Key != "scale") continue;
                         var track = new Track { bone = bk.Key, channel = ch.Key, entitySpace = entitySpace };
                         ParseChannel(track, ch.Value);
+                        // "x - this" reads the LIVE accumulated channel
+                        // value (eyelib reads this from the render entry
+                        // during the clip pass). Track it so the additive
+                        // pass can supply the current accumulation as `this`.
+                        foreach (var kf in track.frames)
+                            if (kf.expr != null)
+                                foreach (var ex in kf.expr)
+                                    if (ex != null && ex.Replace(" ", "").Contains("-this"))
+                                    { track.finalByThis = true; break; }
                         if (track.frames.Count > 0) clip.tracks.Add(track);
                     }
                 }
@@ -748,6 +759,8 @@ namespace VoxelCraft.Creatures
                 variables["tcos0"] = Mathf.Cos(distanceMoved * 38.17f * 0.25f) *
                                      (ms / 0.6f) * 57.3f;
             }
+            Dictionary<string, Vector4> acc = null;
+            Dictionary<string, Vector3> absFinal = null;
             for (int i = 0; i < playing.Count; i++)
             {
                 var p = playing[i];
@@ -788,7 +801,38 @@ namespace VoxelCraft.Creatures
                     else if (c.holdOnLast || p.absolute) p.time = maxT; // hold final pose
                     else { playing.RemoveAt(i); continue; }
                 }
-                Sample(c, p.time, p.absolute, p.thisVals, p.weight);
+                // ADDITIVE pass 1: accumulate relative deltas + absolute
+                // finals per bone|channel; a lone clip keeps the exact
+                // legacy Apply path (bit-identical golden poses).
+                if (playing.Count > 1 && !p.absolute)
+                {
+                    if (acc == null) acc = new Dictionary<string, Vector4>();
+                    if (absFinal == null) absFinal = new Dictionary<string, Vector3>();
+                    Sample(c, p.time, p.absolute, p.thisVals, p.weight, acc, absFinal);
+                }
+                else Sample(c, p.time, p.absolute, p.thisVals, p.weight);
+            }
+            if (acc != null)
+            {
+                // absolute-only bones (no relative contributions) must
+                // still flush: merge absFinal keys into the acc iteration
+                // (creeper/wolf "-this" legs are absolute-only tracks).
+                if (absFinal != null)
+                    foreach (var ak2 in absFinal.Keys)
+                        if (!acc.ContainsKey(ak2))
+                            acc[ak2] = new Vector4(0f, 0f, 0f, 0f);
+                foreach (var kv in acc)
+                {
+                    var parts = kv.Key.Split('|');
+                    if (!boneIndex.TryGetValue(parts[0], out var bone))
+                        foreach (var bkv in boneIndex)
+                            if (string.Compare(bkv.Key, parts[0], true) == 0) { bone = bkv.Value; break; }
+                    if (bone == null) continue;
+                    Vector3 av = default;
+                    bool isAbs = absFinal != null && absFinal.TryGetValue(kv.Key, out av);
+                    Vector3 v = isAbs ? av : new Vector3(kv.Value.x, kv.Value.y, kv.Value.z);
+                    Apply(bone, parts[1], v, isAbs);
+                }
             }
         }
 
@@ -801,7 +845,8 @@ namespace VoxelCraft.Creatures
             return m;
         }
 
-        private void Sample(Clip c, float time, bool absolute = false, Dictionary<string, Vector3> thisVals = null, float ctlWeight = 1f)
+        private void Sample(Clip c, float time, bool absolute = false, Dictionary<string, Vector3> thisVals = null, float ctlWeight = 1f,
+            Dictionary<string, Vector4> acc = null, Dictionary<string, Vector3> absFinal = null)
         {
             // Gait weight scales ONLY locomotion clips (identified the vanilla
             // way: anim_time_update = modified_distance_moved). Behaviour pose
@@ -855,7 +900,37 @@ namespace VoxelCraft.Creatures
                         v = Vector3.Lerp(rest, v, w);
                     }
                 }
-                Apply(bone, tr.channel, v, absApply);
+                if (acc != null && !absApply)
+                {
+                    // Bedrock multi-clip semantics are ADDITIVE (eyelib
+                    // BrClipExecutor.java: rotation.add(sampled)): every
+                    // playing clip contributes its delta to the same bone
+                    // channel, and a later clip's constant 0 component must
+                    // NOT override an earlier clip's swing (steve: bob x=0
+                    // erasing move.arms tcos0). Accumulate per bone|channel.
+                    string ak = tr.bone.ToLowerInvariant() + "|" + tr.channel;
+                    // "-this" tracks: the expression reads the channel's
+                    // CURRENT accumulated value (net effect: replace). The
+                    // pre-sampled v above used the frozen Play()-time this -
+                    // resample with the live accumulation as this.
+                    if (tr.finalByThis && acc.TryGetValue(ak, out var curAcc))
+                    {
+                        var live = new Dictionary<string, Vector3>();
+                        live[tr.bone.ToLowerInvariant() + "|" + tr.channel] =
+                            new Vector3(curAcc.x, curAcc.y, curAcc.z);
+                        if (tr.frames.Count == 1 && tr.frames[0].expr != null)
+                            v = EvalExpr(tr.frames[0].expr, bone, tr.channel, time,
+                                tr.bone.ToLowerInvariant() + "|" + tr.channel, live, tr.frames[0].post);
+                    }
+                    if (acc.TryGetValue(ak, out var prev)) v += new Vector3(prev.x, prev.y, prev.z);
+                    acc[ak] = new Vector4(v.x, v.y, v.z, 1f);
+                }
+                else if (absFinal != null && absApply)
+                {
+                    string ak = tr.bone.ToLowerInvariant() + "|" + tr.channel;
+                    absFinal[ak] = v; // last absolute wins
+                }
+                else Apply(bone, tr.channel, v, absApply);
             }
         }
 
@@ -1060,12 +1135,15 @@ namespace VoxelCraft.Creatures
                 // ground (parrot pre_anim: !is_on_ground -> flying state).
                 isOnGround = 1f,
                 propertyLookup = molangProperties,
+                // String-property defaults (engine role): unrolled is the
+                // standing state of every stateful mob in harness scenes.
+                stringPropertyEq = (name, val) =>
+                    name == "minecraft:armadillo_state" ? val == "unrolled" : val == null,
             };
         }
         /// <summary>Optional property table for query.property('...')
         /// lookups (populated by the controller runtime / game layer).</summary>
         public System.Func<string, float> molangProperties;
-
         /// <summary>Evaluate one pre_animation assignment line
         /// ("variable.x = expr", "variable.x += expr", ternaries allowed)
         /// and write the result into `variables`. Unknown queries eval to 0
@@ -1120,6 +1198,7 @@ namespace VoxelCraft.Creatures
                     sitAmount, lieAmount, rollCounter, allAnimationsFinished,
                     modifiedMoveSpeed;
                 internal Dictionary<string, float> vars;
+                internal System.Func<string, string, bool> stringPropertyEq;
                 internal System.Func<string, float> propertyLookup;
             }
 
@@ -1179,9 +1258,26 @@ namespace VoxelCraft.Creatures
                     return Ternary();
                 }
 
+                // molang logical layer: || lowest, && next (below compare).
+                // Operands are floats: nonzero = true (armadillo
+                // variable.walking = mms > 0.01 && !variable.is_rolled_up).
+                internal float AndOr()
+                {
+                    float v = Compare();
+                    while (true)
+                    {
+                        SkipWs();
+                        if (i + 1 < s.Length && s[i] == '&' && s[i + 1] == '&')
+                        { i += 2; float r = Compare(); v = (v != 0f && r != 0f) ? 1f : 0f; }
+                        else if (i + 1 < s.Length && s[i] == '|' && s[i + 1] == '|')
+                        { i += 2; float r = Compare(); v = (v != 0f || r != 0f) ? 1f : 0f; }
+                        else return v;
+                    }
+                }
+
                 internal float Ternary()
                 {
-                    float cond = Compare();
+                    float cond = AndOr();
                     if (Eat('?'))
                     {
                         float a = Ternary();
@@ -1242,6 +1338,8 @@ namespace VoxelCraft.Creatures
                 private float Unary()
                 {
                     SkipWs();
+                    if (i < s.Length && s[i] == '!' && (i + 1 >= s.Length || s[i + 1] != '='))
+                    { i++; float v = Unary(); return v == 0f ? 1f : 0f; }
                     if (Eat('-')) return -Unary();
                     if (Eat('('))
                     {
@@ -1287,9 +1385,34 @@ namespace VoxelCraft.Creatures
                             rawArg = s.Substring(qs, i - qs);
                             i++; // closing quote
                         }
+                        // string-literal SECOND arg: property_eq('key','val')
+                        // compares an entity string property for equality
+                        // (armadillo_state == 'unrolled' family). arg2 raw.
+                        string rawArg2 = null;
+                        if (Eat(','))
+                        {
+                            SkipWs();
+                            char qc = i < s.Length ? s[i] : char.MinValue;
+                            if (qc == 39 || qc == 34) // ' or "
+                            {
+                                i++; int q2s = i;
+                                while (i < s.Length && s[i] != qc) i++;
+                                rawArg2 = s.Substring(q2s, i - q2s); i++;
+                                Eat(')');
+                            }
+                            else { i--; /* restore for b path */ }
+                        }
+                        if (idLower == "property_eq" && rawArg != null && rawArg2 != null)
+                            return ctx.stringPropertyEq != null && ctx.stringPropertyEq(rawArg, rawArg2) ? 1f : 0f;
+                        // Args are parsed BEFORE the closing paren; 3-arg
+                        // funcs (clamp/lerp/random_integer) read arg3 here -
+                        // reading it after Eat(')') runs off the expression
+                        // end and the whole Eval catch-drops to 0 (armadillo
+                        // walk weight min(1.4,lerp(0.2,2.4,mms)) hit this).
                         float a = Ternary();
                         float b = 0f;
-                        if (Eat(',')) b = Ternary();
+                        float c = 0f;
+                        if (Eat(',')) { b = Ternary(); if (Eat(',')) c = Ternary(); }
                         Eat(')');
                         switch (idLower)
                         {
@@ -1300,10 +1423,10 @@ namespace VoxelCraft.Creatures
                             case "math.sin": return Mathf.Sin(a * Mathf.Deg2Rad);
                             case "math.abs": return Mathf.Abs(a);
                             case "math.mod": return b != 0f ? a - b * Mathf.Floor(a / b) : 0f;
-                            case "math.clamp": { float c = Ternary(); return Mathf.Clamp(a, b, c); }
+                            case "math.clamp": return Mathf.Clamp(a, b, c);
                             case "math.min": return Mathf.Min(a, b);
                             case "math.max": return Mathf.Max(a, b);
-                            case "math.lerp": { float c = Ternary(); return Mathf.Lerp(a, b, c); }
+                            case "math.lerp": return Mathf.Lerp(a, b, c);
                             case "math.floor": return Mathf.Floor(a);
                             case "math.ceil": return Mathf.Ceil(a);
                             case "math.sqrt": return Mathf.Sqrt(a);
