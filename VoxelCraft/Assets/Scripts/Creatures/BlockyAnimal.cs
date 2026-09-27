@@ -175,6 +175,21 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 7, 7, 10);
                     leg = BoxBuilder.McNet(26, 1, 7, 2, 1);
                     break;
+                case "spider":
+                    // Bedrock spider v1.8 geo (64x32 sheet): abdomen body1
+                    // 10x8x12 uv(0,12), head 8x8x8 uv(32,4), leg plates
+                    // 16x2x2 uv(18,0) all eight.
+                    body = BoxBuilder.McNet(0, 12, 10, 8, 12);
+                    head = BoxBuilder.McNet(32, 4, 8, 8, 8);
+                    leg = BoxBuilder.McNet(18, 0, 16, 2, 2);
+                    break;
+                case "parrot":
+                    // Bedrock parrot geo (32x32 sheet): body 3x6x3 uv(2,8),
+                    // head 2x3x2 uv(2,2), leg plates 1x2x1 uv(14,18).
+                    body = BoxBuilder.McNet(2, 8, 3, 6, 3);
+                    head = BoxBuilder.McNet(2, 2, 2, 3, 2);
+                    leg = BoxBuilder.McNet(14, 18, 1, 2, 1);
+                    break;
                 case "bat":
                     // Bedrock bat geo (64x64 sheet): head 6x6x6 uv(0,0),
                     // body 6x12x6 uv(0,16), wing plates 10x16x1 uv(42,0).
@@ -278,6 +293,16 @@ namespace VoxelCraft.Creatures
                 // comes from the data registry - no per-species code.
                 var reg = CreatureRegistry.Get(species);
                 string walkClip = reg != null ? reg.walkClip : "animation.quadruped.walk";
+                // Per-species ground offset (spider geo pivots sit ~0.53m
+                // above the leg contact point; data-driven correction).
+                if (reg != null && !string.IsNullOrEmpty(reg.groundOffset))
+                {
+                    float go = float.Parse(reg.groundOffset,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    var bp = bodyRoot.localPosition;
+                    bodyRoot.localPosition = new Vector3(bp.x, bp.y + go, bp.z);
+                    UnityEngine.Debug.Log($"[GOF] {species} bodyRoot {bp.y:F3}->{bodyRoot.localPosition.y:F3}");
+                }
                 // Gait variable injection is registry-driven: the gait field
                 // names the ENTITY-layer pre_animation family (goat tcos_*,
                 // creeper leg_rot, horse leg_x_rot_anim, steve tcos0). New
@@ -299,6 +324,12 @@ namespace VoxelCraft.Creatures
                 if (reg != null && reg.extraVariables != null)
                     foreach (var ekv in reg.extraVariables)
                         animPlayer.variables[ekv.Key] = ekv.Value;
+                if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
+                    animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                if (reg != null && !string.IsNullOrEmpty(reg.gaitWeight))
+                    animPlayer.gaitWeightTarget = float.Parse(reg.gaitWeight,
+                        System.Globalization.CultureInfo.InvariantCulture);
                 if (reg != null && reg.extraClips != null)
                     foreach (var extra in reg.extraClips)
                         animPlayer.Play(extra);
@@ -845,9 +876,13 @@ namespace VoxelCraft.Creatures
                 // swing was flinging legs at 80 deg.
                 geoAnimPlayer.moving = walking && move > 0f;
                 geoAnimPlayer.walkSpeedRef = walkSpeed;
+                var regGw = CreatureRegistry.Get(species);
+                float target = regGw != null && !string.IsNullOrEmpty(regGw.gaitWeight)
+                    ? float.Parse(regGw.gaitWeight, System.Globalization.CultureInfo.InvariantCulture)
+                    : (geoAnimPlayer.moving ? 0.3f : 0f);
                 geoAnimPlayer.gaitWeight = Mathf.Lerp(
                     geoAnimPlayer.gaitWeight,
-                    geoAnimPlayer.moving ? 0.3f : 0f,
+                    target,
                     Time.deltaTime * 4f);
                 // Feed the wing-flap variable the legacy flap value so the
                 // official chicken.general clip can use it.

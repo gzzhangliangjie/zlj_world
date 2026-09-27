@@ -149,9 +149,18 @@
     "armadillo": {
       "walkClip": "animation.armadillo.walk",
       "behaviours": [
-        { "clip": "animation.armadillo.roll_up", "absolute": false },
-        { "clip": "animation.armadillo.rolled_up", "absolute": false },
-        { "clip": "animation.armadillo.unroll", "absolute": false }
+        {
+          "clip": "animation.armadillo.roll_up",
+          "absolute": false
+        },
+        {
+          "clip": "animation.armadillo.rolled_up",
+          "absolute": false
+        },
+        {
+          "clip": "animation.armadillo.unroll",
+          "absolute": false
+        }
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
@@ -227,6 +236,35 @@
       "gait": "none",
       "biped": false,
       "behaviours": []
+    },
+    "spider": {
+      "walkClip": "animation.spider.walk",
+      "extraClips": [],
+      "archetype": "arachnid",
+      "locomotion": "walk",
+      "gait": "dist-cos",
+      "behaviours": [],
+      "gaitWeight": "1.0",
+      "groundOffset": "-0.53",
+      "walkSpeed": "0.3"
+    },
+    "parrot": {
+      "walkClip": "animation.parrot.moving",
+      "extraClips": [
+        "animation.parrot.base"
+      ],
+      "extraVariables": {
+        "wing_flap": 0
+      },
+      "archetype": "hopper",
+      "locomotion": "walk",
+      "gait": "dist-cos",
+      "behaviours": [
+        {
+          "clip": "animation.parrot.sitting",
+          "absolute": false
+        }
+      ]
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
@@ -290,6 +328,12 @@
       42,
       7,
       5
+    ],
+    "parrot": [
+      2,
+      25,
+      8,
+      3
     ]
   },
   "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."

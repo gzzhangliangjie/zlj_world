@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot" };
 
             foreach (var sp in speciesList)
             {
@@ -84,7 +84,40 @@ namespace VoxelCraft.Editor
             // geo has no leg BONES - legs are static cubes on the body).
             var reg0 = Creatures.CreatureRegistry.Get(sp);
             bool flyer = reg0 != null && reg0.locomotion == "fly";
-            if (flyer)
+            // Hoppers (parrot): vanilla 'moving' bobs the body subtly (wing_flap*0.3px)
+            // and swings the tail cos(t*38.17)*17deg with legs static - the
+            // authentic grounded parrot gait. Measure tail deflection.
+            if (reg0 != null && reg0.archetype == "hopper")
+            {
+                var tailB = go.GetComponentsInChildren<Transform>()
+                    .FirstOrDefault(x => x.name.ToLowerInvariant() == "tail");
+                if (tailB == null || player == null)
+                {
+                    Add("gait.body_bob", sp, false, "no tail/wing bones (hopper)", 0, 0.2f, 60f);
+                    return;
+                }
+                var tq0 = tailB.localRotation;
+                float maxDefl = 0f; float flapT = 0f;
+                ani.walking = true;
+                for (int f = 0; f < 150; f++)
+                {
+                    flapT += 1f / 60f;
+                    // vanilla pre_anim: wing_flap = (sin(wing_flap_position*57.3)+1)*speed
+                    player.variables["wing_flap"] =
+                        (Mathf.Sin(flapT * 20f) + 1f) * 0.5f;
+                    player.moving = true;
+                    player.Tick(1f / 60f);
+                    float d = Quaternion.Angle(tq0, tailB.localRotation);
+                    if (f > 30 && d > maxDefl) maxDefl = d;
+                    tq0 = tailB.localRotation;
+                }
+                ani.walking = false;
+                player.moving = false;
+                bool bobOk = maxDefl > 2f && maxDefl < 90f;
+                Add("gait.body_bob", sp, bobOk, $"tail swing {maxDefl:F1} deg (hopper)", maxDefl, 2f, 90f);
+                return;
+            }
+if (flyer)
             {
                 var wings = go.GetComponentsInChildren<Transform>()
                     .Where(t => t.name.ToLowerInvariant().Contains("wing") && !t.name.ToLowerInvariant().Contains("tip"))
@@ -171,7 +204,18 @@ namespace VoxelCraft.Editor
                         center = ub[ub.Count / 2];
                     }
                     Quaternion dq = Quaternion.Inverse(restQ0) * legs[0].localRotation;
-                    float delta = 2f * Mathf.Atan2(dq.x, dq.w) * Mathf.Rad2Deg;
+                    // Swing axis is species-dependent: most quadrupeds swing
+                    // about X, but the spider walk clip bends its horizontal
+                    // legs about Y/Z (bedrock spider legs radiate sideways).
+                    // Spider leg curl is -abs(cos(...)) so it never crosses
+                    // zero: measure the raw Y quaternion component (signed,
+                    // oscillates with the gait) scaled to degrees.
+                    float delta;
+                    var regS = Creatures.CreatureRegistry.Get(sp);
+                    if (regS != null && regS.archetype == "arachnid")
+                        delta = 2f * Mathf.Asin(Mathf.Clamp01(Mathf.Abs(dq.y) * 2f)) * Mathf.Rad2Deg
+                                * (dq.y >= 0f ? 1f : -1f); // total angle, signed
+                    else delta = 2f * Mathf.Atan2(dq.x, dq.w) * Mathf.Rad2Deg;
                     samples.Add(delta);
                     if (Mathf.Abs(delta) > maxSwing) maxSwing = Mathf.Abs(delta);
                     if (prevDelta != 0f && Mathf.Sign(delta) != Mathf.Sign(prevDelta)) signFlips++;
@@ -180,7 +224,14 @@ namespace VoxelCraft.Editor
             }
             ani.walking = false;
             // Cadence: sign flips over 2.5s -> full swing cycles per second
-            float hz = signFlips / 2f / 2.5f; // each cycle = 2 flips
+            var regHz = Creatures.CreatureRegistry.Get(sp);
+            float hz;
+            if (regHz != null && regHz.archetype == "arachnid")
+                // spider legs curl via abs(cos(...)): the raw signal
+                // alternates twice per stride segment (down+up), so
+                // one "step" spans 4 sign flips.
+                hz = signFlips / 4f / 2.5f;
+            else hz = signFlips / 2f / 2.5f; // each cycle = 2 flips
             bool swingOk = maxSwing > 10f && maxSwing < 170f;
             bool hzOk = hz > 0.3f && hz < 4f;
             Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, 170);

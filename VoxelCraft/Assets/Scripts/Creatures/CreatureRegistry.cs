@@ -26,8 +26,11 @@ namespace VoxelCraft.Creatures
             public Dictionary<string, float> extraVariables;
             public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
             public bool biped;
-            public string archetype;              // quadruped|biped|insect|flyer-membrane
+            public string archetype;              // quadruped|biped|insect|flyer-membrane|arachnid|hopper
             public string locomotion;             // walk|fly
+            public string gaitWeight;             // optional walk-weight override (spider=1.0)
+            public string groundOffset;           // optional Y offset in metres (spider -0.53)
+            public string walkSpeed;              // optional walk speed in blocks/s (spider 0.3)
             public List<BehaviourDef> behaviours;
         }
 
@@ -75,6 +78,9 @@ namespace VoxelCraft.Creatures
                     if (o.TryGetValue("gait", out var g) && g is string gs) def.gait = gs;
                     if (o.TryGetValue("archetype", out var ar) && ar is string ars) def.archetype = ars;
                     if (o.TryGetValue("locomotion", out var lo) && lo is string los) def.locomotion = los;
+                    if (o.TryGetValue("gaitWeight", out var gw) && gw is string gws) def.gaitWeight = gws;
+                    if (o.TryGetValue("groundOffset", out var gofs) && gofs is string gos) def.groundOffset = gos;
+                    if (o.TryGetValue("walkSpeed", out var ws) && ws is string wss) def.walkSpeed = wss;
                     if (o.TryGetValue("biped", out var bp) && bp is bool bpb) def.biped = bpb;
                     if (o.TryGetValue("extraClips", out var ec) && ec is List<object> ecl && ecl.Count > 0)
                     {

@@ -111,6 +111,11 @@ namespace VoxelCraft.Creatures
         /// idle animals return their legs to the rest pose instead of
         /// freezing mid-swing (vanilla lerps limbSwing the same way).</summary>
         public float gaitWeight = 1f;
+        // Clips authored with small swing amplitudes (spider walk: 23 deg)
+        // are gated by query.move_speed in vanilla, not scaled to 30%; the
+        // 0.3 default was calibrated on quadruped clips that author 80 deg.
+        // Registry 'gait' may override this per species.
+        public float gaitWeightTarget = 0.3f;
 
         // Per-bone constant offsets contributed by the species ".setup" clip.
         // Our bind pose already bakes the setup result in (geo pivots/bpr), so
@@ -177,6 +182,40 @@ namespace VoxelCraft.Creatures
             restPos.Clear();
             restRot.Clear();
             IndexRec(modelRoot);
+            BakeDefaultLegPose();
+        }
+
+        /// <summary>Bedrock plays "*.default_leg_pose" as a permanent state
+        /// clip UNDER the locomotion clip (spider: legs bent 45 deg at rest).
+        /// Our runtime applies Playing clips in list order, so a constantly
+        /// re-applied single-keyframe pose would overwrite the walk clip's
+        /// leg channels every tick. Bake it into the REST pose instead —
+        /// exactly what the vanilla runtime achieves with controller
+        /// priorities — so locomotion composes on top of it.</summary>
+        private void BakeDefaultLegPose()
+        {
+            foreach (var kv in clips)
+            {
+                if (!kv.Key.EndsWith(".default_leg_pose")) continue;
+                foreach (var tr in kv.Value.tracks)
+                {
+                    if (tr.channel != "rotation" || tr.frames.Count == 0) continue;
+                    Transform bone = null;
+                    if (!boneIndex.TryGetValue(tr.bone, out bone))
+                        foreach (var b2 in boneIndex)
+                            if (string.Compare(b2.Key, tr.bone, true) == 0) { bone = b2.Value; break; }
+                    if (bone == null) continue;
+                    var kf = tr.frames[0];
+                    Vector3 v = kf.post;
+                    if (kf.expr != null)
+                        for (int i = 0; i < 3; i++)
+                            if (kf.expr[i] != null) v[i] = SetupConst(kf.expr[i]);
+                    // bedrock "X - this" absolute target -> our rest convention
+                    // (Unity Euler = (-bx, -by, -bz) of the bedrock angle)
+                    bone.localRotation = Quaternion.Euler(-v.x, -v.y, -v.z) * bone.localRotation;
+                    restRot[bone] = bone.localRotation;
+                }
+            }
         }
 
         /// <summary>Start a clip; no-op if it is already playing.</summary>
@@ -585,7 +624,7 @@ namespace VoxelCraft.Creatures
                 // never runs in editor batch mode - the weight froze at 1.0
                 // and walk swung legs at the full authored 80 degrees).
                 gaitWeight = Mathf.MoveTowards(
-                    gaitWeight, moving ? 0.3f : 0f, dt * 2.5f);
+                    gaitWeight, moving ? gaitWeightTarget : 0f, dt * 2.5f);
                 float maxT = c.length > 0f ? c.length : MaxTrackTime(c);
                 if (c.timeFromDistance)
                     // Bedrock distance is in blocks with a gait period of
