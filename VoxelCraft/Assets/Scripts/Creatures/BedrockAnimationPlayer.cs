@@ -566,8 +566,20 @@ namespace VoxelCraft.Creatures
                     // fixed target. Blending toward the bone's CURRENT value
                     // (previous frame's output) is a feedback loop: the pose
                     // never settles and the legs visibly jitter when idle.
-                    Vector3 rest = RestValue(bone, tr.channel);
-                    v = Vector3.Lerp(rest, v, w);
+                    // ROTATION: rest is an angle, Apply composes rest*delta,
+                    // so Lerp(restEuler, v, w) is correct.
+                    // POSITION: Apply() ADDS v to restPos (v is a delta in
+                    // px). Blending toward RestValue (= bind pos in px)
+                    // double-counts the rest and drags legs from (±2,3,±4)px
+                    // toward the clip's near-zero deltas = legs squeezed to
+                    // the centerline (armadillo 2026-09-27). Blend the DELTA
+                    // toward zero instead.
+                    if (tr.channel == "position") v = v * w;
+                    else
+                    {
+                        Vector3 rest = RestValue(bone, tr.channel);
+                        v = Vector3.Lerp(rest, v, w);
+                    }
                 }
                 Apply(bone, tr.channel, v, absolute);
             }
