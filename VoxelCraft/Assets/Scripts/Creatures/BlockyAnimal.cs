@@ -345,7 +345,13 @@ namespace VoxelCraft.Creatures
                 // names the ENTITY-layer pre_animation family (goat tcos_*,
                 // creeper leg_rot, horse leg_x_rot_anim, steve tcos0). New
                 // species with a known gait need zero code here.
-                if (reg != null && !string.IsNullOrEmpty(reg.gait))
+                // Engine-variable gait families (rabbit jump_rotation) have
+                // NO pre_animation source - the variable is engine-side, so
+                // the flag synthesizer stays on even in controller mode.
+                if (reg != null && reg.controllers &&
+                    (reg.gait == "rabbit" || reg.gait == "var:jump_rotation"))
+                    animPlayer.rabbitGait = true;
+                if (reg != null && !string.IsNullOrEmpty(reg.gait) && !reg.controllers)
                 {
                     switch (reg.gait)
                     {
@@ -428,6 +434,31 @@ namespace VoxelCraft.Creatures
                             eDesc = dd;
                     }
                     controllers = new BedrockControllerRuntime(animPlayer, acDefs, eDesc);
+                    // Generic pre_animation: feed the entity's script lines to
+                    // the player; the flag-based gait synthesizers stay off
+                    // for controller species (single source of truth).
+                    if (eDesc != null &&
+                        eDesc.TryGetValue("scripts", out object sc2) && sc2 is Dictionary<string, object> scd)
+                    {
+                        if (scd.TryGetValue("pre_animation", out object pre) && pre is List<object> preList)
+                            foreach (var pl in preList)
+                                if (pl is string pls && !string.IsNullOrWhiteSpace(pls))
+                                    animPlayer.preAnimation.Add(pls);
+                        // scripts.initialize: constant seeds run ONCE (vanilla
+                        // semantics), not per-frame - parse "variable.x = num;"
+                        // and seed the player variable store.
+                        if (scd.TryGetValue("initialize", out object init) && init is List<object> initList)
+                            foreach (var il in initList)
+                                if (il is string ils)
+                                {
+                                    var m = System.Text.RegularExpressions.Regex.Match(ils,
+                                        @"^\s*variable\.([A-Za-z0-9_]+)\s*=\s*(-?[0-9]+(?:\.[0-9]+)?)\s*;?\s*$");
+                                    if (m.Success)
+                                        animPlayer.variables[m.Groups[1].Value.ToLowerInvariant()] =
+                                            float.Parse(m.Groups[2].Value,
+                                                System.Globalization.CultureInfo.InvariantCulture);
+                                }
+                    }
                 }
                 // Ambient behaviours (wolf sit/shake, sheep graze, fox sit/sleep)
                 if (gameObject.GetComponent<BehaviourBrain>() == null)
@@ -874,6 +905,18 @@ namespace VoxelCraft.Creatures
             BedrockControllerRuntime.SetDt(dt);
             controllers.State.isOnGround = 1f;
             controllers.State.hasTarget = 0f;
+            // Engine role: ocelot-family variable.state (behavior-layer
+            // locomotion selector, vanilla: 0 sneak/1 sprint/2 sit/3 walk).
+            // Harness/AI walks => 3; idle keeps sitting for sit-clip species.
+            if (!controllers.State.variables.ContainsKey("state") ||
+                controllers.State.variables["state"] == 2f && moving ||
+                controllers.State.variables["state"] == 3f && !moving)
+                controllers.State.variables["state"] = moving ? 3f : 2f;
+            // Molang scope is SHARED (eyelib single scope): pre_animation
+            // assignments in player.variables must be visible to controller
+            // conditions - sync them into the runtime state store each tick.
+            foreach (var kv in geoAnimPlayer.variables)
+                controllers.State.variables[kv.Key] = kv.Value;
             controllers.State.variables["gliding_speed_value"] =
                 geoAnimPlayer.variables.TryGetValue("gliding_speed_value", out var gsv) ? gsv : 1.0f;
             controllers.State.variables["attack_time"] = -1f;

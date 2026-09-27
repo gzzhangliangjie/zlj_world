@@ -96,7 +96,8 @@
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "ocelot": {
       "walkClip": "animation.ocelot.walk",
@@ -110,14 +111,16 @@
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "creeper": {
       "walkClip": "animation.creeper.legs",
       "behaviours": [],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "var:leg_rot"
+      "gait": "var:leg_rot",
+      "controllers": true
     },
     "horse": {
       "walkClip": "animation.horse.walk",
@@ -138,7 +141,8 @@
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "var:jump_rotation"
+      "gait": "var:jump_rotation",
+      "controllers": true
     },
     "panda": {
       "walkClip": "animation.quadruped.walk",
@@ -228,7 +232,8 @@
       "extraClips": [
         "animation.bee.fly.bobbing"
       ],
-      "behaviours": []
+      "behaviours": [],
+      "controllers": true
     },
     "bat": {
       "walkClip": "animation.bat.flying",
@@ -236,7 +241,8 @@
       "locomotion": "fly",
       "gait": "none",
       "biped": false,
-      "behaviours": []
+      "behaviours": [],
+      "controllers": true
     },
     "spider": {
       "walkClip": "animation.spider.walk",
@@ -270,7 +276,8 @@
       "bakedSetupClips": [
         "animation.parrot.base"
       ],
-      "groundOffset": "0"
+      "groundOffset": "0",
+      "controllers": true
     },
     "hoglin": {
       "walkClip": "animation.hoglin.walk",

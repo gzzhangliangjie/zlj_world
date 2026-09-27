@@ -101,19 +101,27 @@ namespace VoxelCraft.Editor
                     return;
                 }
                 var tq0 = tailB.localRotation;
+                var tailStart = tailB.localRotation;
                 float maxDefl = 0f; float flapT = 0f;
                 ani.walking = true;
                 for (int f = 0; f < 150; f++)
                 {
                     flapT += 1f / 60f;
-                    // vanilla pre_anim: wing_flap = (sin(wing_flap_position*57.3)+1)*speed
-                    player.variables["wing_flap"] =
-                        (Mathf.Sin(flapT * 20f) + 1f) * 0.5f;
+                    // Engine synthesis (B-plan): wing_flap comes from the
+                    // player's wingFlapPos clock via pre_animation, not from
+                    // a harness-side injection.
+                    player.airborneWings = true;
                     player.moving = true;
                     player.Tick(1f / 60f);
-                    float d = Quaternion.Angle(tq0, tailB.localRotation);
-                    if (f > 30 && d > maxDefl) maxDefl = d;
-                    tq0 = tailB.localRotation;
+                    // B-plan: hoppers advance controllers (parrot controller
+                    // drives fly/ground states via is_on_ground).
+                    ani.TickControllers(1f / 60f, moving: true);
+                    // Measure ABSOLUTE deflection from the pose at window
+                    // start (vanilla parrot moving tail swings on a 9.44s
+                    // cos(anim_time*38.17 deg) cycle - per-frame deltas are
+                    // sub-0.2 deg by design, they were the rabbit-era metric).
+                    float d = Quaternion.Angle(tailStart, tailB.localRotation);
+                    if (d > maxDefl) maxDefl = d;
                 }
                 ani.walking = false;
                 player.moving = false;
@@ -136,6 +144,9 @@ if (flyer)
                 {
                     foreach (var bp in go.GetComponentsInChildren<Creatures.BedrockAnimationPlayer>())
                         { bp.moving = true; bp.Tick(1f / 60f); }
+                    // B-plan: flyers advance controllers too (bat flying state
+                    // is initial, bee root schedules the flying clip).
+                    ani.TickControllers(1f / 60f, moving: true);
                     if (f > 30 && w0 != null)
                     {
                         float d = Quaternion.Angle(wb0, w0.localRotation); // deg

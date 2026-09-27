@@ -178,7 +178,7 @@ namespace VoxelCraft.Editor
                 }
             }
             if (dMax > (kind == "rot" ? RotTolDeg : PosTolM))
-            { worst = $"{o[0]} {kind} delta {dMax:F3}"; return false; }
+            { worst = $"{o[0]} {kind} delta {dMax:F3} [{oldLine}]->[{newLine}]"; return false; }
             return true;
         }
     }

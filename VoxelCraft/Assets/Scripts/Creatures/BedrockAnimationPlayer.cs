@@ -82,6 +82,12 @@ namespace VoxelCraft.Creatures
         [Tooltip("Bedrock animation JSONs (resource_pack/animations)")]
         public List<TextAsset> clipsJson = new List<TextAsset>();
         public readonly Dictionary<string, Clip> clips = new Dictionary<string, Clip>();
+
+        // entity.json scripts.pre_animation lines (evaluated every tick
+        // BEFORE clips sample; eyelib EntityRenderOrchestrator.java:259,623:
+        // scripts.pre_animation().eval(scope) runs each animation frame).
+        // Assignment targets live in `variables` - same store the clips read.
+        public List<string> preAnimation = new List<string>();
         public readonly Dictionary<string, float> variables = new Dictionary<string, float>();
 
         private readonly List<Playing> playing = new List<Playing>();
@@ -661,6 +667,31 @@ namespace VoxelCraft.Creatures
             // verification and editor snapshots never run MonoBehaviour
             // Update, and the gait froze at cos(0) in the last regression.
             if (moving) distanceMoved += walkSpeedRef * dt;
+            lifeTime += dt;
+            // Engine role: hopper wing-flap phase advances while airborne
+            // (parrot flying state). On the ground vanilla holds it still
+            // (folded wings, wing_flap evaluates to sin(pos)*speed with the
+            // held phase). airborneWings is set by the game layer/harness.
+            if (airborneWings) wingFlapPos += dt * wingFlapSpd * 57.3f;
+            // Generic entity pre_animation (B-plan): eval each line, then
+            // store assignments into `variables`. Runs BEFORE the flag-based
+            // synthesizers below so migrated species leave the flags off and
+            // this is the single source (eyelib evals pre_animation every
+            // animation frame, EntityRenderOrchestrator.java:259,623).
+            if (preAnimation.Count > 0)
+            {
+                // Engine-default variables referenced by vanilla pre_anim
+                // (goat/hoglin/zombie divide by gliding_speed_value=0.6;
+                // attack_time=-1 means "no attack"). TryAdd so entity
+                // initialize lines / registry extraVariables can override.
+                variables.TryAdd("gliding_speed_value", 0.6f);
+                variables.TryAdd("attack_time", -1f);
+                var pc = BuildCtx(lifeTime);
+                pc.deltaTime = dt;
+                pc.moveSpeed = moving ? Mathf.Clamp01(walkSpeedRef) : 0f;
+                foreach (var line in preAnimation)
+                    EvalAssign(line, pc);
+            }
             if (goatGait)
             {
                 // goat.entity.json pre_animation (gliding_speed_value ~ 0.6):
@@ -729,11 +760,12 @@ namespace VoxelCraft.Creatures
                     gaitWeight, moving ? gaitWeightTarget : 0f, dt * 2.5f);
                 float maxT = c.length > 0f ? c.length : MaxTrackTime(c);
                 if (c.timeFromDistance)
-                    // Bedrock distance is in blocks with a gait period of
-                    // ~0.66 m per full swing; our distanceMoved is metres at
-                    // game scale, so scale to keep the vanilla step cadence
-                    // (raw 38.17 rad/m is ~8 Hz at 1.4 m/s - comically fast).
-                    p.time = distanceMoved * 0.25f;
+                    // anim_time feeds DEGREE-trig clips (cos(anim_time*38.17)).
+                    // Vanilla modified_distance_moved counts internal units of
+                    // ~14.325 per metre, so phase = 38.17*14.325 = 546.9 deg/m
+                    // (period 0.658 m) - identical to the tuned legacy rad
+                    // clock cos_rad(d*9.54). The old *0.25 was rad-scale.
+                    p.time = distanceMoved * 14.325f;
                 else if (c.timeFromWalkVar)
                     // armadillo: vanilla advances t by lerp(2,5,speed)*dt
                     // (~3x realtime at mid speed) - 0.75 = 0.25 * 3.
@@ -743,15 +775,8 @@ namespace VoxelCraft.Creatures
                     // Generic anim_time_update: molang returns the NEW clip
                     // time (goat ram_attack rewinds at -4x when the gate
                     // variable is 0, floors at Math.max(...,0)).
-                    var tc = new Molang.Ctx
-                    {
-                        animTime = p.time,
-                        distance = distanceMoved * 0.25f,
-                        headYaw = headYawDeg,
-                        vars = variables,
-                        moveSpeed = Mathf.Clamp01(walkSpeedRef),
-                        deltaTime = dt
-                    };
+                    var tc = BuildCtx(p.time);
+                    tc.deltaTime = dt;
                     float nt = Molang.Eval(c.timeExpr, tc);
                     p.time = Mathf.Max(0f, nt);
                 }
@@ -856,7 +881,7 @@ namespace VoxelCraft.Creatures
             // 38.17 rad/m raw is ~8Hz at 1.4 m/s (comically fast); all vanilla
                 // gait clips in this project use a 0.25 beat scale on the distance
                 // clock (calibrated on sheep/goat, applied species-wide).
-                var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved * 0.25f, headYaw = headYawDeg, vars = variables, moveSpeed = Mathf.Clamp01(walkSpeedRef) };
+                var ctx = BuildCtx(time);
             // Start from the PARSED CONSTANTS (kf.post) - Fill() stores plain
             // numbers there even when sibling components are expressions, so
             // "0, -115, expr" keeps its -115 constant y while z evaluates.
@@ -897,7 +922,7 @@ namespace VoxelCraft.Creatures
             // 38.17 rad/m raw is ~8Hz at 1.4 m/s (comically fast); all vanilla
                 // gait clips in this project use a 0.25 beat scale on the distance
                 // clock (calibrated on sheep/goat, applied species-wide).
-                var ctx = new Molang.Ctx { animTime = time, distance = distanceMoved * 0.25f, headYaw = headYawDeg, vars = variables, moveSpeed = Mathf.Clamp01(walkSpeedRef) };
+                var ctx = BuildCtx(time);
             Vector3? frozen = null;
             if (frozenThis != null && boneName != null && frozenThis.TryGetValue(boneName.ToLowerInvariant(), out var fv))
                 frozen = fv;
@@ -1003,12 +1028,89 @@ namespace VoxelCraft.Creatures
             }
         }
 
+        float lifeTime;
+        // Engine-driven query state (synthesized): wing flap phase advances
+        // while airborne (hopper archetype), head-aim defaults to straight
+        // ahead (no target in harness scenes).
+        float wingFlapPos, wingFlapSpd = 0.5f;
+        /// <summary>Hopper species airborne flag - drives the engine-side
+        /// wing_flap_position query (parrot flying state).</summary>
+        public bool airborneWings;
+
+        Molang.Ctx BuildCtx(float animTime)
+        {
+            return new Molang.Ctx
+            {
+                // query.modified_distance_moved is in VANILLA internal units
+                // everywhere (bone expressions AND pre_animation):
+                // metres * 14.325. With degree trig (vanilla molang),
+                // cos_deg(d*14.325*38.17) = cos_rad(d*9.5425) - exactly the
+                // golden-baseline gait frequency (period 0.658 m).
+                animTime = animTime,
+                distance = distanceMoved * 14.325f,
+                headYaw = headYawDeg,
+                vars = variables,
+                moveSpeed = Mathf.Clamp01(walkSpeedRef),
+                deltaTime = 1f / 60f,
+                wingFlapPosition = wingFlapPos,
+                wingFlapSpeed = wingFlapSpd,
+                targetXRotation = 0f,
+                targetYRotation = 0f,
+                // Engine ground truth: mobs in harness scenes stand on the
+                // ground (parrot pre_anim: !is_on_ground -> flying state).
+                isOnGround = 1f,
+                propertyLookup = molangProperties,
+            };
+        }
+        /// <summary>Optional property table for query.property('...')
+        /// lookups (populated by the controller runtime / game layer).</summary>
+        public System.Func<string, float> molangProperties;
+
+        /// <summary>Evaluate one pre_animation assignment line
+        /// ("variable.x = expr", "variable.x += expr", ternaries allowed)
+        /// and write the result into `variables`. Unknown queries eval to 0
+        /// (bedrock default). Non-assignment lines are evaluated for side
+        /// effects only (none here) - parse errors are silently ignored like
+        /// eyelib's zero-value fallback.</summary>
+        void EvalAssign(string line, Molang.Ctx ctx)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            string t = line.Trim().TrimEnd(';');
+            int eq = t.IndexOf('=');
+            if (eq <= 0) return;
+            // skip ==, !=, <=, >=, +=, -=, *=, /=
+            char before = t[eq - 1];
+            bool compound = false;
+            string op = "=";
+            if (before == '+' || before == '-' || before == '*' || before == '/')
+            { compound = true; op = before + "="; }
+            if (eq > 0 && (before == '=' || before == '!' || before == '<' || before == '>')) return; // comparison, not assignment
+            string target = t.Substring(0, eq - (compound ? 1 : 0)).Trim();
+            string expr = t.Substring(eq + 1).Trim();
+            if (!target.ToLowerInvariant().StartsWith("variable.")) return;
+            string key = target.Substring("variable.".Length).ToLowerInvariant();
+            float v = Molang.Eval(expr, ctx);
+            if (compound)
+            {
+                float cur = variables.TryGetValue(key, out var c) ? c : 0f;
+                if (op == "+=") v = cur + v;
+                else if (op == "-=") v = cur - v;
+                else if (op == "*=") v = cur * v;
+                else if (op == "/=") v = cur != 0f ? cur / v : 0f;
+            }
+            variables[key] = v;
+        }
+
         // ---------------- Molang-lite ----------------
         public static class Molang
         {
             public struct Ctx
             {
                 public float animTime, distance, headYaw, thisVal, moveSpeed, deltaTime;
+                // Engine-driven queries (vanilla C++ supplies these; we
+                // synthesize): wing flap phase/speed (hoppers), head-aim
+                // targets (look_at_target clamps).
+                public float wingFlapPosition, wingFlapSpeed, targetXRotation, targetYRotation;
                 // B-plan entity queries (controller conditions). Defaults keep
                 // old behaviour: unset = 0 == "no". Populated by
                 // BedrockControllerRuntime from the entity state.
@@ -1026,7 +1128,7 @@ namespace VoxelCraft.Creatures
                 try
                 {
                     var p = new Parser(expr, ctx);
-                    float v = p.Ternary();
+                    float v = p.NullCoalesce();
                     return p.atEnd ? v : 0f;
                 }
                 catch { return 0f; }
@@ -1039,11 +1141,43 @@ namespace VoxelCraft.Creatures
                 private readonly Ctx ctx;
 
                 internal Parser(string e, Ctx c) { s = e.Trim(); i = 0; ctx = c; }
+                internal Parser(string e, int start, Ctx c) { s = e; i = start; ctx = c; }
                 internal bool atEnd { get { SkipWs(); return i >= s.Length; } }
 
                 private void SkipWs() { while (i < s.Length && char.IsWhiteSpace(s[i])) i++; }
                 private bool Peek(char c) { SkipWs(); return i < s.Length && s[i] == c; }
                 private bool Eat(char c) { if (Peek(c)) { i++; return true; } return false; }
+
+                // molang null-coalescing "variable.x ?? expr": vars hold
+                // floats, so null == UNSET variable. Only this exact pattern
+                // appears in vanilla data (armadillo rolled_up_time ?? 0.0).
+                internal float NullCoalesce()
+                {
+                    SkipWs();
+                    int save = i;
+                    if (i < s.Length && char.IsLetter(s[i]))
+                    {
+                        int st = i;
+                        while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '_' || s[i] == '.')) i++;
+                        string tok = s.Substring(st, i - st).ToLowerInvariant();
+                        SkipWs();
+                        if (i + 1 < s.Length && s[i] == '?' && s[i + 1] == '?' &&
+                            tok.StartsWith("variable.") && ctx.vars != null)
+                        {
+                            string vkey = tok.Substring("variable.".Length);
+                            i += 2; // skip ??
+                            float rhs = NullCoalesce();
+                            if (ctx.vars.ContainsKey(vkey))
+                            {
+                                var p2 = new Parser(s, save, ctx);
+                                return p2.NullCoalesce();
+                            }
+                            return rhs;
+                        }
+                        i = save;
+                    }
+                    return Ternary();
+                }
 
                 internal float Ternary()
                 {
@@ -1159,8 +1293,11 @@ namespace VoxelCraft.Creatures
                         Eat(')');
                         switch (idLower)
                         {
-                            case "math.cos": return Mathf.Cos(a);
-                            case "math.sin": return Mathf.Sin(a);
+                            // vanilla molang trig takes DEGREES (eyelib
+                            // MolangMath.java cos/sin wrap Deg2Rad; parrot
+                            // dance.x = cos(life_time*57.3*20) confirms).
+                            case "math.cos": return Mathf.Cos(a * Mathf.Deg2Rad);
+                            case "math.sin": return Mathf.Sin(a * Mathf.Deg2Rad);
                             case "math.abs": return Mathf.Abs(a);
                             case "math.mod": return b != 0f ? a - b * Mathf.Floor(a / b) : 0f;
                             case "math.clamp": { float c = Ternary(); return Mathf.Clamp(a, b, c); }
@@ -1182,6 +1319,10 @@ namespace VoxelCraft.Creatures
                     {
                         case "query.anim_time": return ctx.animTime;
                         case "query.delta_time": return ctx.deltaTime;
+                        case "query.wing_flap_position": return ctx.wingFlapPosition;
+                        case "query.wing_flap_speed": return ctx.wingFlapSpeed;
+                        case "query.target_x_rotation": return ctx.targetXRotation;
+                        case "query.target_y_rotation": return ctx.targetYRotation;
                         case "query.modified_distance_moved": return ctx.distance;
                         case "query.modified_move_speed": return ctx.modifiedMoveSpeed != 0f ? ctx.modifiedMoveSpeed : ctx.moveSpeed;
                         case "query.head_yaw": return ctx.headYaw;
