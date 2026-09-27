@@ -268,7 +268,7 @@
       "bakedSetupClips": [
         "animation.parrot.base"
       ],
-      "groundOffset": "+0.375"
+      "groundOffset": "0"
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
