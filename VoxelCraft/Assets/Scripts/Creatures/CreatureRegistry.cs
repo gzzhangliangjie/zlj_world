@@ -24,6 +24,7 @@ namespace VoxelCraft.Creatures
             public string walkClip = "animation.quadruped.walk";
             public List<string> extraClips;      // played permanently alongside walk
             public List<string> bakedSetupClips;  // baked into REST at Bind (vanilla setup controller, played once)
+            public bool controllers;              // B-plan: drive clips via the vanilla controller state machine (AnimControllers/<sp> + EntityDefs/<sp>)
             public List<string> bakedSetupPos;    // subset whose POSITION keys are real pose data (polarbear.move -9px), not engine-compensation junk (parrot base legs -6px)
             public Dictionary<string, float> extraVariables;
             public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
@@ -91,6 +92,8 @@ namespace VoxelCraft.Creatures
                         def.extraClips = new List<string>();
                         foreach (var c in ecl) if (c is string cs) def.extraClips.Add(cs);
                     }
+                    if (o.TryGetValue("controllers", out var ctl) && ctl is bool ctlb && ctlb)
+                        def.controllers = true;
                     if (o.TryGetValue("bakedSetupClips", out var bs) && bs is List<object> bsl && bsl.Count > 0)
                     {
                         def.bakedSetupClips = new List<string>();

@@ -104,6 +104,8 @@ namespace VoxelCraft.Editor
                         player.moving = true;
                         go.transform.position += go.transform.forward * (ani.walkSpeed * Dt);
                         player.Tick(Dt);
+                        // B-plan species: advance controllers like AnimVerify does
+                        ani.TickControllers(Dt, moving: true);
                     }
                     else ani.ApplyLegacyGait(ani.walkSpeed, Dt, f * Dt * (4f + ani.walkSpeed * 3f));
                     if (f < 30) continue; // skip warm-up blend, same window as gait checks

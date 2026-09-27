@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using VoxelCraft.Art;
 using VoxelCraft.Core;
@@ -30,6 +31,7 @@ namespace VoxelCraft.Creatures
         private Transform bodyRoot;
         private Transform head;
         private BedrockAnimationPlayer geoAnimPlayer; // official clips (geo path)
+        private BedrockControllerRuntime controllers; // B-plan state machine (opt-in per species)
         private float animPhase;
         private float stateTimer;
         [Tooltip("Roaming state; verification harness forces this true/false.")]
@@ -356,33 +358,74 @@ namespace VoxelCraft.Creatures
                     if (reg.gait != "none" && reg.gait != "dist-cos")
                         animPlayer.walkSpeedRef = walkSpeed;
                 }
-                animPlayer.Play(walkClip);
-                if (reg != null && reg.extraVariables != null)
-                    foreach (var ekv in reg.extraVariables)
-                        animPlayer.variables[ekv.Key] = ekv.Value;
-                if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
-                    animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
-                        System.Globalization.CultureInfo.InvariantCulture);
-                if (reg != null && !string.IsNullOrEmpty(reg.gaitWeight))
-                    animPlayer.gaitWeightTarget = float.Parse(reg.gaitWeight,
-                        System.Globalization.CultureInfo.InvariantCulture);
-                if (reg != null && reg.extraClips != null)
-                    foreach (var extra in reg.extraClips)
-                    {
-                        // Setup clips (parrot "base") are baked into the REST
-                        // pose, not played: a looping extraClip re-applies its
-                        // constant channels every tick and overwrites the walk
-                        // clip (parrot wings frozen, legs buried by -6px).
-                        if (reg.bakedSetupClips != null && reg.bakedSetupClips.Contains(extra))
-                            continue;
-                        animPlayer.Play(extra);
-                    }
+                if (reg == null || !reg.controllers)
+                {
+                    animPlayer.Play(walkClip);
+                    if (reg != null && reg.extraVariables != null)
+                        foreach (var ekv in reg.extraVariables)
+                            animPlayer.variables[ekv.Key] = ekv.Value;
+                    if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
+                        animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
+                            System.Globalization.CultureInfo.InvariantCulture);
+                    if (reg != null && !string.IsNullOrEmpty(reg.gaitWeight))
+                        animPlayer.gaitWeightTarget = float.Parse(reg.gaitWeight,
+                            System.Globalization.CultureInfo.InvariantCulture);
+                    if (reg != null && reg.extraClips != null)
+                        foreach (var extra in reg.extraClips)
+                        {
+                            // Setup clips (parrot "base") are baked into the REST
+                            // pose, not played: a looping extraClip re-applies its
+                            // constant channels every tick and overwrites the walk
+                            // clip (parrot wings frozen, legs buried by -6px).
+                            if (reg.bakedSetupClips != null && reg.bakedSetupClips.Contains(extra))
+                                continue;
+                            animPlayer.Play(extra);
+                        }
+                }
+                else
+                {
+                    // controller-driven: pre_animation variables from the
+                    // entity json (gait var family) run every tick in Update.
+                    if (reg.extraVariables != null)
+                        foreach (var ekv in reg.extraVariables)
+                            animPlayer.variables[ekv.Key] = ekv.Value;
+                    if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
+                        animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
+                            System.Globalization.CultureInfo.InvariantCulture);
+                }
 
                 // NOTE: species ".setup" clips (wolf/pig "-this" re-roots) are
                 // NOT played: they exist to convert bedrock's 1.8 bind pose,
                 // which BedrockGeoImporter already applies via
                 // bind_pose_rotation + leg re-rooting.
                 geoAnimPlayer = animPlayer;
+
+                // B-plan: controller-driven species (registry "controllers":
+                // true) get the vanilla state machine; the legacy
+                // walk+extraClips scheduling above is then skipped.
+                if (reg != null && reg.controllers)
+                {
+                    var acTa = Resources.Load<TextAsset>("AnimControllers/" + species + ".animation_controllers");
+                    var eTa = Resources.Load<TextAsset>("EntityDefs/" + species + ".entity");
+                    Dictionary<string, object> acDefs = null, eDesc = null;
+                    if (acTa != null)
+                    {
+                        object ao0 = null; try { ao0 = MiniJson.Deserialize(acTa.text); } catch { }
+                        var acJson = ao0 as Dictionary<string, object>;
+                        if (acJson != null && acJson.TryGetValue("animation_controllers", out object ao) && ao is Dictionary<string, object> ad)
+                            acDefs = ad;
+                    }
+                    if (eTa != null)
+                    {
+                        object eo0 = null; try { eo0 = MiniJson.Deserialize(eTa.text); } catch { }
+                        var eJson = eo0 as Dictionary<string, object>;
+                        if (eJson != null && eJson.TryGetValue("minecraft:client_entity", out object ce) &&
+                            ce is Dictionary<string, object> ced && ced.TryGetValue("description", out object desc) &&
+                            desc is Dictionary<string, object> dd)
+                            eDesc = dd;
+                    }
+                    controllers = new BedrockControllerRuntime(animPlayer, acDefs, eDesc);
+                }
                 // Ambient behaviours (wolf sit/shake, sheep graze, fox sit/sleep)
                 if (gameObject.GetComponent<BehaviourBrain>() == null)
                     gameObject.AddComponent<BehaviourBrain>();
@@ -820,6 +863,21 @@ namespace VoxelCraft.Creatures
             }
         }
 
+        /// <summary>Public controller tick for batch harnesses (Update never
+        /// runs in batchmode). Same state feeding as Update does.</summary>
+        public void TickControllers(float dt, bool moving)
+        {
+            if (controllers == null || geoAnimPlayer == null) return;
+            BedrockControllerRuntime.SetDt(dt);
+            controllers.State.isOnGround = 1f;
+            controllers.State.hasTarget = 0f;
+            controllers.State.variables["gliding_speed_value"] =
+                geoAnimPlayer.variables.TryGetValue("gliding_speed_value", out var gsv) ? gsv : 1.0f;
+            controllers.State.variables["attack_time"] = -1f;
+            controllers.State.modifiedMoveSpeed = moving ? 0.25f : 0f;
+            controllers.Tick(dt);
+        }
+
         private void Update()
         {
             if (bodyRoot == null || world == null || world.sim == null || dead)
@@ -936,6 +994,9 @@ namespace VoxelCraft.Creatures
                         walking && move > 0f
                             ? (0.25f + 0.45f * Mathf.Abs(Mathf.Sin(animPhase * 1.5f))) * 57.3f
                             : (0.25f + 0.06f * Mathf.Sin(animPhase * 0.7f)) * 57.3f;
+                // B-plan: advance the vanilla controller state machine; it
+                // schedules clips itself (walk weight = query.modified_move_speed).
+                TickControllers(Time.deltaTime, geoAnimPlayer.moving);
                 return;
             }
             animPhase += Time.deltaTime * (4f + move * 3f);

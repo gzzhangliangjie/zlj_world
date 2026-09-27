@@ -942,7 +942,16 @@ namespace VoxelCraft.Creatures
             public struct Ctx
             {
                 public float animTime, distance, headYaw, thisVal, moveSpeed;
+                // B-plan entity queries (controller conditions). Defaults keep
+                // old behaviour: unset = 0 == "no". Populated by
+                // BedrockControllerRuntime from the entity state.
+                public float isBaby, isSitting, isSleeping, isOnGround, isRiding,
+                    isJumping, isDancing, hasTarget, isStalking, isInterested,
+                    isStunned, isShakingWetness, isResting, isGrazing,
+                    sitAmount, lieAmount, rollCounter, allAnimationsFinished,
+                    modifiedMoveSpeed;
                 internal Dictionary<string, float> vars;
+                internal System.Func<string, float> propertyLookup;
             }
 
             public static float Eval(string expr, Ctx ctx)
@@ -1058,10 +1067,21 @@ namespace VoxelCraft.Creatures
                     while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '_' || s[i] == '.')) i++;
                     string id = s.Substring(st, i - st);
                     bool isCall = Peek('(');
+                    string rawArg = null;
 
                     if (isCall)
                     {
                         i++; // '('
+                        // string-literal first arg (query.property('minecraft:...'))
+                        SkipWs();
+                        if (i < s.Length && (s[i] == '\'' || s[i] == '"'))
+                        {
+                            char q = s[i++];
+                            int qs = i;
+                            while (i < s.Length && s[i] != q) i++;
+                            rawArg = s.Substring(qs, i - qs);
+                            i++; // closing quote
+                        }
                         float a = Ternary();
                         float b = 0f;
                         if (Eat(',')) b = Ternary();
@@ -1073,6 +1093,17 @@ namespace VoxelCraft.Creatures
                             case "math.abs": return Mathf.Abs(a);
                             case "math.mod": return b != 0f ? a - b * Mathf.Floor(a / b) : 0f;
                             case "math.clamp": { float c = Ternary(); return Mathf.Clamp(a, b, c); }
+                            case "math.min": return Mathf.Min(a, b);
+                            case "math.max": return Mathf.Max(a, b);
+                            case "math.lerp": { float c = Ternary(); return Mathf.Lerp(a, b, c); }
+                            case "math.floor": return Mathf.Floor(a);
+                            case "math.ceil": return Mathf.Ceil(a);
+                            case "math.sqrt": return Mathf.Sqrt(a);
+                            case "math.pow": return Mathf.Pow(a, b);
+                            case "math.random": return Random.Range(a, b);
+                            case "query.property":
+                                // rawArg holds the quoted property name
+                                return ctx.propertyLookup != null && rawArg != null ? ctx.propertyLookup(rawArg) : 0f;
                             default: return 0f;
                         }
                     }
@@ -1080,11 +1111,29 @@ namespace VoxelCraft.Creatures
                     {
                         case "query.anim_time": return ctx.animTime;
                         case "query.modified_distance_moved": return ctx.distance;
-                        case "query.modified_move_speed": return ctx.moveSpeed;
+                        case "query.modified_move_speed": return ctx.modifiedMoveSpeed != 0f ? ctx.modifiedMoveSpeed : ctx.moveSpeed;
                         case "query.head_yaw": return ctx.headYaw;
+                        // B-plan entity state queries (controller conditions).
+                        case "query.is_baby": return ctx.isBaby;
+                        case "query.is_sitting": return ctx.isSitting;
+                        case "query.is_sleeping": return ctx.isSleeping;
+                        case "query.is_on_ground": return ctx.isOnGround;
+                        case "query.is_riding": return ctx.isRiding;
+                        case "query.is_jumping": return ctx.isJumping;
+                        case "query.is_dancing": return ctx.isDancing;
+                        case "query.has_target": return ctx.hasTarget;
+                        case "query.is_stalking": return ctx.isStalking;
+                        case "query.is_interested": return ctx.isInterested;
+                        case "query.is_stunned": return ctx.isStunned;
+                        case "query.is_shaking_wetness": return ctx.isShakingWetness;
+                        case "query.is_resting": return ctx.isResting;
+                        case "query.is_grazing": return ctx.isGrazing;
+                        case "query.sit_amount": return ctx.sitAmount;
+                        case "query.lie_amount": return ctx.lieAmount;
+                        case "query.roll_counter": return ctx.rollCounter;
+                        case "query.all_animations_finished": return ctx.allAnimationsFinished;
                         case "query.life_time": return ctx.animTime;
                         case "this": return ctx.thisVal;
-                        case "query.is_baby": return 0f; // no baby variants
                         case "query.key_frame_lerp_time": return 0f; // lerp phase; grazing head wiggle approximated as constant
                         case "true": return 1f;
                         case "false": return 0f;

@@ -272,9 +272,7 @@
     },
     "hoglin": {
       "walkClip": "animation.hoglin.walk",
-      "extraClips": [
-        "animation.hoglin.look_at_target"
-      ],
+      "controllers": true,
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",

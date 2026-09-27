@@ -195,6 +195,9 @@ if (flyer)
                     player.moving = true;
                     go.transform.position += go.transform.forward * (ani.walkSpeed * dt);
                     player.Tick(dt);
+                    // B-plan species: advance the controller state machine with
+                    // the same locomotion state the harness feeds the player.
+                    ani.TickControllers(dt, moving: true);
                 }
                 else ani.ApplyLegacyGait(ani.walkSpeed, dt, f * dt * (4f + ani.walkSpeed * 3f));
                 if (f > 30)
