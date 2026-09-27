@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using VoxelCraft.Creatures;
@@ -73,6 +74,12 @@ namespace VoxelCraft.Editor
                 ("skeleton", null, false, "walk"),
                 ("villager", null, false, "walk"),
             };
+
+            // GIF_SPECIES: render a single species (quick turnaround for
+            // media assembly); unset = full 22-species regression run.
+            string onlySp = System.Environment.GetEnvironmentVariable("GIF_SPECIES");
+            if (!string.IsNullOrEmpty(onlySp))
+                jobs = jobs.Where(j => j.Item1 == onlySp).ToList();
 
             foreach (var (sp, clip, absolute, tag) in jobs)
             {
