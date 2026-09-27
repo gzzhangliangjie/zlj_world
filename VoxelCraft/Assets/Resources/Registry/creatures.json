@@ -148,7 +148,11 @@
     },
     "armadillo": {
       "walkClip": "animation.armadillo.walk",
-      "behaviours": [],
+      "behaviours": [
+        { "clip": "animation.armadillo.roll_up", "absolute": false },
+        { "clip": "animation.armadillo.rolled_up", "absolute": false },
+        { "clip": "animation.armadillo.unroll", "absolute": false }
+      ],
       "archetype": "quadruped",
       "locomotion": "walk",
       "gait": "dist-cos"
