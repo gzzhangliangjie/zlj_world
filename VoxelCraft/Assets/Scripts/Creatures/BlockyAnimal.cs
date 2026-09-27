@@ -377,9 +377,6 @@ namespace VoxelCraft.Creatures
                             continue;
                         animPlayer.Play(extra);
                     }
-                if (reg != null && reg.absoluteExtraClips != null)
-                    foreach (var extra in reg.absoluteExtraClips)
-                        animPlayer.Play(extra, true);
 
                 // NOTE: species ".setup" clips (wolf/pig "-this" re-roots) are
                 // NOT played: they exist to convert bedrock's 1.8 bind pose,

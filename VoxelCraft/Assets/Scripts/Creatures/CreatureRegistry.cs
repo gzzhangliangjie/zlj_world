@@ -23,7 +23,6 @@ namespace VoxelCraft.Creatures
         {
             public string walkClip = "animation.quadruped.walk";
             public List<string> extraClips;      // played permanently alongside walk
-            public List<string> absoluteExtraClips; // played permanently in ABSOLUTE mode (vanilla look_at_target: relative_to entity + "x - this")
             public List<string> bakedSetupClips;  // baked into REST at Bind (vanilla setup controller, played once)
             public List<string> bakedSetupPos;    // subset whose POSITION keys are real pose data (polarbear.move -9px), not engine-compensation junk (parrot base legs -6px)
             public Dictionary<string, float> extraVariables;
@@ -96,11 +95,6 @@ namespace VoxelCraft.Creatures
                     {
                         def.bakedSetupClips = new List<string>();
                         foreach (var c in bsl) if (c is string cs) def.bakedSetupClips.Add(cs);
-                    }
-                    if (o.TryGetValue("absoluteExtraClips", out var aec) && aec is List<object> aecl && aecl.Count > 0)
-                    {
-                        def.absoluteExtraClips = new List<string>();
-                        foreach (var c in aecl) if (c is string cs) def.absoluteExtraClips.Add(cs);
                     }
                     if (o.TryGetValue("bakedSetupPos", out var bsp) && bsp is List<object> bspl && bspl.Count > 0)
                     {

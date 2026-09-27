@@ -37,6 +37,12 @@ namespace VoxelCraft.Creatures
         {
             public string bone;
             public string channel;        // position | rotation | scale
+            // "relative_to":{"rotation":"entity"} in the animation file: the
+            // channel's values are FINAL entity-space angles (vanilla wiki:
+            // "makes the bone rotation relative to the entity instead of the
+            // bone's parent"). Numerically identical to the "-this" absolute
+            // convention when no parent rotates, which holds for body->head.
+            public bool entitySpace;
             public List<Keyframe> frames = new List<Keyframe>();
         }
 
@@ -499,10 +505,17 @@ namespace VoxelCraft.Creatures
                 foreach (var bk in bones)
                 {
                     if (!(bk.Value is Dictionary<string, object> bd)) continue;
+                    // relative_to:{rotation:"entity"} is a property of the BONE
+                    // ENTRY (sibling of the channels), not of each channel.
+                    bool entitySpace = false;
+                    if (bd.TryGetValue("relative_to", out object rtv) &&
+                        rtv is Dictionary<string, object> rt &&
+                        rt.TryGetValue("rotation", out object rtr) && rtr is string rts)
+                        entitySpace = rts == "entity";
                     foreach (var ch in bd)
                     {
                         if (ch.Key != "position" && ch.Key != "rotation" && ch.Key != "scale") continue;
-                        var track = new Track { bone = bk.Key, channel = ch.Key };
+                        var track = new Track { bone = bk.Key, channel = ch.Key, entitySpace = entitySpace };
                         ParseChannel(track, ch.Value);
                         if (track.frames.Count > 0) clip.tracks.Add(track);
                     }
@@ -726,7 +739,10 @@ namespace VoxelCraft.Creatures
                                         : kf.post;
                 }
                 else v = SampleKeyframes(tr, time, thisVals, tr.bone.ToLowerInvariant() + "|" + tr.channel);
-                if (!absolute && w < 1f)
+                // entitySpace tracks carry FINAL angles - same sampling math
+                // as absolute clips regardless of how the clip was scheduled.
+                bool absApply = absolute || tr.entitySpace;
+                if (!absApply && w < 1f)
                 {
                     // Blend toward the BIND pose captured at Bind() time - a
                     // fixed target. Blending toward the bone's CURRENT value
@@ -747,7 +763,7 @@ namespace VoxelCraft.Creatures
                         v = Vector3.Lerp(rest, v, w);
                     }
                 }
-                Apply(bone, tr.channel, v, absolute);
+                Apply(bone, tr.channel, v, absApply);
             }
         }
 
