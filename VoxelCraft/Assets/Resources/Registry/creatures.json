@@ -244,7 +244,7 @@
       "locomotion": "walk",
       "gait": "dist-cos",
       "behaviours": [],
-      "gaitWeight": "0.3",
+      "gaitWeight": "1.0",
       "groundOffset": "0.31",
       "walkSpeed": "0.3"
     },
