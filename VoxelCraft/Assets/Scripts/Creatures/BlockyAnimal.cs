@@ -161,6 +161,25 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 8, 8, 8);
                     leg = BoxBuilder.McNet(0, 16, 4, 6, 4);
                     break;
+                case "hoglin":
+                    // Bedrock hoglin geo (128x64 sheet): body 16x14x26
+                    // uv(1,1) (mane plate 0x10x19 uv(90,33)), head 14x6x19
+                    // uv(61,1) + tusks 2x11x2 uv(1,13), ears 6x1x4
+                    // uv(1,1)/(1,6), front legs 6x14x6 uv(41,42)/(66,42),
+                    // back legs 5x11x5 uv(0,45)/(21,45).
+                    body = BoxBuilder.McNet(1, 1, 16, 14, 26);
+                    head = BoxBuilder.McNet(61, 1, 14, 6, 19);
+                    leg = BoxBuilder.McNet(41, 42, 6, 14, 6);
+                    break;
+                case "polar_bear":
+                    // Bedrock polarbear geo (128x64 sheet): body 14x14x11
+                    // uv(0,19) + hump 12x12x10 uv(39,0), head 7x7x7 uv(0,0)
+                    // + snout 5x3x3 uv(0,44) + ears 2x2x1 uv(26,0),
+                    // legs 4x10x8 uv(50,22) front / 4x10x6 uv(50,40) rear.
+                    body = BoxBuilder.McNet(0, 19, 14, 14, 11);
+                    head = BoxBuilder.McNet(0, 0, 7, 7, 7);
+                    leg = BoxBuilder.McNet(50, 22, 4, 10, 8);
+                    break;
                 case "llama":
                     // Bedrock llama geo (128x64 sheet): head 8x18x6 uv(0,14),
                     // body 12x18x10 uv(29,0), legs 4x14x4 uv(29,29).
@@ -252,6 +271,18 @@ namespace VoxelCraft.Creatures
             bodyRoot = new GameObject("Body").transform;
             bodyRoot.SetParent(transform, false);
 
+            // entity.json scripts.scale (polar_bear "1.2"): whole-entity
+            // uniform scale from the data registry, applied on the root so
+            // every bone/cube inherits it.
+            var regDef = CreatureRegistry.Get(species);
+            if (regDef != null && !string.IsNullOrEmpty(regDef.entityScale))
+            {
+                float es;
+                if (float.TryParse(regDef.entityScale, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out es) && es > 0f)
+                    bodyRoot.localScale = Vector3.one * es;
+            }
+
             // Preferred path: build straight from the vanilla bedrock geo JSON
             // (the model source itself) - bones, pivots and cubes land exactly
             // where Mojang put them. Falls back to the hand-built nets below
@@ -294,6 +325,8 @@ namespace VoxelCraft.Creatures
                 var reg = CreatureRegistry.Get(species);
                 if (reg != null && reg.bakedSetupClips != null && reg.bakedSetupClips.Count > 0)
                     animPlayer.bakedSetupClips = new System.Collections.Generic.List<string>(reg.bakedSetupClips);
+                if (reg != null && reg.bakedSetupPos != null && reg.bakedSetupPos.Count > 0)
+                    animPlayer.bakedSetupPos = new System.Collections.Generic.List<string>(reg.bakedSetupPos);
                 animPlayer.Bind(bodyRoot);
                 string walkClip = reg != null ? reg.walkClip : "animation.quadruped.walk";
                 // Per-species ground offset (spider geo pivots sit ~0.53m

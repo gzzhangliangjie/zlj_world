@@ -87,6 +87,8 @@ namespace VoxelCraft.Editor
                 ("zombie", null, false, "walk"),
                 ("skeleton", null, false, "walk"),
                 ("villager", null, false, "walk"),
+                ("hoglin", null, false, "walk"),
+                ("polar_bear", null, false, "walk"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for

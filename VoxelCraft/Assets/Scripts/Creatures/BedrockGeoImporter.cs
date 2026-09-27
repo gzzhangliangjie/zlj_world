@@ -450,6 +450,11 @@ namespace VoxelCraft.Creatures
             if (byName.TryGetValue("LegFR", out var hfr)) legsOut[1] = hfr;
             if (byName.TryGetValue("LegBL", out var hbl)) legsOut[2] = hbl;
             if (byName.TryGetValue("LegBR", out var hbr)) legsOut[3] = hbr;
+            // hoglin geo: leg_front_left/right + leg_back_left/right
+            if (byName.TryGetValue("leg_front_left", out var hgfl)) legsOut[0] = hgfl;
+            if (byName.TryGetValue("leg_front_right", out var hgfr)) legsOut[1] = hgfr;
+            if (byName.TryGetValue("leg_back_left", out var hgbl)) legsOut[2] = hgbl;
+            if (byName.TryGetValue("leg_back_right", out var hgbr)) legsOut[3] = hgbr;
             // rabbit geo: frontLegL/R + haunchL/R (rear thigh) + rearFootL/R
             if (byName.TryGetValue("frontLegLeft", out var rfl2)) legsOut[0] = rfl2;
             if (byName.TryGetValue("frontLegRight", out var rfr2)) legsOut[1] = rfr2;

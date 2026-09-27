@@ -24,6 +24,7 @@ namespace VoxelCraft.Creatures
             public string walkClip = "animation.quadruped.walk";
             public List<string> extraClips;      // played permanently alongside walk
             public List<string> bakedSetupClips;  // baked into REST at Bind (vanilla setup controller, played once)
+            public List<string> bakedSetupPos;    // subset whose POSITION keys are real pose data (polarbear.move -9px), not engine-compensation junk (parrot base legs -6px)
             public Dictionary<string, float> extraVariables;
             public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
             public bool biped;
@@ -32,6 +33,7 @@ namespace VoxelCraft.Creatures
             public string gaitWeight;             // optional walk-weight override (spider=1.0)
             public string groundOffset;           // optional Y offset in metres (spider -0.53)
             public string walkSpeed;              // optional walk speed in blocks/s (spider 0.3)
+            public string entityScale;            // optional whole-entity scale (polar_bear scripts.scale 1.2)
             public List<BehaviourDef> behaviours;
         }
 
@@ -82,6 +84,7 @@ namespace VoxelCraft.Creatures
                     if (o.TryGetValue("gaitWeight", out var gw) && gw is string gws) def.gaitWeight = gws;
                     if (o.TryGetValue("groundOffset", out var gofs) && gofs is string gos) def.groundOffset = gos;
                     if (o.TryGetValue("walkSpeed", out var ws) && ws is string wss) def.walkSpeed = wss;
+                    if (o.TryGetValue("entityScale", out var esc) && esc is string escs) def.entityScale = escs;
                     if (o.TryGetValue("biped", out var bp) && bp is bool bpb) def.biped = bpb;
                     if (o.TryGetValue("extraClips", out var ec) && ec is List<object> ecl && ecl.Count > 0)
                     {
@@ -92,6 +95,11 @@ namespace VoxelCraft.Creatures
                     {
                         def.bakedSetupClips = new List<string>();
                         foreach (var c in bsl) if (c is string cs) def.bakedSetupClips.Add(cs);
+                    }
+                    if (o.TryGetValue("bakedSetupPos", out var bsp) && bsp is List<object> bspl && bspl.Count > 0)
+                    {
+                        def.bakedSetupPos = new List<string>();
+                        foreach (var c in bspl) if (c is string cs) def.bakedSetupPos.Add(cs);
                     }
                     if (o.TryGetValue("extraVariables", out var ev) && ev is Dictionary<string, object> evd)
                     {

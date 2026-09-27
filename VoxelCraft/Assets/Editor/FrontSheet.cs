@@ -21,7 +21,7 @@ namespace VoxelCraft.Editor
             cam.clearFlags = CameraClearFlags.SolidColor;
             try
             {
-                foreach (string sp in new[] { "zombie", "skeleton", "villager", "bee", "donkey", "armadillo", "rabbit", "panda", "spider", "parrot" })
+                foreach (string sp in new[] { "zombie", "skeleton", "villager", "bee", "donkey", "armadillo", "rabbit", "panda", "spider", "parrot", "hoglin", "polar_bear" })
                 {
                     float yaw = sp == "bee" ? -144f : 180f;
                     var go = new GameObject("FS_" + sp);

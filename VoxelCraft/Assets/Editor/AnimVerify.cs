@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear" };
 
             foreach (var sp in speciesList)
             {
@@ -73,13 +73,17 @@ namespace VoxelCraft.Editor
         static void VerifyGait(string sp, GameObject go, Creatures.BlockyAnimal ani)
         {
             var player = go.GetComponent<Creatures.BedrockAnimationPlayer>();
+            // Capture the BIND rest rotations BEFORE any clip ticks, keyed by
+            // the leg transforms found below (used as the swing reference).
+            var restRot0 = new Dictionary<Transform, Quaternion>();
             // Leg bones: geo path names them leg0..3 / descriptive names
             // (goat: left_front_leg etc.; ocelot: backLegL/R + frontLegL/R);
             // hand-built path uses Hip0..3.
             var legs = go.GetComponentsInChildren<Transform>()
-                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg|Leg1A|Leg2A|Leg3A|Leg4A|frontLegLeft|frontLegRight|haunchLeft|haunchRight)$"))
+                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg|Leg1A|Leg2A|Leg3A|Leg4A|frontLegLeft|frontLegRight|haunchLeft|haunchRight|leg_front_left|leg_front_right|leg_back_left|leg_back_right)$"))
                          .OrderBy(t => t.name)
                          .Take(4).ToArray();
+            foreach (var lg in legs) restRot0[lg] = lg.localRotation;
             // Flyers (bee/bat): wings flap, legs don't cadence (bedrock bee
             // geo has no leg BONES - legs are static cubes on the body).
             var reg0 = Creatures.CreatureRegistry.Get(sp);
@@ -170,7 +174,13 @@ if (flyer)
                     // flips representation past ±90° (Unity picks the 180-x
                     // equivalent), which faked double sign flips on steve's
                     // 134° swings. The quaternion angle is representation-free.
-                    restQ0 = legs[0].localRotation;
+                    // REFERENCE = the f=0 BIND rest, NOT the f=30 mid-swing
+                    // snapshot: a snapshot at a random phase reads peak-to-
+                    // peak DOUBLE amplitude when the swing crosses it (hoglin
+                    // ±92° legs measured as a fake 184° > the 170° cap).
+                    restQ0 = restRot0.Count > 0
+                        ? restRot0[legs[0]]
+                        : legs[0].localRotation;
                 }
                 // angles0 is a MID-SWING snapshot, not the oscillation centre.
                 // Steves swing ±134°; reference+amplitude can exceed 180° and
@@ -223,21 +233,31 @@ if (flyer)
                 }
             }
             ani.walking = false;
-            // Cadence: sign flips over 2.5s -> full swing cycles per second
+            // Cadence: with the bind-rest reference, one-sided gaits (spider
+            // curl -abs(cos), rabbit hop) never cross zero, so zero-crossing
+            // sign flips read 0 (fake FAIL). Count MEDIAN crossings of the
+            // signed delta signal instead: symmetric swings cross the median
+            // (=0 line) exactly as often as sign flips; one-sided pulses
+            // cross their median twice per cycle (down + up). Same 2-crossing
+            // period as before, valid for both waveform families.
+            var sorted = new List<float>(samples);
+            sorted.Sort();
+            float sMed = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0f;
+            int medCross = 0; float prevOff = 0f; bool hasPrev = false;
+            foreach (var s in samples)
+            {
+                float off = s - sMed;
+                if (hasPrev && ((prevOff <= 0f && off > 0f) || (prevOff >= 0f && off < 0f))) medCross++;
+                prevOff = off; hasPrev = true;
+            }
             var regHz = Creatures.CreatureRegistry.Get(sp);
-            float hz;
-            if (regHz != null && regHz.archetype == "arachnid")
-                // spider legs curl via abs(cos(...)): the raw signal
-                // alternates twice per stride segment (down+up), so
-                // one "step" spans 4 sign flips.
-                hz = signFlips / 4f / 2.5f;
-            else hz = signFlips / 2f / 2.5f; // each cycle = 2 flips
+            float hz = medCross / 2f / 2.5f; // each cycle = 2 median crossings
             bool swingOk = maxSwing > 10f && maxSwing < 170f;
             bool hzOk = hz > 0.3f && hz < 4f;
             Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, 170);
-            Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (sign flips {signFlips})", hz, 0.3f, 4f);
+            Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (median crossings {medCross})", hz, 0.3f, 4f);
             // Sanity: legs actually animated at all
-            Add("gait.alive", sp, signFlips >= 2, $"{signFlips} flips in 2.5s", signFlips, 2, 999);
+            Add("gait.alive", sp, medCross >= 2, $"{medCross} median crossings in 2.5s", medCross, 2, 999);
 
             // IDLE STABILITY (regression: legs jittered forever after the
             // animal stopped - blend target was the previous frame's pose).
@@ -331,8 +351,11 @@ if (flyer)
                             !r.name.ToLowerInvariant().StartsWith("tail") &&
                             // legs must NOT count as the head's anchor: front
                             // legs reaching the head rear masked the wolf's
-                            // 4px gap (fake "0mm connected" green).
-                            !RegexName(r.name, @"""^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|cube_2x8x2)$"""))
+                            // 4px gap (fake "0mm connected" green). Geo-path
+                            // meshes are named cube_WxHxD under the leg bone,
+                            // so test the PARENT bone name too.
+                            !RegexName(r.name, @"""^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|cube_2x8x2)$""") &&
+                            !RegexName(r.transform.parent != null ? r.transform.parent.name : "", @"""^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|leg_front_left|leg_front_right|leg_back_left|leg_back_right|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR)$"""))
                 .ToList();
             if (bodyRends.Count == 0)
             { Add("struct.head_seam", sp, false, "no body renderers", 0, 0, 1); return; }
@@ -354,6 +377,16 @@ if (flyer)
                 var b = VertexAabb(r);
                 if (b.max.z <= hb.min.z + 0.30f && b.min.z < hb.min.z) // sits behind head
                     bestRear = Mathf.Max(bestRear, b.max.z);
+                // DEEP-SET HEADS (hoglin): the head rear sinks far INTO the
+                // body volume (body front face crosses the head-rear plane).
+                // No part sits strictly "behind" hb.min.z within the 0.30
+                // window, so the old test fell through to the hind legs and
+                // reported a fake 886mm gap. A body part that STRADDLES the
+                // head-rear plane (min < head-rear < max) is interpenetrating
+                // = physically connected by construction.
+                else if (b.min.z < hb.min.z - 0.001f && b.max.z > hb.min.z + 0.001f &&
+                         b.max.y > hb.min.y + 0.05f && b.min.y < hb.max.y - 0.05f)
+                    bestRear = Mathf.Max(bestRear, hb.min.z + 0.10f);
             }
             // BIPEDS (steve): the head sits ON TOP of the body with fully
             // overlapping z ranges (vanilla humanoid: head y24..32, body
@@ -581,6 +614,20 @@ if (flyer)
             else
             {
                 eyePair = false;
+                // Eye darkness is RELATIVE to the face, not absolute near-
+                // black: PIL on the vanilla hoglin skin shows its eyes are
+                // brown rgb(149,91,74) (sum 1.17) - far above the old 0.9
+                // absolute gate, which mis-flagged a correctly mapped face.
+                // Median-luminance 65% keeps the "eye darker than fur" rule
+                // without demanding near-black paint.
+                var lum = new List<float>();
+                foreach (var p in px) if (p.a > 0.5f) lum.Add(p.r + p.g + p.b);
+                lum.Sort();
+                float median = lum.Count > 0 ? lum[lum.Count / 2] : 1f;
+                // No absolute cap: hoglin's brown eyes (sum 1.23) sit above
+                // 0.9 while its fur median is 1.69 (gate 1.36); an absolute
+                // cap re-broke it. The RELATIVE rule is the discriminator.
+                float darkGate = median * 0.8f;
                 // Min separation scales with face width: the sep>=3 floor
                 // was calibrated on 8px faces; vanilla narrow faces (ocelot
                 // 5px, eyes at local x1/x3 sep 2) legitimately sit closer.
@@ -597,7 +644,7 @@ if (flyer)
                             // straddling the rect centre = an eye pair.
                             // chicken eyes are 3px apart; both straddle centre.
                             if (a.a > 0.5f && b.a > 0.5f &&
-                                a.r + a.g + a.b < 0.9f && b.r + b.g + b.b < 0.9f &&
+                                a.r + a.g + a.b < darkGate && b.r + b.g + b.b < darkGate &&
                                 x2 - x >= minSep &&
                                 x < (W - 1) / 2f && x2 > (W - 1) / 2f)
                             { eyePair = true; break; }

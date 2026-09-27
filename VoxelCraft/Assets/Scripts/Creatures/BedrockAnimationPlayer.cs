@@ -122,6 +122,11 @@ namespace VoxelCraft.Creatures
         // walk clip's wing flap).
         public List<string> bakedSetupClips;
 
+        // Subset of bakedSetupClips whose POSITION keys are genuine vanilla
+        // pose constants (polarbear.move body -9px), not engine-compensation
+        // junk (parrot base legs -6px).
+        public List<string> bakedSetupPos;
+
         // Per-bone constant offsets contributed by the species ".setup" clip.
         // Our bind pose already bakes the setup result in (geo pivots/bpr), so
         // absolute clips ("x - this") must SUBTRACT these to get their delta.
@@ -204,16 +209,26 @@ namespace VoxelCraft.Creatures
                 bool bake = kv.Key.EndsWith(".default_leg_pose") ||
                             (bakedSetupClips != null && bakedSetupClips.Contains(kv.Key));
                 if (!bake) continue;
+                bool bakePos = bakedSetupPos != null && bakedSetupPos.Contains(kv.Key);
                 foreach (var tr in kv.Value.tracks)
                 {
-                    // ROTATION ONLY. The base clip's position keys (legs -6px,
-                    // wings +/-1.5px) exist to compensate the ENGINE's bind
-                    // convention (children re-placed under bind_pose_rotation)
-                    // - same role as the pig/wolf ".setup" position keys we
-                    // already skip: our importer re-roots parts geo-faithfully
-                    // so they are flush at bind. Baking them here floated the
-                    // parrot's legs 6px below the belly (user report).
-                    if (tr.channel != "rotation" || tr.frames.Count == 0) continue;
+                    // ROTATION ONLY by default. The base clip's position keys
+                    // (legs -6px, wings +/-1.5px) exist to compensate the
+                    // ENGINE's bind convention (children re-placed under
+                    // bind_pose_rotation) - same role as the pig/wolf ".setup"
+                    // position keys we already skip: our importer re-roots
+                    // parts geo-faithfully so they are flush at bind. Baking
+                    // them here floated the parrot's legs 6px below the belly
+                    // (user report). EXCEPTION (bakedSetupPos, e.g. polarbear
+                    // .move body y "-9 - ..."): a CONSTANT position key that is
+                    // genuine vanilla pose data - bedrock's additive runtime
+                    // keeps applying it under walk (body sunk 9px, flush with
+                    // the legs), so it belongs in the REST pose. Expression
+                    // keys with query/variable refs stay out (not constant).
+                    if (tr.frames.Count == 0) continue;
+                    bool isPos = tr.channel == "position";
+                    if (tr.channel != "rotation" && !isPos) continue;
+                    if (isPos && !bakePos) continue;
                     Transform bone = null;
                     if (!boneIndex.TryGetValue(tr.bone, out bone))
                         foreach (var b2 in boneIndex)
@@ -224,6 +239,17 @@ namespace VoxelCraft.Creatures
                     if (kf.expr != null)
                         for (int i = 0; i < 3; i++)
                             if (kf.expr[i] != null) v[i] = SetupConst(kf.expr[i]);
+                    if (isPos)
+                    {
+                        // bedrock position channel = px/16 in MODEL space;
+                        // Unity local = metres, x mirrored (importer convention).
+                        // Sample() applies position as ADD px, so bake the same
+                        // delta into restPos (restPos is metres).
+                        Vector3 delta = new Vector3(-v.x / 16f, v.y / 16f, v.z / 16f);
+                        bone.localPosition += delta;
+                        restPos[bone] = bone.localPosition;
+                        continue;
+                    }
                     // bedrock "X - this" absolute target. These are ANIMATION
                     // rotation values (not geo bone rotations), so they follow
                     // the clip convention Unity Euler = (bx, -by, bz). The geo
