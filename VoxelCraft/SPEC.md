@@ -28,6 +28,9 @@
 | M7 | 贴图 alpha=3 texel 混合消失 → 固体模型 alpha 提 255 | importer | 贴图事故 |
 | M8 | faceOverrides 坐标 = Unity 底部原点 v-flip | registry | goat [36,2,21,6] ↔ png y56..62 验证 |
 | M9 | 原版控制器状态机:registry `controllers:true` 后,clip 排播全由 AnimControllers/<sp>.json + EntityDefs/<sp>.entity.json 数据驱动(eyelib 语义:transitions 首个为真切换、动画条目 blend-weight molang、嵌套控制器、无 scripts.animate 实体全控制器驱动) | registry | hoglin 试点:av62 300/300 + goldenCheck 0 diff + GPU GIF 40f comps=1(8d47092) |
+| M10 | 控制器 blend 权重逐帧落地:runtime Tick 重求值权重并 SetClipWeight,player 把 ctlWeight 连乘进 gait/pose 混合(delta 缩放,非 lerp-to-rest) | eyelib BrClipExecutor.java:21,46(multiplier *= blendWeight; rotation.mul(w)/pos.mul(w)) | spider walk 权重回归 golden 0 diff(8baf908) |
+| M11 | 通用 anim_time_update:任意 molang 表达式驱动 clip 时钟(query.anim_time/delta_time 入 Ctx);ram_attack 式门控倒放(-4x)不再是 realtime 正放 | goat ram_attack "Math.max(anim_time + (gate?dt:-dt*4),0)";Ident 大小写归一(Math.==math.) | goat head 漂移 +0.5°/帧→0(8baf908) |
+| M12 | rest 烘焙 clip 跳过规则(纯数据推导):entity map .setup 尾(1.8 bind 换算,importer 已应用)+ .default_leg_pose(Bind 烘 REST)+ registry bakedSetupClips(polarbear.move 族,数据层声明哪些烘 REST) | pig/llama/mooshroom setup=["-this"];wolf.setup 位置族;polarbear.move "-9-2*ss-this" | polar_bear body pos delta 0.313m→0(8baf908) |
 
 ## 二、数据层(物种接线 = 只填这些字段)
 
