@@ -47,6 +47,13 @@
 4. GetSpeciesNets case + GifFrames job + FrontSheet
 5. AnimVerify 全绿 → 双视角 GIF(GIF_YAW=144/-36)→ PIL 逐帧 → 交付
 
+## 三·五、自动化回归门禁(GoldenPose,提交 b612d05/8b35333)
+- **基线**:`_logs/golden/<species>.txt`——26 物种×150 帧×全骨 localPos+localRot,AnimVerify 同款确定性 harness(walking/moving/前进爬行/Tick(1/60)、hopper wing_flap 注入对齐)
+- **门禁**:`Unity -executeMethod VoxelCraft.Editor.GoldenPose.Run -goldenCheck` 逐帧逐骨 diff,容差 rot 0.5°/pos 5mm,欧拉回绕感知;**任何机制改动(controllers/molang/累加)必须过此门**
+- 工作流:改机制 → goldenCheck 全绿 = 与"已正确的 26 只动物"行为等价(这正是它们作为框架测试套件的价值);有 diff = 逐条排查(要么机制 bug,要么旧特判本来就错——都要证据)
+- 已验证:自检 26/26 零 diff;负测试(gaitWeight 1.0→0.35)精确咬出 spider 1200 diff;实战首秀即抓住操作失误(gaitWeight 误写 0.3,真值 1.0,walkSpeed 才是 0.3)
+- 注意:registry 数值改动会立即改变行为(这是设计),基线重置=重新跑 capture 模式并记录原因
+
 ## 四、红线(违反=返工)
 - 语义歧义禁止手推 → 翻本地库源码(eyelib/blockbench/geckolib/SimpleBedrockModel)
 - 禁止新 species 特判代码;新配置字段必须先证明"通用机制不可行"
