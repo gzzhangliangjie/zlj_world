@@ -54,6 +54,11 @@ namespace VoxelCraft.Creatures
             public bool holdOnLast;       // loop:"hold_on_last_frame" (roll_up family)
             public bool timeFromDistance; // anim_time_update = modified_distance_moved
             public bool timeFromWalkVar;  // anim_time_update = variable.walk_anim_time_update (armadillo)
+            // Generic anim_time_update expression (e.g. goat ram_attack
+            // "Math.max(query.anim_time + (variable.should_bow_head ?
+            // query.delta_time : -query.delta_time * 4), 0)"): the clip
+            // clock is driven by this molang each tick instead of realtime.
+            public string timeExpr;
             public List<Track> tracks = new List<Track>();
         }
 
@@ -62,6 +67,10 @@ namespace VoxelCraft.Creatures
             internal Clip clip;
             internal float time;
             internal bool absolute; // setup/sitting-style: values are targets
+            // Per-clip blend weight from the controller runtime (eyelib
+            // BrClipExecutor: multiplier chains controller entry weight into
+            // the clip; the delta is scaled, not a lerp toward rest).
+            internal float weight = 1f;
             // Frozen `this` per rotation track, captured at Play() time.
             // Bedrock reads the channel's value when the clip STARTS; a live
             // per-frame reading oscillates (45-this -> -45, next frame reads
@@ -270,9 +279,41 @@ namespace VoxelCraft.Creatures
         /// <summary>Start a clip; no-op if it is already playing.</summary>
         public int ClipCount => clips.Count;
 
+        /// <summary>All loaded clip full names (controller runtime derives
+        /// its bind-conversion skip list from these).</summary>
+        public IEnumerable<string> ClipNames => clips.Keys;
+
         public bool Play(string clipName)
         {
             return Play(clipName, false);
+        }
+
+        /// <summary>Controller-scheduled play: blend weight (0..1) chains in
+        /// per eyelib BrClipExecutor (multiplier *= blendWeight).</summary>
+        public bool Play(string clipName, bool absolute, float weight)
+        {
+            bool ok = Play(clipName, absolute);
+            if (ok)
+                for (int i = 0; i < playing.Count; i++)
+                    if (playing[i].clip.name == clipName) playing[i].weight = weight;
+            return ok;
+        }
+
+        /// <summary>Update the blend weight of an already-playing clip
+        /// (controller weights are re-evaluated every tick).</summary>
+        public void SetClipWeight(string clipName, float weight)
+        {
+            for (int i = 0; i < playing.Count; i++)
+                if (playing[i].clip.name == clipName) playing[i].weight = weight;
+        }
+
+        /// <summary>Blend weight the controller currently assigns (1 if the
+        /// clip is not controller-driven).</summary>
+        public float GetClipWeight(string clipName)
+        {
+            foreach (var p in playing)
+                if (p.clip.name == clipName) return p.weight;
+            return 1f;
         }
 
         /// <summary>Name of the most recently played clip (null if none) -
@@ -499,6 +540,11 @@ namespace VoxelCraft.Creatures
                 if (a.TryGetValue("anim_time_update", out object atu2) &&
                     atu2 is string atus2 && atus2.Contains("variable.walk_anim_time_update"))
                     clip.timeFromWalkVar = true;
+                // Generic form: any other string expression drives the clock
+                // via molang (ram_attack-style gated rewind/fast-forward).
+                else if (a.TryGetValue("anim_time_update", out object atu3) &&
+                         atu3 is string atus3 && !clip.timeFromDistance && !clip.timeFromWalkVar)
+                    clip.timeExpr = atus3;
 
                 if (!(a.TryGetValue("bones", out object bv) &&
                       bv is Dictionary<string, object> bones)) continue;
@@ -692,6 +738,23 @@ namespace VoxelCraft.Creatures
                     // armadillo: vanilla advances t by lerp(2,5,speed)*dt
                     // (~3x realtime at mid speed) - 0.75 = 0.25 * 3.
                     p.time = distanceMoved * 0.75f;
+                else if (c.timeExpr != null)
+                {
+                    // Generic anim_time_update: molang returns the NEW clip
+                    // time (goat ram_attack rewinds at -4x when the gate
+                    // variable is 0, floors at Math.max(...,0)).
+                    var tc = new Molang.Ctx
+                    {
+                        animTime = p.time,
+                        distance = distanceMoved * 0.25f,
+                        headYaw = headYawDeg,
+                        vars = variables,
+                        moveSpeed = Mathf.Clamp01(walkSpeedRef),
+                        deltaTime = dt
+                    };
+                    float nt = Molang.Eval(c.timeExpr, tc);
+                    p.time = Mathf.Max(0f, nt);
+                }
                 else p.time += dt;
                 TickRollUpVisibility(c.name, dt);
                 if (maxT > 0f && p.time > maxT)
@@ -700,7 +763,7 @@ namespace VoxelCraft.Creatures
                     else if (c.holdOnLast || p.absolute) p.time = maxT; // hold final pose
                     else { playing.RemoveAt(i); continue; }
                 }
-                Sample(c, p.time, p.absolute, p.thisVals);
+                Sample(c, p.time, p.absolute, p.thisVals, p.weight);
             }
         }
 
@@ -713,13 +776,17 @@ namespace VoxelCraft.Creatures
             return m;
         }
 
-        private void Sample(Clip c, float time, bool absolute = false, Dictionary<string, Vector3> thisVals = null)
+        private void Sample(Clip c, float time, bool absolute = false, Dictionary<string, Vector3> thisVals = null, float ctlWeight = 1f)
         {
             // Gait weight scales ONLY locomotion clips (identified the vanilla
             // way: anim_time_update = modified_distance_moved). Behaviour pose
             // clips (graze/sit/sleep) must hold full weight - blending them
             // toward rest washed the poses out while idle.
-            float w = absolute ? 1f : ((c.timeFromDistance || c.timeFromWalkVar) ? Mathf.Clamp01(gaitWeight) : 1f);
+            // Controller blend weight chains in multiplicatively on EVERY clip
+            // it schedules (eyelib BrClipExecutor.java:21,46: multiplier *=
+            // blendWeight; the sampled delta is scaled).
+            float w = absolute ? 1f : ((c.timeFromDistance || c.timeFromWalkVar)
+                ? Mathf.Clamp01(gaitWeight) * ctlWeight : ctlWeight);
             foreach (var tr in c.tracks)
             {
                 if (!boneIndex.TryGetValue(tr.bone, out var bone))
@@ -941,7 +1008,7 @@ namespace VoxelCraft.Creatures
         {
             public struct Ctx
             {
-                public float animTime, distance, headYaw, thisVal, moveSpeed;
+                public float animTime, distance, headYaw, thisVal, moveSpeed, deltaTime;
                 // B-plan entity queries (controller conditions). Defaults keep
                 // old behaviour: unset = 0 == "no". Populated by
                 // BedrockControllerRuntime from the entity state.
@@ -1066,8 +1133,12 @@ namespace VoxelCraft.Creatures
                     int st = i;
                     while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '_' || s[i] == '.')) i++;
                     string id = s.Substring(st, i - st);
-                    bool isCall = Peek('(');
+                    // Vanilla json mixes Math.* and math.* (goat pre_anim uses
+                    // Math.cos, controllers use math.min) - normalize to lower
+                    // BEFORE dispatch; string-literal args keep raw case.
+                    string idLower = id.ToLowerInvariant();
                     string rawArg = null;
+                    bool isCall = Peek('(');
 
                     if (isCall)
                     {
@@ -1086,7 +1157,7 @@ namespace VoxelCraft.Creatures
                         float b = 0f;
                         if (Eat(',')) b = Ternary();
                         Eat(')');
-                        switch (id)
+                        switch (idLower)
                         {
                             case "math.cos": return Mathf.Cos(a);
                             case "math.sin": return Mathf.Sin(a);
@@ -1107,9 +1178,10 @@ namespace VoxelCraft.Creatures
                             default: return 0f;
                         }
                     }
-                    switch (id)
+                    switch (idLower)
                     {
                         case "query.anim_time": return ctx.animTime;
+                        case "query.delta_time": return ctx.deltaTime;
                         case "query.modified_distance_moved": return ctx.distance;
                         case "query.modified_move_speed": return ctx.modifiedMoveSpeed != 0f ? ctx.modifiedMoveSpeed : ctx.moveSpeed;
                         case "query.head_yaw": return ctx.headYaw;
@@ -1138,9 +1210,11 @@ namespace VoxelCraft.Creatures
                         case "true": return 1f;
                         case "false": return 0f;
                     }
-                    if (id.StartsWith("variable.") && ctx.vars != null)
+                    if (idLower.StartsWith("variable.") && ctx.vars != null)
                     {
-                        string key = id.Substring("variable.".Length);
+                        // vars keys are stored lowercase (pre_animation writes
+                        // variable.X; Molang names are case-insensitive).
+                        string key = idLower.Substring("variable.".Length);
                         return ctx.vars.TryGetValue(key, out var v) ? v : 0f;
                     }
                     return 0f; // unknown -> 0

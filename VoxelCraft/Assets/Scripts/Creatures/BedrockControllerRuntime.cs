@@ -57,6 +57,16 @@ namespace VoxelCraft.Creatures
         readonly BedrockAnimationPlayer player;
         public System.Action<string> ControllerEvent;
 
+        // Clips the IMPORTER already applied (1.8 geo "bind_pose_rotation"
+        // conversion: *.setup / wolf_setup-style "-this" re-root keys, or
+        // default_leg_pose baked into REST at Bind). Scheduling them again
+        // double-applies the conversion. Derived from the entity animations
+        // map / clip names - pure data, no registry field.
+        // Evidence: pig/llama/mooshroom .setup = body ["-this",0,0];
+        // wolf .setup = position family re-rooting legs/tail/upperbody;
+        // spider .default_leg_pose baked via BakeDefaultLegPose (player.cs).
+        readonly HashSet<string> skipClips = new HashSet<string>();
+
         public BedrockControllerRuntime(BedrockAnimationPlayer player,
             Dictionary<string, object> controllersJson,
             Dictionary<string, object> entityDescription)
@@ -87,6 +97,25 @@ namespace VoxelCraft.Creatures
             if (rootAnimate.Count == 0)
                 foreach (var c in controllers.Keys)
                     rootAnimate.Add(new AnimRef { shortName = c });
+
+            // Derive skipClips: full names ending ".setup" mapped in the
+            // entity animations table are 1.8 bind-conversion clips the
+            // importer already applied; ".default_leg_pose" clips are baked
+            // into REST at Bind (BakeDefaultLegPose).
+            foreach (var kv in entityAnims)
+            {
+                if (kv.Value != null && (kv.Value.EndsWith(".setup") || kv.Value.EndsWith(".default_leg_pose")))
+                    skipClips.Add(kv.Value);
+            }
+            foreach (var cn in player.ClipNames)
+                if (cn != null && cn.EndsWith(".default_leg_pose"))
+                    skipClips.Add(cn);
+            // Registry-declared rest-baked clips (bakedSetupClips, e.g.
+            // polarbear.move "-9 - 2*standing_scale - this" family): baked
+            // into REST at Bind, so runtime playback would double-apply.
+            if (player.bakedSetupClips != null)
+                foreach (var cn in player.bakedSetupClips)
+                    skipClips.Add(cn);
         }
 
         static Controller ParseController(string name, Dictionary<string, object> def)
@@ -179,12 +208,17 @@ namespace VoxelCraft.Creatures
                 Drive(e.shortName, w, ctx, want, 0);
             }
 
-            // 2. diff against currently playing: stop removed, start added
+            // 2. diff against currently playing: stop removed, start added;
+            //    re-push weights every tick (expressions are re-evaluated,
+            //    eyelib ticks updateAnimations with blendValue.eval(scope))
             var wantSet = new HashSet<string>(want.Select(w => w.clip));
             foreach (var clip in playing.ToList())
                 if (!wantSet.Contains(clip)) { player.Stop(clip); playing.Remove(clip); }
             foreach (var w in want)
+            {
                 if (!playing.Contains(w.clip)) { player.Play(w.clip); playing.Add(w.clip); }
+                player.SetClipWeight(w.clip, w.weight);
+            }
         }
 
         void Drive(string shortName, float weight, BedrockAnimationPlayer.Molang.Ctx ctx, List<ClipInst> want, int depth)
@@ -231,12 +265,24 @@ namespace VoxelCraft.Creatures
             }
             else
             {
-                // animation.* - schedule on the player (full name IS the clip name)
+                // animation.* - schedule on the player (full name IS the clip
+                // name). Skip clips the importer/bind already applied.
+                if (skipClips.Contains(full)) return;
                 want.Add(new ClipInst { clip = full, weight = weight });
             }
         }
 
         static float dt_cache;
         public static void SetDt(float dt) { dt_cache = dt; }
+
+        /// <summary>Diagnostics: clips scheduled by the last Tick with
+        /// weights (probe/harness debugging only).</summary>
+        public string DebugScheduled()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var p in playing)
+                sb.Append(p).Append("(w=").Append(player.GetClipWeight(p).ToString("0.00")).Append(") ");
+            return sb.ToString();
+        }
     }
 }

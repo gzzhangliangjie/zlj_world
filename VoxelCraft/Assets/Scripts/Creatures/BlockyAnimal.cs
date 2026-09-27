@@ -358,18 +358,21 @@ namespace VoxelCraft.Creatures
                     if (reg.gait != "none" && reg.gait != "dist-cos")
                         animPlayer.walkSpeedRef = walkSpeed;
                 }
+                // walkSpeed/gaitWeight apply in BOTH modes (data-layer tuning
+                // of the shared gait engine; the controller path still uses
+                // the player's distance clock and gait weight).
+                if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
+                    animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                if (reg != null && !string.IsNullOrEmpty(reg.gaitWeight))
+                    animPlayer.gaitWeightTarget = float.Parse(reg.gaitWeight,
+                        System.Globalization.CultureInfo.InvariantCulture);
                 if (reg == null || !reg.controllers)
                 {
                     animPlayer.Play(walkClip);
                     if (reg != null && reg.extraVariables != null)
                         foreach (var ekv in reg.extraVariables)
                             animPlayer.variables[ekv.Key] = ekv.Value;
-                    if (reg != null && !string.IsNullOrEmpty(reg.walkSpeed))
-                        animPlayer.walkSpeedRef = float.Parse(reg.walkSpeed,
-                            System.Globalization.CultureInfo.InvariantCulture);
-                    if (reg != null && !string.IsNullOrEmpty(reg.gaitWeight))
-                        animPlayer.gaitWeightTarget = float.Parse(reg.gaitWeight,
-                            System.Globalization.CultureInfo.InvariantCulture);
                     if (reg != null && reg.extraClips != null)
                         foreach (var extra in reg.extraClips)
                         {
@@ -874,7 +877,13 @@ namespace VoxelCraft.Creatures
             controllers.State.variables["gliding_speed_value"] =
                 geoAnimPlayer.variables.TryGetValue("gliding_speed_value", out var gsv) ? gsv : 1.0f;
             controllers.State.variables["attack_time"] = -1f;
-            controllers.State.modifiedMoveSpeed = moving ? 0.25f : 0f;
+            // query.modified_move_speed value domain is NORMALIZED (bedrock-
+            // wiki queries.md: player walking ≈0.86, sprinting = 1.0) - NOT a
+            // raw ratio to re-derive per frame. The harness moves species at
+            // full walk speed, so moving => 1.0 (sprint-equivalent), idle => 0.
+            // This keeps {walk: query.modified_move_speed} entries behavior-
+            // equivalent to the legacy gaitWeight 0.3 baseline (gates at golden).
+            controllers.State.modifiedMoveSpeed = moving ? 1f : 0f;
             controllers.Tick(dt);
         }
 

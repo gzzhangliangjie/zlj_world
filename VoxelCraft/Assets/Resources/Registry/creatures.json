@@ -3,24 +3,20 @@
   "species": {
     "chicken": {
       "walkClip": "animation.chicken.move",
-      "extraClips": [
-        "animation.chicken.general"
-      ],
-      "extraVariables": {
-        "wing_flap": 0
-      },
       "biped": true,
       "behaviours": [],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "cow": {
       "walkClip": "animation.quadruped.walk",
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "fox": {
       "walkClip": "animation.quadruped.walk",
@@ -40,28 +36,32 @@
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "goat": {
       "walkClip": "animation.goat.walk",
       "gait": "var:tcos",
       "behaviours": [],
       "archetype": "quadruped",
-      "locomotion": "walk"
+      "locomotion": "walk",
+      "controllers": true
     },
     "mooshroom": {
       "walkClip": "animation.quadruped.walk",
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "pig": {
       "walkClip": "animation.quadruped.walk",
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "sheep": {
       "walkClip": "animation.quadruped.walk",
@@ -75,7 +75,8 @@
       ],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "wolf": {
       "walkClip": "animation.quadruped.walk",
@@ -144,7 +145,8 @@
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "armadillo": {
       "walkClip": "animation.armadillo.walk",
@@ -171,7 +173,8 @@
       "behaviours": [],
       "archetype": "quadruped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "steve": {
       "walkClip": "animation.player.move.arms",
@@ -211,12 +214,10 @@
     "villager": {
       "walkClip": "animation.villager.move",
       "biped": true,
-      "extraClips": [
-        "animation.villager.general"
-      ],
       "archetype": "biped",
       "locomotion": "walk",
-      "gait": "dist-cos"
+      "gait": "dist-cos",
+      "controllers": true
     },
     "bee": {
       "walkClip": "animation.bee.flying",
@@ -246,7 +247,8 @@
       "behaviours": [],
       "gaitWeight": "1.0",
       "groundOffset": "0.31",
-      "walkSpeed": "0.3"
+      "walkSpeed": "0.3",
+      "controllers": true
     },
     "parrot": {
       "walkClip": "animation.parrot.moving",
@@ -280,17 +282,18 @@
     },
     "polar_bear": {
       "walkClip": "animation.quadruped.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "dist-cos",
+      "entityScale": "1.2",
+      "controllers": true,
       "bakedSetupClips": [
         "animation.polarbear.move"
       ],
       "bakedSetupPos": [
         "animation.polarbear.move"
-      ],
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "entityScale": "1.2"
+      ]
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",

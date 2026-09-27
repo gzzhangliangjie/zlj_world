@@ -127,6 +127,7 @@ namespace VoxelCraft.Editor
                     {
                         // walk: forward motion + anim player distance variable
                         ani.walking = true;
+                        if (player != null) player.moving = true;
                         go.transform.position += Vector3.forward * (dt * 1.5f);
                     }
                     else
@@ -149,7 +150,7 @@ namespace VoxelCraft.Editor
                         ani.walking = false;
                     }
                     if (player != null) player.Tick(dt);
-                    if (ani != null) DriveBlockyTick(ani, dt);
+                    if (ani != null) DriveBlockyTick(ani, dt, ani.walking);
                     if (flap && player != null)
                     {
                         // vanilla pre_anim: (sin(pos*57.3)+1)*speed, pos
@@ -208,11 +209,14 @@ namespace VoxelCraft.Editor
 
         /// <summary>Drive BlockyAnimal's own Tick if it has one (batch: Update
         /// never runs, so we must call the same code path the runtime uses).</summary>
-        static void DriveBlockyTick(BlockyAnimal ani, float dt)
+        static void DriveBlockyTick(BlockyAnimal ani, float dt, bool moving)
         {
-            var t = typeof(BlockyAnimal).GetMethod("Tick",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (t != null && t.GetParameters().Length == 1) t.Invoke(ani, new object[] { dt });
+            // controller-driven species (registry controllers:true): advance
+            // the vanilla state machine - Update() never runs in batch mode,
+            // so without this the walk clip is never scheduled (frozen legs).
+            // Legacy species are unaffected (TickControllers no-ops without
+            // a controller runtime).
+            ani.TickControllers(dt, moving);
         }
 
         /// <summary>"clip|t1|clip2|t2|..." chained pose sequences: play the
