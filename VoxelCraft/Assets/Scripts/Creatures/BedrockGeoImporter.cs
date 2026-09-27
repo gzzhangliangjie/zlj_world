@@ -359,9 +359,14 @@ namespace VoxelCraft.Creatures
                     float sx = ToFloat(size[0]), sy = ToFloat(size[1]), sz = ToFloat(size[2]);
                     int W = (int)sx, H = (int)sy, D = (int)sz;
                     // Zero-thickness plates (bee wing 9x0x6, legs 7x2x0):
-                    // clamp to 1 px so the UV rect doesn't collapse (a
-                    // degenerate u0==u1 rect samples a 1-texel line).
+                    // clamp the MESH extent to 1 px so the plate renders,
+                    // but the UV NET keeps the authored 0 dims - bedrock
+                    // only gives the two flanks real texture for a 0-axis
+                    // box; padding the net to 1px invents top/bottom/front
+                    // rects that sample neighbouring art (parrot feather
+                    // W=0 picked up a solid white patch above the head).
                     if (W < 1) W = 1; if (H < 1) H = 1; if (D < 1) D = 1;
+                    int nW = sx < 1f ? 0 : W, nH = sy < 1f ? 0 : H, nD = sz < 1f ? 0 : D;
 
                     // Flipped frame: x' = -x, z' = -z. Bedrock origin is the
                     // (-x, +y-bottom, -z-front) corner; after flipping x/z the
@@ -401,7 +406,7 @@ namespace VoxelCraft.Creatures
                     if (bone.parent != null && bone.parent != root)
                         local = Quaternion.Inverse(bone.parent.localRotation) * local;
 
-                    Vector4[] net = BuildNet(u, v, W, H, D, boneMirror);
+                    Vector4[] net = BuildNet(u, v, nW, nH, nD, boneMirror);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
                         local, new Vector3(Mathf.Max(sx, 0.5f) * Px, Mathf.Max(sy, 0.5f) * Px, Mathf.Max(sz, 0.5f) * Px), skin, net, texW, texH,
                         null, boneMirror ? MirrorFlips : null);

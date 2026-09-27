@@ -98,6 +98,9 @@ namespace VoxelCraft.Editor
                 ani.species = sp;
                 ani.BuildModel();
                 var player = go.GetComponent<BedrockAnimationPlayer>();
+                var regH = Creatures.CreatureRegistry.Get(sp);
+                float hopperFlap = regH != null && regH.archetype == "hopper" ? 0f : -1f;
+                float flapPhase = 0f;
 
                 // ---- frame capture ----
                 int total = Mathf.CeilToInt((clip == null ? WalkSeconds : PoseSeconds) * Fps);
@@ -132,6 +135,13 @@ namespace VoxelCraft.Editor
                     }
                     if (player != null) player.Tick(dt);
                     if (ani != null) DriveBlockyTick(ani, dt);
+                    // Hoppers (parrot): vanilla pre_animation computes
+                    // variable.wing_flap every frame; batch mode never runs
+                    // Update, so drive it here: (sin(t*57.3*w)+1)*speed.
+                    if (hopperFlap >= 0f && player != null)
+                        player.variables["wing_flap"] =
+                            (Mathf.Sin(flapPhase * 57.3f * 20f) + 1f) * 0.5f;
+                    if (hopperFlap >= 0f) flapPhase += dt;
 
                     var tex = Shoot(cam, go);
                     frames.Add(tex);

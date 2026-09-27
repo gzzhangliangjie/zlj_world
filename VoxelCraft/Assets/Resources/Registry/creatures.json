@@ -245,13 +245,14 @@
       "gait": "dist-cos",
       "behaviours": [],
       "gaitWeight": "1.0",
-      "groundOffset": "-0.53",
+      "groundOffset": "0.31",
       "walkSpeed": "0.3"
     },
     "parrot": {
       "walkClip": "animation.parrot.moving",
       "extraClips": [
-        "animation.parrot.base"
+        "animation.parrot.base",
+        "animation.parrot.standing"
       ],
       "extraVariables": {
         "wing_flap": 0

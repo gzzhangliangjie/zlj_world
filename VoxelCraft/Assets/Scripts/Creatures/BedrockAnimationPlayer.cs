@@ -210,9 +210,12 @@ namespace VoxelCraft.Creatures
                     if (kf.expr != null)
                         for (int i = 0; i < 3; i++)
                             if (kf.expr[i] != null) v[i] = SetupConst(kf.expr[i]);
-                    // bedrock "X - this" absolute target -> our rest convention
-                    // (Unity Euler = (-bx, -by, -bz) of the bedrock angle)
-                    bone.localRotation = Quaternion.Euler(-v.x, -v.y, -v.z) * bone.localRotation;
+                    // bedrock "X - this" absolute target. These are ANIMATION
+                    // rotation values (not geo bone rotations), so they follow
+                    // the clip convention Unity Euler = (bx, -by, bz). The geo
+                    // rest convention (-bx,-by,-bz) flipped the spider's legs
+                    // up over the body instead of down to the ground.
+                    bone.localRotation = Quaternion.Euler(v.x, -v.y, v.z) * bone.localRotation;
                     restRot[bone] = bone.localRotation;
                 }
             }
