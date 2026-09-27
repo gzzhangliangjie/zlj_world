@@ -271,8 +271,9 @@
    "groundOffset": "0"
   },
   "hoglin": {
-   "walkClip": "animation.hoglin.walk",
-   "behaviours": [],
+    "walkClip": "animation.hoglin.walk",
+    "absoluteExtraClips": ["animation.hoglin.look_at_target"],
+    "behaviours": [],
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "var:tcos"
