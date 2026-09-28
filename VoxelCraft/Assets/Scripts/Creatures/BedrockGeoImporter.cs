@@ -313,10 +313,23 @@ namespace VoxelCraft.Creatures
                 // individually in pass 3 (see bindRot lookup). Explicit
                 // "rotation" is an animation-time rest offset and
                 // still applies to the transform.
+                // Explicit "rotation" is an animation-time rest offset.
+                // Convention (M23, 2026-09-28): bedrock->unity maps X/Z
+                // IDENTITY and negates only Y - the Ry(pi)-conjugation
+                // result (axis (1,0,0)->(-1,0,0) plus RH->LH angle flip =
+                // two sign flips = identity; Y axis unchanged but angle
+                // flips). Verified against: Java HoglinModel.
+                // DEFAULT_HEAD_X_ROT=+0.8727rad (head DOWN) == geo [50,0,0]
+                // -> Unity Euler(+50); horse Neck [30,0,0] leans FORWARD.
+                // The old (-x,-y,-z) rendered hoglin head UP, horse/donkey
+                // necks reclined ("昂着"), tails up, ears crossed inward.
+                // Cube-level bind_pose_rotation (pass 3) and Apply()'s
+                // relative branch already used this convention (pixel-
+                // verified); the bone-level rest was the odd one out.
                 if (bone.TryGetValue("rotation", out object rv) && rv is List<object> rl && rl.Count == 3)
                 {
                     t.localRotation = Quaternion.Euler(
-                        -ToFloat(rl[0]), -ToFloat(rl[1]), -ToFloat(rl[2]));
+                        ToFloat(rl[0]), -ToFloat(rl[1]), ToFloat(rl[2]));
                 }
             }
             // 2c: rebase pivots - every parent's pivot AND rotation is known,

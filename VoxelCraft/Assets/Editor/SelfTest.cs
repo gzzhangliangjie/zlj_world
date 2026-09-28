@@ -599,6 +599,11 @@ namespace VoxelCraft.Editor
                 Creatures.BlockyAnimal.GetSpeciesNets(sp, out var bodyNet, out _, out var headNet, out var legNet);
                 // bee/bat leg/wing nets are thin plates - see NetHasPixels.
                 bool plateLegs = sp == "bee" || sp == "bat";
+                // chicken legs are 3x5x3 cubes whose vanilla sheet keeps only
+                // 12/96 texels opaque (the hollow-scale look - M23: restored
+                // the vanilla sheet after the alpha=255 fill made legs thick).
+                // Some side faces legitimately sample nothing.
+                if (sp == "chicken") plateLegs = true;
                 // skeleton skin leaves the torso TOP rect empty (vanilla art:
                 // only flanks/front/back painted on the ribcage) - the plate
                 // rule (any-face) applies, not all-faces.

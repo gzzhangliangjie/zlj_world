@@ -885,9 +885,18 @@ namespace VoxelCraft.Creatures
                                         : kf.post;
                 }
                 else v = SampleKeyframes(tr, time, thisVals, tr.bone.ToLowerInvariant() + "|" + tr.channel);
-                // entitySpace tracks carry FINAL angles - same sampling math
-                // as absolute clips regardless of how the clip was scheduled.
-                bool absApply = absolute || tr.entitySpace;
+                // entitySpace (relative_to:"entity") tracks: per the bedrock
+                // runtime (eyelib BrClipExecutor: renderInfoEntry.rotation
+                // .add(sampled), with `this` read back as bind+accumulated),
+                // channel values are ADDITIVE DELTAS over the bind in entity
+                // space, NOT final replacements. A constant 0 component
+                // (hoglin look_at_target [0, yaw-this, 0]) contributes a
+                // zero delta so the 50-deg head bind SURVIVES (Java
+                // HoglinModel.DEFAULT_HEAD_X_ROT confirms), while "-this"
+                // expressions converge the channel to the target on top of
+                // bind. The old absolute-replacement path flattened the bind
+                // to 0 during walk (M23 fix).
+                bool absApply = absolute;
                 if (!absApply && w < 1f)
                 {
                     // Blend toward the BIND pose captured at Bind() time - a
