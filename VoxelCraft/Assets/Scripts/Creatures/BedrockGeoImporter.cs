@@ -473,6 +473,13 @@ namespace VoxelCraft.Creatures
             // is true; walking armadillos keep the 8x8x12 body + legs. Left
             // visible it swallows the whole body and hides the legs.
             if (byName.TryGetValue("body_rolled_up", out var bru)) bru.gameObject.SetActive(false);
+            // Generic part_visibility (M22): apply the species' vanilla
+            // render_controllers part_visibility rules from
+            // Resources/RenderControllers/<species>.render_controllers.json.
+            // Boolean exprs only (query.is_saddled/is_chested etc. default
+            // false in our engine role) - that covers every vanilla
+            // "gear-only" part (donkey bags/saddle/bridle, horse MuleEars).
+            ApplyPartVisibility(byName, parent);
             if (byName.TryGetValue("head", out var ht)) headOut = ht;
             if (byName.TryGetValue("wing0", out var w0)) wingsOut[0] = w0;
             if (byName.TryGetValue("wing1", out var w1)) wingsOut[1] = w1;
@@ -504,6 +511,132 @@ namespace VoxelCraft.Creatures
             if (setupAnimJson != null) BakeSetup(setupAnimJson.text, byName, boneNameToOriginal, modelPos);
 
             return true;
+        }
+
+        /// <summary>M22 generic part_visibility: reads
+        /// Resources/RenderControllers/&lt;species&gt;.render_controllers.json
+        /// (vanilla render_controllers data) and hides bones whose
+        /// part_visibility expression is false. Supports "Bone", "Bone*",
+        /// "*Suffix" patterns and boolean expressions whose query.* engine
+        /// variables default to false (is_saddled/is_chested/has_rider...),
+        /// plus literal true/false and &amp;&amp;/||/! combos. Data-driven:
+        /// a new species ships the vanilla file and gear parts hide
+        /// themselves - no code change.</summary>
+        private static void ApplyPartVisibility(Dictionary<string, Transform> byName, Transform parent)
+        {
+            // species is encoded in the parent's root chain: importer runs
+            // under BlockyAnimal whose .species names the RC file
+            string species = null;
+            var root = parent;
+            while (root != null && string.IsNullOrEmpty(species))
+            {
+                var ani = root.GetComponent<Creatures.BlockyAnimal>();
+                if (ani != null) species = ani.species;
+                root = root.parent;
+            }
+            if (string.IsNullOrEmpty(species)) return;
+            var rcAsset = Resources.Load<TextAsset>("RenderControllers/" + species + ".render_controllers");
+            if (rcAsset == null) return;
+            try
+            {
+                var wrap = MiniJson.Deserialize(rcAsset.text) as Dictionary<string, object>;
+                if (wrap == null || !wrap.TryGetValue("render_controllers", out var rcsObj)) return;
+                var rcs = rcsObj as Dictionary<string, object>;
+                if (rcs == null) return;
+                foreach (var rc in rcs.Values)
+                {
+                    if (!(rc is Dictionary<string, object> rcDef)) continue;
+                    if (!rcDef.TryGetValue("part_visibility", out var pvObj)) continue;
+                    if (!(pvObj is List<object> rules)) continue;
+                    foreach (var ruleObj in rules)
+                    {
+                        if (!(ruleObj is Dictionary<string, object> rule)) continue;
+                        foreach (var kv in rule)
+                        {
+                            string pattern = kv.Key;
+                            // vanilla ships booleans ("Ear*": false) and
+                            // molang strings ("Saddle": "query.is_saddled")
+                            bool visible;
+                            if (kv.Value is bool b) visible = b;
+                            else if (kv.Value is string expr) visible = EvalVisibilityExpr(expr);
+                            else continue;
+                            foreach (var bn in byName)
+                            {
+                                if (!PatternMatch(pattern, bn.Key)) continue;
+                                bn.Value.gameObject.SetActive(visible);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* malformed RC file: keep everything visible */ }
+        }
+
+        /// <summary>glob match for "Bone", "Bone*", "*Suffix"; * matches any
+        /// char run (vanilla uses it for prefixed families like ReinsL/R).</summary>
+        private static bool PatternMatch(string pattern, string name)
+        {
+            if (pattern == "*") return true;
+            if (pattern.StartsWith("*") && pattern.EndsWith("*") && pattern.Length >= 2)
+                return name.Contains(pattern.Substring(1, pattern.Length - 2));
+            if (pattern.StartsWith("*"))
+                return name.EndsWith(pattern.Substring(1));
+            if (pattern.EndsWith("*"))
+                return name.StartsWith(pattern.Substring(0, pattern.Length - 1));
+            return pattern == name;
+        }
+
+        /// <summary>Boolean part_visibility expressions. Query/engine vars
+        /// (query.is_saddled, query.has_rider...) resolve to their engine
+        /// role defaults - false until gameplay sets them. Literals
+        /// true/false and &amp;&amp;/||/! combine them.</summary>
+        private static bool EvalVisibilityExpr(string expr)
+        {
+            expr = expr.Trim();
+            if (expr == "true") return true;
+            if (expr == "false") return false;
+            // split top-level || (no parens in vanilla part_visibility exprs)
+            var orParts = SplitTop(expr, "||");
+            foreach (var orPart in orParts)
+            {
+                var andParts = SplitTop(orPart.Trim(), "&&");
+                bool andVal = true;
+                foreach (var ap in andParts)
+                {
+                    string a = ap.Trim();
+                    bool neg = a.StartsWith("!");
+                    if (neg) a = a.Substring(1).Trim();
+                    // engine-role default: every gameplay query/variable
+                    // (is_saddled/is_chested/has_rider...) is FALSE until
+                    // gameplay AI sets it - a walking bare mob shows no gear.
+                    bool v = false;
+                    if (a == "true") v = true;
+                    else if (a == "false") v = false;
+                    andVal = andVal && (!neg ? v : !v);
+                }
+                if (andVal) return true;
+            }
+            return false;
+        }
+
+        private static List<string> SplitTop(string s, string sep)
+        {
+            var parts = new List<string>();
+            int depth = 0, last = 0;
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                if (c == '(') depth++;
+                else if (c == ')') depth--;
+                else if (depth == 0 && i + sep.Length <= s.Length && s.Substring(i, sep.Length) == sep)
+                {
+                    parts.Add(s.Substring(last, i - last));
+                    i += sep.Length - 1;
+                    last = i + 1;
+                }
+            }
+            parts.Add(s.Substring(last));
+            return parts;
         }
 
         /// <summary>Parse the species' .setup clip and bake its constant

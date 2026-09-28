@@ -40,6 +40,8 @@
 | M19 | BP 实体属性通用链路:registry species.properties(name→当前值,支持 string 或 {default} 对象,镜像 BP description.properties)→CreatureRegistry 解析→stringPropertyEq 查表(硬编码 armadillo_state 已删);player.species 由 BuildModel 赋值 | 曾硬编码 `name=="minecraft:armadillo_state"?"unrolled"` | bedrock-samples v1.21.80.3 armadillo BP:enum5值 default"unrolled" |
 | M20 | swing 验收窗按体型收紧:bipedLike(steve/zombie/skeleton/villager/biped)上限 90°(Java ModelBiped 1.4rad=80.2° 基准);四足维持 170° | gsv=0.6 时人形腿 133.7° 从 170° 平窗蒙混(腿飞) | av89 300/300;zombie 窗 [10,90] |
 | M21 | ocelot sit 正/侧视 2 连通域=vanilla 原生视觉(坐姿身体后仰45°+前腿垂直撑地,斜视投影腿根与腹部脱开;3D bounds 实际相交);SitProbe 实证 sit 动画数值全对(frontleg 42.15°/backleg -45°/body -45° 每 tick 稳定) | 曾疑 '-this' 双计 | 前爪分离块 64x28px 居中,原版固有 |
+| M22 | 通用 part_visibility:Resources/RenderControllers/<species>.render_controllers.json(原版数据文件)→BedrockGeoImporter.ApplyPartVisibility;支持 Bone/Bone*/*Suffix 通配 + 布尔字面量 + molang 布尔表达式;query.*/variable.* 引擎角色默认 false(裸生物无装备) | 驴/马曾把 Saddle/BagL/R/Bridle/Bit/Reins/短Ear 全建模(22骨全家桶),裸驴驮箱+马露出骡耳 | donkey_v3 RC:Bag*=is_chested,Saddle=is_saddled,Ear*=false;horse_v3:Bag*=false,MuleEar*=false;golden rebase horse/donkey(golden35 26/26) |
+
 
 
 ## 二、数据层(物种接线 = 只填这些字段)
