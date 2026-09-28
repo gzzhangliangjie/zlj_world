@@ -310,6 +310,36 @@
       "bakedSetupPos": [
         "animation.polarbear.move"
       ]
+    },
+    "salmon": {
+      "walkClip": "animation.salmon.swim",
+      "archetype": "fish",
+      "locomotion": "swim",
+      "gait": "var:animationamountblend",
+      "behaviours": [],
+      "controllers": true,
+      "walkSpeed": "0.3",
+      "groundOffset": "0"
+    },
+    "pufferfish": {
+      "walkClip": "animation.pufferfish.swim",
+      "archetype": "fish",
+      "locomotion": "swim",
+      "gait": "var:animationamountblend",
+      "behaviours": [],
+      "controllers": true,
+      "walkSpeed": "0.15",
+      "groundOffset": "0"
+    },
+    "axolotl": {
+      "walkClip": "animation.axolotl.swim",
+      "archetype": "quadruped",
+      "locomotion": "swim",
+      "gait": "dist-cos",
+      "behaviours": [],
+      "controllers": true,
+      "walkSpeed": "0.35",
+      "groundOffset": "0"
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
@@ -385,6 +415,12 @@
       25,
       8,
       3
+    ],
+    "salmon": [
+      22,
+      25,
+      8,
+      4
     ]
   },
   "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."

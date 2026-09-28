@@ -15,7 +15,7 @@ namespace VoxelCraft.Editor
             "goat", "horse", "donkey", "rabbit", "panda", "armadillo",
             "ocelot", "creeper", "hoglin", "polar_bear", "llama", "bee",
             "spider", "parrot", "bat", "steve", "zombie", "skeleton",
-            "villager",
+            "villager", "salmon", "pufferfish", "axolotl",
         };
 
         public static void Run()

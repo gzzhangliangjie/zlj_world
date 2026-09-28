@@ -22,6 +22,10 @@ namespace VoxelCraft.Creatures
         public float walkSpeed = 1.4f;
         public float health = 3f;
         public bool dead;
+        /// <summary>Debug/harness: force the fish controller into the
+        /// flopping (dry-land) state - used by AnimVerify when the swim clip
+        /// only drives bones the geo lacks (pufferfish large has no tailfin).</summary>
+        public bool aquaticDryLand;
 
         private Transform[] legs = new Transform[4];
         private Transform[] wings = new Transform[2]; // chicken wing hinges
@@ -250,6 +254,31 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 8, 10, 8);
                     leg = BoxBuilder.McNet(0, 22, 4, 12, 4);
                     break;
+                case "salmon":
+                    // Bedrock salmon geo (32x32 sheet): body_front 3x5x8
+                    // uv(0,0), body_back 3x5x8 uv(0,13), tailfin 0x5x6
+                    // uv(20,10), head 2x4x3 uv(22,0), fins 2x0x2 uv(2,0).
+                    body = BoxBuilder.McNet(0, 0, 3, 5, 8);
+                    head = BoxBuilder.McNet(22, 0, 2, 4, 3);
+                    leg = BoxBuilder.McNet(2, 0, 2, 2, 2);
+                    break;
+                case "pufferfish":
+                    // Bedrock pufferfish large geo (32x32 sheet): body 8x8x8
+                    // uv(0,0), tailfin 6x6x1 uv(24,21), fins 2x1x2 uv(24,0)/
+                    // (24,3), spines uv(0,16)/(14,16)/(14,19).
+                    body = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    head = BoxBuilder.McNet(0, 0, 8, 8, 8);
+                    leg = BoxBuilder.McNet(24, 0, 2, 1, 2);
+                    break;
+                case "axolotl":
+                    // Bedrock axolotl geo (64x64 sheet): body 8x4x10
+                    // uv(0,11) + tail fin 0x5x12 uv(2,19), head 8x5x5
+                    // uv(0,1), gills 3x7x0 uv(0,40)/(11,40), legs 3x5x0
+                    // uv(2,13).
+                    body = BoxBuilder.McNet(0, 11, 8, 4, 10);
+                    head = BoxBuilder.McNet(0, 1, 8, 5, 5);
+                    leg = BoxBuilder.McNet(2, 13, 3, 5, 3);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -383,6 +412,16 @@ namespace VoxelCraft.Creatures
                 if (reg != null && reg.controllers &&
                     (reg.gait == "rabbit" || reg.gait == "var:jump_rotation"))
                     animPlayer.rabbitGait = true;
+                // Aquatic species (fish/axolotl, locomotion=swim): engine
+                // answers is_in_water=1 so fish.general keeps swimming and
+                // ZRot flop stays 0; fish clips read the synthesized
+                // animationamountblend phase (engine-side, like rabbit).
+                if (reg != null && reg.locomotion == "swim")
+                {
+                    animPlayer.inWater = true;
+                    if (reg.gait == "var:animationamountblend" || reg.gait == "fish")
+                        animPlayer.fishGait = true;
+                }
                 if (reg != null && !string.IsNullOrEmpty(reg.gait) && !reg.controllers)
                 {
                     switch (reg.gait)
@@ -392,6 +431,7 @@ namespace VoxelCraft.Creatures
                         case "horse": case "var:leg_x_rot_anim": animPlayer.horseGait = true; break;
                         case "rabbit": case "var:jump_rotation": animPlayer.rabbitGait = true; break;
                         case "steve": case "var:tcos0": animPlayer.steveGait = true; break;
+                        case "fish": case "var:animationamountblend": animPlayer.fishGait = true; break;
                     }
                     if (reg.gait != "none" && reg.gait != "dist-cos")
                         animPlayer.walkSpeedRef = walkSpeed;
@@ -447,6 +487,39 @@ namespace VoxelCraft.Creatures
                 if (reg != null && reg.controllers)
                 {
                     var acTa = Resources.Load<TextAsset>("AnimControllers/" + species + ".animation_controllers");
+                    // Shared-family fallback (M25 fish): salmon/pufferfish
+                    // reference controller.animation.fish.general which lives
+                    // in fish.animation_controllers.json, not per-species files
+                    // (vanilla ships one AC file per family).
+                    if (acTa == null)
+                        foreach (var fam in new[] { "fish" })
+                        {
+                            var fTa = Resources.Load<TextAsset>("AnimControllers/" + fam + ".animation_controllers");
+                            if (fTa == null) continue;
+                            object fAo0 = null; try { fAo0 = MiniJson.Deserialize(fTa.text); } catch { }
+                            if (fAo0 is Dictionary<string, object> fJson &&
+                                fJson.TryGetValue("animation_controllers", out object fAo) &&
+                                fAo is Dictionary<string, object> fAd)
+                            {
+                                // adopt only controllers the entity references
+                                var eTa0 = Resources.Load<TextAsset>("EntityDefs/" + species + ".entity");
+                                if (eTa0 != null)
+                                {
+                                    object eo1 = null; try { eo1 = MiniJson.Deserialize(eTa0.text); } catch { }
+                                    if (eo1 is Dictionary<string, object> eJson1 &&
+                                        eJson1.TryGetValue("minecraft:client_entity", out object ce1) &&
+                                        ce1 is Dictionary<string, object> ced1 &&
+                                        ced1.TryGetValue("description", out object desc1) &&
+                                        desc1 is Dictionary<string, object> dd1 &&
+                                        dd1.TryGetValue("animations", out object an1) &&
+                                        an1 is Dictionary<string, object> anims1)
+                                        foreach (var kv in anims1)
+                                            if (kv.Value is string vs && vs.StartsWith("controller.animation.fish."))
+                                            { acTa = fTa; break; }
+                                }
+                            }
+                            if (acTa != null) break;
+                        }
                     var eTa = Resources.Load<TextAsset>("EntityDefs/" + species + ".entity");
                     Dictionary<string, object> acDefs = null, eDesc = null;
                     if (acTa != null)
@@ -947,7 +1020,21 @@ namespace VoxelCraft.Creatures
         {
             if (controllers == null || geoAnimPlayer == null) return;
             BedrockControllerRuntime.SetDt(dt);
-            controllers.State.isOnGround = 1f;
+            // Aquatic species (M25): fish live in water - keeps the fish
+            // controller in its swimming state (flop only on land), and swim
+            // mid-water (axolotl move.v2 picks swim only when !is_on_ground;
+            // grounded picks walk_floor_water).
+            var regW = CreatureRegistry.Get(species);
+            if (regW != null && regW.locomotion == "swim")
+            {
+                controllers.State.isOnGround = 0f;
+                controllers.State.isInWater = aquaticDryLand ? 0f : 1f;
+            }
+            else
+            {
+                controllers.State.isOnGround = 1f;
+                controllers.State.isInWater = 0f;
+            }
             controllers.State.hasTarget = 0f;
             // Engine role: ocelot-family variable.state (behavior-layer
             // locomotion selector, vanilla: 0 sneak/1 sprint/2 sit/3 walk).

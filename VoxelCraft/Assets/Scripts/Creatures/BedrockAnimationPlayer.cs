@@ -132,6 +132,15 @@ namespace VoxelCraft.Creatures
         /// (Java-equivalent limbSwingAmount saturation: mms/gsv &lt;= 1,
         /// gsv=0.6 produced 133.7° legs, 67% over Java's own cap).</summary>
         public bool steveGait;
+        /// <summary>Fish swim clips (salmon/pufferfish) read
+        /// variable.animationamountblend - an engine-injected phase on fish
+        /// entities. Tick synthesizes it from the locomotion distance clock
+        /// (var:animationamountblend gait in creatures.json).</summary>
+        public bool fishGait;
+        /// <summary>Aquatic species flag: query.is_in_water answers 1 (the
+        /// harness/game keeps fish in water; fish.general controller stays
+        /// in the swimming state).</summary>
+        public bool inWater;
 
         /// <summary>Locomotion speed (m/s) feeding gait variable math.</summary>
         public float walkSpeedRef = 1.4f;
@@ -756,6 +765,20 @@ namespace VoxelCraft.Creatures
                 variables["jump_rotation"] =
                     Mathf.Max(0f, Mathf.Cos(distanceMoved * 38.38f * 0.25f)) * rspeed;
             }
+            // Fish family (salmon/pufferfish, 2026-09-28): vanilla swim clips
+            // read variable.animationamountblend, a phase the ENGINE injects
+            // on fish entities (AnimationAmountPrev/AnimationAmount lerp with
+            // frame_alpha). We synthesize it from the same distance clock the
+            // other gait families use: swim tail beat = cos(phase*30 deg) in
+            // the clip, so the phase advances with the swim distance (32x32
+            // salmon sheet; molang names are case-insensitive).
+            if (fishGait)
+            {
+                variables["animationamount"] = distanceMoved * 14.325f * 4f;
+                variables["animationamountprev"] = variables["animationamount"];
+                // ZRot (flop on land): harness keeps aquatic species in water
+                // (is_in_water=1) so ZRot=0 - the swim pose is the rest state.
+            }
             // player.entity.json pre_animation (walking):
             //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(1.0) * 57.3
             if (steveGait)
@@ -1152,6 +1175,9 @@ namespace VoxelCraft.Creatures
                 // Engine ground truth: mobs in harness scenes stand on the
                 // ground (parrot pre_anim: !is_on_ground -> flying state).
                 isOnGround = 1f,
+                // Aquatic species live in water (fish.general controller:
+                // is_in_water keeps the swimming state; ZRot flop = 0).
+                isInWater = inWater ? 1f : 0f,
                 propertyLookup = molangProperties,
                 // String-property defaults (engine role): the registry's
                 // BP properties table is the single source (armadillo:
@@ -1220,7 +1246,7 @@ namespace VoxelCraft.Creatures
                 // BedrockControllerRuntime from the entity state.
                 public float isBaby, isSitting, isSleeping, isOnGround, isRiding,
                     isJumping, isDancing, hasTarget, isStalking, isInterested,
-                    isStunned, isShakingWetness, isResting, isGrazing,
+                    isStunned, isShakingWetness, isResting, isGrazing, isInWater,
                     sitAmount, lieAmount, rollCounter, allAnimationsFinished,
                     modifiedMoveSpeed;
                 internal Dictionary<string, float> vars;
@@ -1490,6 +1516,14 @@ namespace VoxelCraft.Creatures
                         case "query.is_shaking_wetness": return ctx.isShakingWetness;
                         case "query.is_resting": return ctx.isResting;
                         case "query.is_grazing": return ctx.isGrazing;
+                        case "query.is_in_water": return ctx.isInWater;
+                        case "query.is_levitating": return 0f;
+                        case "query.is_playing_dead": return 0f;
+                        case "query.time_stamp": return ctx.animTime;
+                        case "query.frame_alpha": return 0f;
+                        case "query.ground_speed": return ctx.modifiedMoveSpeed != 0f ? ctx.modifiedMoveSpeed : ctx.moveSpeed;
+                        case "query.vertical_speed": return 0f;
+                        case "query.body_x_rotation": return 0f;
                         case "query.sit_amount": return ctx.sitAmount;
                         case "query.lie_amount": return ctx.lieAmount;
                         case "query.roll_counter": return ctx.rollCounter;

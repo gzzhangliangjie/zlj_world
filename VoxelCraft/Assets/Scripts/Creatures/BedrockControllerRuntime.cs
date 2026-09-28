@@ -177,7 +177,7 @@ namespace VoxelCraft.Creatures
         {
             public float isBaby, isSitting, isSleeping, isOnGround = 1f, isRiding, isJumping,
                 isDancing, hasTarget, isStalking, isInterested, isStunned,
-                isShakingWetness, isResting, isGrazing, sitAmount, lieAmount,
+                isShakingWetness, isResting, isGrazing, isInWater, sitAmount, lieAmount,
                 rollCounter, allAnimationsFinished, modifiedMoveSpeed;
             public Dictionary<string, float> properties = new Dictionary<string, float>();
             public Dictionary<string, float> variables = new Dictionary<string, float>();
@@ -204,6 +204,7 @@ namespace VoxelCraft.Creatures
                 isShakingWetness = state.isShakingWetness,
                 isResting = state.isResting,
                 isGrazing = state.isGrazing,
+                isInWater = state.isInWater,
                 sitAmount = state.sitAmount,
                 lieAmount = state.lieAmount,
                 rollCounter = state.rollCounter,

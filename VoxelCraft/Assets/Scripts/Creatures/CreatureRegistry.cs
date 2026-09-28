@@ -30,7 +30,7 @@ namespace VoxelCraft.Creatures
             public string gait;                  // "goat"|"creeper"|"horse"|"steve"|null = gait vars to inject
             public bool biped;
             public string archetype;              // quadruped|biped|insect|flyer-membrane|arachnid|hopper
-            public string locomotion;             // walk|fly
+            public string locomotion;             // walk|fly|swim
             public string gaitWeight;             // optional walk-weight override (spider=1.0)
             public string groundOffset;           // optional Y offset in metres (spider -0.53)
             public string walkSpeed;              // optional walk speed in blocks/s (spider 0.3)

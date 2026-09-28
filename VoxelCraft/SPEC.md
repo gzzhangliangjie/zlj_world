@@ -112,3 +112,26 @@
 - **修复**: 删除两处 Inverse 补偿(BedrockGeoImporter 2c + pass 3 cube local)。数值验证: horse Head cube (0,1.906,0.469)→(0,1.809,0.895)(被颈 30° 携带);马耳 y 2.245>头顶 2.151(飞)→2.059<2.054(贴合);驴 MuleEar 基座嵌入头顶;疣猪耳 z 1.296(脸前悬空)→0.547(头后侧贴附)。BCF 结构正视: Head/Mane/Neck centre=149(正中), 双耳 134/165 精确镜像。
 - **门禁**: m23b.lateral_symmetry 改静止骨架语义(walk trot 中途帧对角步态合法不对称);SelfTest PASS;golden rebase(horse/donkey/hoglin 3 物种恰为 diff 集)后 26/26;AnimVerify PASS。
 - **教训**: rest rotation 是场景图变换,不是"仅自身 cube"的修饰 — 两个参考实现源码是权威,数值探针(EAP/BCF)比视觉截图快且硬。
+
+## M25 (2026-09-28) 水生三物种(salmon/pufferfish/axolotl):fish archetype + 家族 AC + 引擎态注入
+- **资产**:原版 RP 三件套(entity/geo/tex)+ anims + 家族 AC。salmon 1.8 旧格式、
+  axolotl 1.21 `minecraft:geometry` 数组、pufferfish large(鼓起态,无 tailfin=官方设计)。
+- **fish 家族 AC fallback**:salmon/pufferfish 引用 `controller.animation.fish.general`,
+  住在 `fish.animation_controllers.json`(原版一族一 AC 文件,不是一物种一文件)。
+  BlockyAnimal:per-species AC 缺失时按 entity animations 表里 `controller.animation.<family>.`
+  前缀收养家族文件(通用机制,后续热带鱼/鳕鱼直接复用)。
+- **引擎态注入(locomotion=swim)**:TickControllers 里 `isInWater=1, isOnGround=0`
+  (axolotl move.v2 靠 `is_in_water && !is_on_ground` 选 swim;fish.general 靠
+  is_in_water 停在 swimming 态)。`aquaticDryLand` 公共标志供 AnimVerify 强制 flop。
+- **AnimationAmount 相位**:engine 变量,pre_anim `AnimationAmountBlend=lerp(Prev,Amount,
+  frame_alpha)`;我们注入 `animationamount = distanceMoved*14.325*4`(与 dist-cos 同源),
+  变量名一律小写存储(Molang 大小写不敏感,pre_anim 大写赋值动画小写读)。
+- **query 补齐**:is_in_water/is_levitating/is_playing_dead/time_stamp/frame_alpha/
+  ground_speed/vertical_speed/body_x_rotation(fish pre_anim + axolotl controller 全覆盖)。
+- **AnimVerify 分派**:fish archetype=fin_swing(全后代变换摆幅;无 tailfin 的鼓起河豚
+  记 skip);swim 四足(axolotl)swing=窗内中值相对摆幅(腿持有固定泳姿 72.5/80..110/95,
+  bind 相对读数恒 ~180);feet_y→swim_y 悬浮带 [-0.35,1.2];head_seam 对 fish 豁免。
+- **face**:salmon 眼睛在头两侧面(同 goat 先例),faceOverride rect (22,25,8,4) +
+  sideEyes 条带扫 png y4..7。教训:**改 faceOverride 分支后老物种 face 全线 FAIL =
+  else-if 链断裂**(ovr 为 null 时才走 HeadFaceRectFromGeo)。
+- **门禁**:SelfTest PASS / AnimVerify 324 PASS / golden 29/29(新 3 物种 capture 入基线)。

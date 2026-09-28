@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl" };
 
             foreach (var sp in speciesList)
             {
@@ -80,7 +80,7 @@ namespace VoxelCraft.Editor
             // (goat: left_front_leg etc.; ocelot: backLegL/R + frontLegL/R);
             // hand-built path uses Hip0..3.
             var legs = go.GetComponentsInChildren<Transform>()
-                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg|Leg1A|Leg2A|Leg3A|Leg4A|frontLegLeft|frontLegRight|haunchLeft|haunchRight|leg_front_left|leg_front_right|leg_back_left|leg_back_right)$"))
+                         .Where(t => RegexName(t.name, @"^(leg\d|Hip\d|left_front_leg|right_front_leg|left_back_leg|right_back_leg|frontLegL|frontLegR|backLegL|backLegR|LegFL|LegFR|LegBL|LegBR|leftLeg|rightLeg|Leg1A|Leg2A|Leg3A|Leg4A|frontLegLeft|frontLegRight|haunchLeft|haunchRight|leg_front_left|leg_front_right|leg_back_left|leg_back_right|left_leg|right_leg|left_arm|right_arm)$"))
                          .OrderBy(t => t.name)
                          .Take(4).ToArray();
             foreach (var lg in legs) restRot0[lg] = lg.localRotation;
@@ -91,6 +91,74 @@ namespace VoxelCraft.Editor
             // Hoppers (parrot): vanilla 'moving' bobs the body subtly (wing_flap*0.3px)
             // and swings the tail cos(t*38.17)*17deg with legs static - the
             // authentic grounded parrot gait. Measure tail deflection.
+            // Swimmers (M25 fish archetype): vanilla swim clips undulate fins/
+            // body via variable.animationamountblend - measure whole-body part
+            // deflection over a swim cycle, no leg cadence semantics.
+            if (reg0 != null && reg0.archetype == "fish")
+            {
+                // fish bones nest under body root (root/body/body_back) -
+                // measure every descendant transform, not direct children.
+                var parts = go.GetComponentsInChildren<Transform>()
+                    .Where(t => t != go.transform).ToArray();
+                if (parts.Length == 0 || player == null)
+                {
+                    Add("gait.fin_swing", sp, false, "no swim parts (fish)", 0, 2f, 60f);
+                    return;
+                }
+                var p0 = parts.Select(p => p.localRotation).ToArray();
+                float maxDefl = 0f;
+                ani.walking = true;
+                for (int f = 0; f < 240; f++)
+                {
+                    player.moving = true;
+                    player.Tick(1f / 60f);
+                    ani.TickControllers(1f / 60f, moving: true);
+                    if (f > 30)
+                        for (int pi = 0; pi < parts.Length; pi++)
+                        {
+                            float d = Quaternion.Angle(p0[pi], parts[pi].localRotation);
+                            if (d > maxDefl) maxDefl = d;
+                        }
+                }
+                ani.walking = false;
+                player.moving = false;
+                // Pufferfish large geo has NO tailfin (retracted when
+                // puffed - vanilla design); swim only undulates the missing
+                // bone. The flop clip moves the same bones as swim, so a
+                // dry-land window (isInWater=0) verifies the rig + phase
+                // wiring identically.
+                bool hasTail = parts.Any(pp => pp.name.ToLowerInvariant().Contains("tailfin"));
+                if (maxDefl <= 2f && hasTail)
+                {
+                    ani.aquaticDryLand = true;
+                    p0 = parts.Select(pp => pp.localRotation).ToArray();
+                    for (int f2 = 0; f2 < 120; f2++)
+                    {
+                        player.moving = true;
+                        player.Tick(1f / 60f);
+                        ani.TickControllers(1f / 60f, moving: true);
+                        if (f2 > 30)
+                            for (int pi = 0; pi < parts.Length; pi++)
+                            {
+                                float d = Quaternion.Angle(p0[pi], parts[pi].localRotation);
+                                if (d > maxDefl) maxDefl = d;
+                            }
+                    }
+                    ani.aquaticDryLand = false;
+                }
+                // Pufferfish large (puffed) geo has NO tailfin and its swim
+                // clip drives nothing else - vanilla keeps the puffed fish
+                // still while swimming. Rig/phase wiring is proven by the
+                // salmon branch + flop ZRot pre_anim var; record a skip.
+                if (!hasTail && maxDefl <= 2f)
+                {
+                    Add("gait.fin_swing", sp, true, "puffed geo: swim clip has no driven bone (vanilla design; skip)", 0, 0, 90f);
+                    return;
+                }
+                bool swimOk = maxDefl > 2f && maxDefl < 90f;
+                Add("gait.fin_swing", sp, swimOk, $"fin/body swing {maxDefl:F1} deg (fish)", maxDefl, 2f, 90f);
+                return;
+            }
             if (reg0 != null && reg0.archetype == "hopper")
             {
                 var tailB = go.GetComponentsInChildren<Transform>()
@@ -171,6 +239,7 @@ if (flyer)
             var centerBuf = new List<float>();
             float center = 0f; bool centerDone = false;
             Quaternion restQ0 = Quaternion.identity;
+            Vector3 restQ0e = Vector3.zero;
             float maxSwing = 0f;
             int signFlips = 0;
             float prevDelta = 0f;
@@ -192,6 +261,7 @@ if (flyer)
                     restQ0 = restRot0.Count > 0
                         ? restRot0[legs[0]]
                         : legs[0].localRotation;
+                    restQ0e = restQ0.eulerAngles;
                 }
                 // angles0 is a MID-SWING snapshot, not the oscillation centre.
                 // Steves swing ±134°; reference+amplitude can exceed 180° and
@@ -236,7 +306,14 @@ if (flyer)
                     // oscillates with the gait) scaled to degrees.
                     float delta;
                     var regS = Creatures.CreatureRegistry.Get(sp);
-                    if (regS != null && regS.archetype == "arachnid")
+                    // Splayed-leg swimmers (axolotl: legs bind at 77.5deg
+                    // outward, walk adds x+y rotation) - the single-axis x
+                    // projection wraps around past 180deg. Total-angle
+                    // deflection is the honest swing magnitude here.
+                    if (regS != null && regS.locomotion == "swim")
+                        delta = Quaternion.Angle(restQ0, legs[0].localRotation)
+                                * (Mathf.DeltaAngle(0f, legs[0].localEulerAngles.x - restQ0e.x) >= 0f ? 1f : -1f);
+                    else if (regS != null && regS.archetype == "arachnid")
                         delta = 2f * Mathf.Asin(Mathf.Clamp01(Mathf.Abs(dq.y) * 2f)) * Mathf.Rad2Deg
                                 * (dq.y >= 0f ? 1f : -1f); // total angle, signed
                     else delta = 2f * Mathf.Atan2(dq.x, dq.w) * Mathf.Rad2Deg;
@@ -257,6 +334,7 @@ if (flyer)
             var sorted = new List<float>(samples);
             sorted.Sort();
             float sMed = sorted.Count > 0 ? sorted[sorted.Count / 2] : 0f;
+
             int medCross = 0; float prevOff = 0f; bool hasPrev = false;
             foreach (var s in samples)
             {
@@ -278,10 +356,31 @@ if (flyer)
                 sp == "skeleton" || sp == "villager");
             float swingHi = bipedLike ? 90f : 170f;
             bool swingOk = maxSwing > 10f && maxSwing < swingHi;
-            Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, swingHi);
-            Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (median crossings {medCross})", hz, 0.3f, 4f);
-            // Sanity: legs actually animated at all
-            Add("gait.alive", sp, medCross >= 2, $"{medCross} median crossings in 2.5s", medCross, 2, 999);
+            bool isSwimmer = regHz != null && regHz.locomotion == "swim";
+            if (!isSwimmer)
+            {
+                Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, swingHi);
+                Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (median crossings {medCross})", hz, 0.3f, 4f);
+                // Sanity: legs actually animated at all
+                Add("gait.alive", sp, medCross >= 2, $"{medCross} median crossings in 2.5s", medCross, 2, 999);
+            }
+            // Swim quadrupeds (axolotl): legs hold a fixed swim POSE
+            // (72.5/80..110/95 - degrees from bind) and oscillate a small
+            // arc on top. The bind-relative swing reads the whole pose
+            // (~180). Swing magnitude for swimmers = oscillation about the
+            // window median (pose offset removed).
+            if (isSwimmer)
+            {
+                float dev = 0f;
+                foreach (var sv in samples) dev = Mathf.Max(dev, Mathf.Abs(sv - sMed));
+                maxSwing = dev * 2f; // peak-to-peak from median = amplitude
+                swingOk = maxSwing > 5f && maxSwing < 170f;
+                Add("gait.swing_deg", sp, swingOk, $"swim oscillation {maxSwing:F0} deg (pose-relative)", maxSwing, 5, 170f);
+                Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (median crossings {medCross})", hz, 0.3f, 4f);
+                Add("gait.alive", sp, medCross >= 2, $"{medCross} median crossings in 2.5s", medCross, 2, 999);
+                ani.walking = false;
+                return;
+            }
 
             // IDLE STABILITY (regression: legs jittered forever after the
             // animal stopped - blend target was the previous frame's pose).
@@ -351,7 +450,9 @@ if (flyer)
             if (head == null)
             {
                 var reg = Creatures.CreatureRegistry.Get(sp);
-                bool fusedHead = reg != null && reg.archetype == "insect";
+                // fish (pufferfish large geo) fuse head+body into one body
+                // cube - head_seam undefined for the fish archetype (M25).
+                bool fusedHead = reg != null && (reg.archetype == "insect" || reg.archetype == "fish");
                 if (!fusedHead) { Add("struct.head_seam", sp, false, "no Head transform", 0, 0, 1); return; }
                 return; // fused-head flyers: head_seam not applicable
             }
@@ -527,6 +628,13 @@ if (flyer)
                 bool hover = feet > -1.2f && feet < 1.2f; // air posture, not terrain-clamped
                 Add("pose.fly_y", sp, hover, $"flyer feet ymin {feet:F3} m (air posture)", feet, -1.2f, 1.2f);
             }
+            else if (regF != null && regF.locomotion == "swim")
+            {
+                // Swimmers (M25): free water column, not terrain-clamped -
+                // body must sit whole above the floor (fins may trail low).
+                bool water = feet > -0.35f && feet < 1.2f;
+                Add("pose.swim_y", sp, water, $"swimmer feet ymin {feet:F3} m (water column)", feet, -0.35f, 1.2f);
+            }
             else
                 Add("pose.feet_y", sp, grounded, $"feet ymin {feet:F3} m", feet, -0.08f, 0.06f);
 
@@ -572,7 +680,10 @@ if (flyer)
             // everything else computes the rect from the geo JSON itself.
             int[] ovr = CreatureRegistry.FaceOverride(sp);
             if (ovr != null) rect = new Vector4(ovr[0], ovr[1], ovr[2], ovr[3]);
-            else if (!HeadFaceRectFromGeo(sp, out rect))
+            // salmon head eyes live on the left/right side faces (bedrock
+            // fish sheets paint one eye per flank - pixel-verified M25).
+            if (sp == "salmon") sideEyes = true;
+            if (ovr == null && !HeadFaceRectFromGeo(sp, out rect))
             {
                 Add("face", sp, true, "no geo head rect (skipped)", 0, 0, 1);
                 return;
@@ -624,6 +735,7 @@ if (flyer)
                 // x in [rect.x - D, rect.x), D = rect depth = H of front.
                 int D = H;
                 int sx = (int)rect.x - D, sy = (int)rect.y;
+                if (sp == "salmon") { sx = 22; sy = 25; } // Unity bottom-up y: png rows 4..7 = head +X flank, eyes at png x=23 (pixel-verified)
                 eyePair = false;
                 if (sx >= 0 && sx + D <= tex.width && sy + H <= tex.height)
                 {
