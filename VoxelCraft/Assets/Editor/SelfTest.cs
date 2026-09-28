@@ -766,6 +766,72 @@ namespace VoxelCraft.Editor
             Eval("m11.skinned_uv_sampling", uvSampleOk,
                 uvSampleOk ? "mesh.uv matches MC net + rotation convention" : uvSampleBad);
 
+            // ----- M23b: bilateral symmetry gate (user-visible "crooked
+            // head" class of bugs). A walking quadruped's mesh must be
+            // mirror-symmetric about the sagittal plane: every cube centre
+            // x is either ~0 (medial) or paired +/- with equal z,y. Head
+            // subtree forward axis must have x ~ 0 (no yaw).
+            bool symOk = true; string symBad = "ok";
+            foreach (string sp in new[] { "horse", "donkey", "hoglin", "cow", "pig", "sheep", "wolf", "fox" })
+            {
+                var symGo = new GameObject("Sym_" + sp);
+                var symAni = symGo.AddComponent<Creatures.BlockyAnimal>();
+                symAni.species = sp;
+                symAni.BuildModel();
+                var symPl = symGo.GetComponent<Creatures.BedrockAnimationPlayer>();
+                // REST pose semantics (M24): a mid-walk trot frame is
+                // legitimately asymmetric (diagonal legs). The invariant
+                // that must ALWAYS hold is the SKELETON's mirror symmetry
+                // about the sagittal plane - authored rest pose + carried
+                // bone rests. Tick once so clips schedule/resolve, but with
+                // walking=false so gait deltas are zero.
+                symAni.walking = false;
+                if (symPl != null) symPl.Tick(1f / 30f);
+                // cube centres grouped by (y,z) rounded; unpaired |x| = skew
+                var centres = new System.Collections.Generic.List<Vector3>();
+                foreach (var r in symGo.GetComponentsInChildren<Renderer>())
+                    centres.Add(r.bounds.center);
+                bool pairOk = true; string worst = "";
+                for (int i = 0; i < centres.Count && pairOk; i++)
+                {
+                    var c = centres[i];
+                    if (Mathf.Abs(c.x) < 0.02f) continue; // medial
+                    bool found = false;
+                    for (int j = 0; j < centres.Count; j++)
+                    {
+                        var d = centres[j];
+                        if (d.x * c.x < 0f && Mathf.Abs(Mathf.Abs(d.x) - Mathf.Abs(c.x)) < 0.02f &&
+                            Mathf.Abs(d.y - c.y) < 0.02f && Mathf.Abs(d.z - c.z) < 0.02f)
+                        { found = true; break; }
+                    }
+                    if (!found)
+                    {
+                        pairOk = false;
+                        // name the renderer for fast triage
+                        string who = "?";
+                        foreach (var r in symGo.GetComponentsInChildren<Renderer>())
+                            if ((r.bounds.center - c).magnitude < 0.005f)
+                            { who = Ancestry(r.transform); break; }
+                        worst = $"cube centre ({c.x:F3},{c.y:F3},{c.z:F3}) under {who}";
+                    }
+                }
+                // head forward axis yaw
+                Transform headT = null;
+                foreach (var t in symGo.GetComponentsInChildren<Transform>())
+                    if (t.name.ToLowerInvariant() == "head") { headT = t; break; }
+                if (headT != null)
+                {
+                    Vector3 fwd = headT.rotation * Vector3.forward;
+                    if (Mathf.Abs(fwd.x) > 0.02f)
+                    { pairOk = false; worst += $" head fwd x={fwd.x:F3} (yawed)"; }
+                }
+                if (!pairOk) { symOk = false; symBad = sp + ": " + worst; }
+                Object.DestroyImmediate(symGo);
+                if (!symOk) break;
+            }
+            Eval("m23b.lateral_symmetry", symOk,
+                symOk ? "8 quadrupeds rest-skeleton mirror-symmetric; head fwd x=0" : symBad);
+
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");
 
@@ -773,6 +839,14 @@ namespace VoxelCraft.Editor
             {
                 if (ok) pass++; else fail++;
                 Report(name, ok, detail);
+            }
+
+            string Ancestry(Transform t)
+            {
+                var sb2 = new System.Text.StringBuilder(t.name);
+                for (var p = t.parent; p != null && p.name != "Sym_horse" && p.name != "Sym_donkey" && p.name.Length > 1; p = p.parent)
+                    sb2.Insert(0, p.name + "/");
+                return sb2.ToString();
             }
         }
 

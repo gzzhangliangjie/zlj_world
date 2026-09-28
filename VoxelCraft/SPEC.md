@@ -105,3 +105,10 @@
 - animation controllers 状态机未解析(当前用 walk 常驻+extras+behaviours 近似);B 方案完整解 = controllers+molang 条件求值(参考实现要点见上节)
 - ocelot/sit 两域 open;zombie 耳朵细节
 - Molang 引擎 query 覆盖率低(target_y_rotation 等=0)
+
+## M24 (2026-09-28) 骨骼 rest rotation 携带子骨骼(马/驴歪头+疣猪耳飞 同根因)
+- **语义**(eyelib `ModelPoseTransforms.applyBone`: translate(pivot)→rotate(rest)→translate(-pivot) 递归;SimpleBedrockModel `convertPivot`+`translateAndRotateAndScale`): 骨骼显式 `rotation` 通过场景图携带子骨骼。子骨 localPos = 原始 pivot 差,不反旋转。
+- **旧 bug**: importer pass 2c/3 用 `Inverse(parent.localRotation)` 抵消父 rest → 骨自身 cube 随 rest 转、子骨冻结在未旋转 authored 坐标。马 Neck[30,0,0] 转了颈块但 Head/Muzzle/耳留在高位(歪头,look_at_player 的颈 yaw 也传不到头);疣猪 head[50,0,0] 低头但双耳留在未低头位置(耳朵飞)。
+- **修复**: 删除两处 Inverse 补偿(BedrockGeoImporter 2c + pass 3 cube local)。数值验证: horse Head cube (0,1.906,0.469)→(0,1.809,0.895)(被颈 30° 携带);马耳 y 2.245>头顶 2.151(飞)→2.059<2.054(贴合);驴 MuleEar 基座嵌入头顶;疣猪耳 z 1.296(脸前悬空)→0.547(头后侧贴附)。BCF 结构正视: Head/Mane/Neck centre=149(正中), 双耳 134/165 精确镜像。
+- **门禁**: m23b.lateral_symmetry 改静止骨架语义(walk trot 中途帧对角步态合法不对称);SelfTest PASS;golden rebase(horse/donkey/hoglin 3 物种恰为 diff 集)后 26/26;AnimVerify PASS。
+- **教训**: rest rotation 是场景图变换,不是"仅自身 cube"的修饰 — 两个参考实现源码是权威,数值探针(EAP/BCF)比视觉截图快且硬。

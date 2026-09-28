@@ -334,6 +334,22 @@ namespace VoxelCraft.Creatures
             }
             // 2c: rebase pivots - every parent's pivot AND rotation is known,
             // so file order no longer matters.
+            // M24 (2026-09-28): the child delta is the RAW pivot difference -
+            // NO Inverse(parent rest) compensation. Per the bedrock runtime
+            // (eyelib ModelPoseTransforms.applyBone: translate(pivot) ->
+            // rotate(rest) -> translate(-pivot), recursing; SimpleBedrockModel
+            // BedrockModel.convertPivot: local = childAbs - parentAbs, scene
+            // graph applies the parent rotation), a bone's explicit "rotation"
+            // CARRIES its children through the transform hierarchy. The old
+            // Inverse() compensation froze children at their UNROTATED
+            // authored pivots while the bone's own cubes rotated with the
+            // transform: horse Neck [30,0,0] leaned its cube but the Head
+            // subtree stayed up/behind, un-tilted (crooked head, and the
+            // look_at_player neck yaw never reached the head); hoglin head
+            // [50,0,0] tipped its cube while both ears stayed at the
+            // untilted spot (flying ears). bind_pose_rotation (1.8) is
+            // different by design: it reorients only the bone's OWN cubes
+            // (pass 3) and children pivots are authored final - unaffected.
             foreach (var kv in boneMeta)
             {
                 string name = kv.Key;
@@ -342,7 +358,7 @@ namespace VoxelCraft.Creatures
                 var t = byName[name];
                 if (pt != null && modelPos.TryGetValue(parentName, out var pp))
                 {
-                    t.localPosition = Quaternion.Inverse(pt.localRotation) * (modelPos[name] - pp);
+                    t.localPosition = modelPos[name] - pp;
                 }
                 else
                 {
@@ -415,9 +431,15 @@ namespace VoxelCraft.Creatures
 
                     // local position relative to the bone pivot, in the bone's
                     // parent frame (model-space delta rotated into local space)
+                    // M24: NO Inverse(parent rest) here either. centre and
+                    // modelPos are both model-space; the raw delta placed as
+                    // box.localPosition under the bone (whose localRotation
+                    // IS the rest) yields world = pivot + R(rest)*delta -
+                    // exactly the bedrock semantics (cube carried by its
+                    // bone's rest rotation). The old Inverse() un-rotated the
+                    // delta, pinning the cube at the un-tilted authored spot
+                    // (horse head cube riding above the tilted neck).
                     Vector3 local = centre - modelPos[name];
-                    if (bone.parent != null && bone.parent != root)
-                        local = Quaternion.Inverse(bone.parent.localRotation) * local;
 
                     Vector4[] net = BuildNet(u, v, nW, nH, nD, boneMirror);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
