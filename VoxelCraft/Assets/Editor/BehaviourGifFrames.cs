@@ -257,7 +257,10 @@ namespace VoxelCraft.Editor
             // quadrupeds and cropped steve (2m) / sitting ocelot (1.03m).
             float maxDim = Mathf.Max(b.size.x, b.size.y, b.size.z);
             float dist = maxDim * 2.2f + 0.5f;
-            float yaw = 0f;
+            // yaw=180 shows the FACE: mobs walk toward +Z (harness moves
+            // them with Vector3.forward), so yaw=0 frames their BACK. Same
+            // convention as FrontSheet (bee -144, others 180).
+            float yaw = 180f;
             string yawEnv = System.Environment.GetEnvironmentVariable("GIF_YAW");
             if (!string.IsNullOrEmpty(yawEnv)) float.TryParse(yawEnv, out yaw);
             Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * new Vector3(1.6f, 0.35f, -2.2f).normalized;

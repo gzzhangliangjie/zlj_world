@@ -124,7 +124,9 @@ namespace VoxelCraft.Creatures
         public bool rabbitGait;
         /// <summary>Player/steve move clips read variable.tcos0
         /// (player.entity.json pre_animation); Tick computes it from the
-        /// locomotion clock. gliding_speed_value engine default = 0.6.</summary>
+        /// locomotion clock. gliding_speed_value engine default = 1.0
+        /// (Java-equivalent limbSwingAmount saturation: mms/gsv &lt;= 1,
+        /// gsv=0.6 produced 133.7° legs, 67% over Java's own cap).</summary>
         public bool steveGait;
 
         /// <summary>Locomotion speed (m/s) feeding gait variable math.</summary>
@@ -692,10 +694,13 @@ namespace VoxelCraft.Creatures
             if (preAnimation.Count > 0)
             {
                 // Engine-default variables referenced by vanilla pre_anim
-                // (goat/hoglin/zombie divide by gliding_speed_value=0.6;
+                // (goat/hoglin/zombie divide by gliding_speed_value;
                 // attack_time=-1 means "no attack"). TryAdd so entity
                 // initialize lines / registry extraVariables can override.
-                variables.TryAdd("gliding_speed_value", 0.6f);
+                // gsv=1.0: Java limbSwingAmount saturation equivalent
+                // (mms/gsv <= 1); 0.6 was an unsourced guess that gave
+                // 133.7° humanoid leg swing (vanilla ≈ 80° max).
+                variables.TryAdd("gliding_speed_value", 1.0f);
                 variables.TryAdd("attack_time", -1f);
                 var pc = BuildCtx(lifeTime);
                 pc.deltaTime = dt;
@@ -748,7 +753,7 @@ namespace VoxelCraft.Creatures
                     Mathf.Max(0f, Mathf.Cos(distanceMoved * 38.38f * 0.25f)) * rspeed;
             }
             // player.entity.json pre_animation (walking):
-            //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(0.6) * 57.3
+            //   tcos0 = cos(dist * 38.17) * move_speed / gliding_speed_value(1.0) * 57.3
             if (steveGait)
             {
                 // query.modified_move_speed is engine-normalised (~0.25
