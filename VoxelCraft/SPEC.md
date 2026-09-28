@@ -37,6 +37,9 @@
 | M16 | Molang 逻辑层与三参函数:`&&`/`||`(AndOr 层,非零=真)与单目 `!`(Unary 层)进表达式语法;`math.clamp/lerp` 三参在闭括号**前**取第三参(旧实现在 Eat(')') 之后读第三参会越过表达式末尾→Eval catch→整表达式 0)。armadillo walking= `mms>0.01 && !is_rolled_up` 全依赖此层 | armadillo walk 权重 `min(1.4,lerp(0.2,2.4,mms))` 曾恒 0;walking 曾恒 0 | av80 前 armadillo 腿冻结;修复后 av81 300/300 |
 | M17 | 多 clip 同 bone 通道 = **累加(ADDITIVE)**(eyelib BrClipExecutor.java:74-84 `renderInfoEntry.rotation.add(sampled)`):两遍制采样——pass1 按 bone|channel 累积相对 delta+absolute 终值,pass2 flush;单 clip 物种保持逐 Apply 位等价(基线不动)。`-this` 表达式=读**当前累积值**的替换语义(pass1 里用 acc 现值重采样,数学=eyelib live this) | steve bob x=0 曾整组覆盖 move.arms tcos0(arm 静止);wolf angry 尾摆曾被 tail_default 覆盖(基线 y=0 伪影) | av87 300/300+golden28 26/26 |
 | M18 | 动画库族加载:BlockyAnimal 从 EntityDefs/<sp>.entity.json 的 animations 映射收集 `animation.<family>.…` 引用,按前缀段 join('_') 探测 Anims/<family>.animation.json(horse_v3 家族不再靠硬编码名单);steve 接 vanilla player.animation_controllers.json(root→third_person 态,vars 缺省 0=第三人称) | horse entity 引用 animation.horse.v3.* 但库只有 animation.horse.*→Play 静默丢弃 | horseprobe4-6:LegFL 40.86° 反相摆动 |
+| M19 | BP 实体属性通用链路:registry species.properties(name→当前值,支持 string 或 {default} 对象,镜像 BP description.properties)→CreatureRegistry 解析→stringPropertyEq 查表(硬编码 armadillo_state 已删);player.species 由 BuildModel 赋值 | 曾硬编码 `name=="minecraft:armadillo_state"?"unrolled"` | bedrock-samples v1.21.80.3 armadillo BP:enum5值 default"unrolled" |
+| M20 | swing 验收窗按体型收紧:bipedLike(steve/zombie/skeleton/villager/biped)上限 90°(Java ModelBiped 1.4rad=80.2° 基准);四足维持 170° | gsv=0.6 时人形腿 133.7° 从 170° 平窗蒙混(腿飞) | av89 300/300;zombie 窗 [10,90] |
+| M21 | ocelot sit 正/侧视 2 连通域=vanilla 原生视觉(坐姿身体后仰45°+前腿垂直撑地,斜视投影腿根与腹部脱开;3D bounds 实际相交);SitProbe 实证 sit 动画数值全对(frontleg 42.15°/backleg -45°/body -45° 每 tick 稳定) | 曾疑 '-this' 双计 | 前爪分离块 64x28px 居中,原版固有 |
 
 
 ## 二、数据层(物种接线 = 只填这些字段)

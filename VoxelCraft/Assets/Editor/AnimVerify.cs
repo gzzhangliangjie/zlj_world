@@ -266,9 +266,19 @@ if (flyer)
             }
             var regHz = Creatures.CreatureRegistry.Get(sp);
             float hz = medCross / 2f / 2.5f; // each cycle = 2 median crossings
-            bool swingOk = maxSwing > 10f && maxSwing < 170f;
             bool hzOk = hz > 0.3f && hz < 4f;
-            Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, 170);
+            // Upper bound is archetype-scaled (wave-2b lesson: a flat 170
+            // window let gsv=0.6 pass humanoid legs at 133.7 deg - airborne
+            //-looking. Java ModelBiped caps biped leg swing at 1.4 rad =
+            // 80.2 deg; quadruped vanilla amplitude families run 12-60 deg.
+            // Ceiling = 1.5x the species' own measured family? No single
+            // number fits both archetypes - scale by biped-ness):
+            bool bipedLike = regHz != null && (regHz.biped ||
+                regHz.archetype == "biped" || sp == "steve" || sp == "zombie" ||
+                sp == "skeleton" || sp == "villager");
+            float swingHi = bipedLike ? 90f : 170f;
+            bool swingOk = maxSwing > 10f && maxSwing < swingHi;
+            Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, swingHi);
             Add("gait.hz", sp, hzOk, $"{hz:F1} steps/s (median crossings {medCross})", hz, 0.3f, 4f);
             // Sanity: legs actually animated at all
             Add("gait.alive", sp, medCross >= 2, $"{medCross} median crossings in 2.5s", medCross, 2, 999);

@@ -36,6 +36,11 @@ namespace VoxelCraft.Creatures
             public string walkSpeed;              // optional walk speed in blocks/s (spider 0.3)
             public string entityScale;            // optional whole-entity scale (polar_bear scripts.scale 1.2)
             public List<BehaviourDef> behaviours;
+            // BP entity-properties (bedrock BP description.properties):
+            // name -> current string value. Seeded once from each
+            // property's `default` (engine role: synced BP state; the
+            // game/AI layer may set them later - e.g. armadillo roll_up).
+            public Dictionary<string, string> properties;
         }
 
         static Dictionary<string, SpeciesDef> cache;
@@ -109,6 +114,21 @@ namespace VoxelCraft.Creatures
                         def.extraVariables = new Dictionary<string, float>();
                         foreach (var ekv in evd)
                             def.extraVariables[ekv.Key] = System.Convert.ToSingle(ekv.Value);
+                    }
+                    if (o.TryGetValue("properties", out var pr) && pr is Dictionary<string, object> prd)
+                    {
+                        // value is either the current string directly
+                        // ("minecraft:armadillo_state": "unrolled") or an
+                        // object with a default (mirrors BP description.
+                        // properties shape when vendored verbatim).
+                        def.properties = new Dictionary<string, string>();
+                        foreach (var pkv in prd)
+                        {
+                            if (pkv.Value is string s) def.properties[pkv.Key] = s;
+                            else if (pkv.Value is Dictionary<string, object> po &&
+                                     po.TryGetValue("default", out var dv) && dv is string dvs)
+                                def.properties[pkv.Key] = dvs;
+                        }
                     }
                     if (o.TryGetValue("behaviours", out var bh) && bh is List<object> bhl && bhl.Count > 0)
                     {

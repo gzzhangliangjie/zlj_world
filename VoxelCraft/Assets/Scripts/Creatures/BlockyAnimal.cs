@@ -314,6 +314,7 @@ namespace VoxelCraft.Creatures
                 // Official bedrock animation clips drive the same bone names.
                 var animPlayer = gameObject.GetComponent<BedrockAnimationPlayer>();
                 if (animPlayer == null) animPlayer = gameObject.AddComponent<BedrockAnimationPlayer>();
+                animPlayer.species = species;
                 animPlayer.clipsJson.Clear();
                 // Clip library: the species file plus the shared families.
                 // horse_v3 family: the horse/donkey entities reference

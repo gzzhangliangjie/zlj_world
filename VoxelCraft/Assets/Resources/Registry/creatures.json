@@ -173,7 +173,10 @@
       "archetype": "quadruped",
       "locomotion": "walk",
       "gait": "dist-cos",
-      "controllers": true
+      "controllers": true,
+      "properties": {
+        "minecraft:armadillo_state": "unrolled"
+      }
     },
     "llama": {
       "walkClip": "animation.quadruped.walk",

@@ -106,6 +106,10 @@ namespace VoxelCraft.Creatures
 
         /// <summary>Set externally (e.g. by look-at AI) in degrees.</summary>
         public float headYawDeg;
+        /// <summary>Owning species (set by BlockyAnimal.BuildModel); the
+        /// property_eq engine-role lookup reads the registry's BP property
+        /// table for this species.</summary>
+        public string species = "";
 
         /// <summary>Goat: compute tcos gait vars from the entity-layer
         /// pre_animation script (goat.entity.json) each tick.</summary>
@@ -1140,10 +1144,18 @@ namespace VoxelCraft.Creatures
                 // ground (parrot pre_anim: !is_on_ground -> flying state).
                 isOnGround = 1f,
                 propertyLookup = molangProperties,
-                // String-property defaults (engine role): unrolled is the
-                // standing state of every stateful mob in harness scenes.
+                // String-property defaults (engine role): the registry's
+                // BP properties table is the single source (armadillo:
+                // minecraft:armadillo_state default "unrolled" from BP
+                // description.properties; bedrock-samples v1.21.80.3).
                 stringPropertyEq = (name, val) =>
-                    name == "minecraft:armadillo_state" ? val == "unrolled" : val == null,
+                {
+                    var reg = Creatures.CreatureRegistry.Get(species);
+                    if (reg != null && reg.properties != null &&
+                        reg.properties.TryGetValue(name, out var cur))
+                        return cur == val;
+                    return val == null;
+                },
             };
         }
         /// <summary>Optional property table for query.property('...')
