@@ -1,0 +1,29 @@
+{
+	"format_version" : "1.10.0",
+	"minecraft:client_entity" : {
+		"description" : {
+			"identifier" : "voxelcraft:croc",
+			"min_engine_version" : "1.10.0",
+			"geometry" : {
+				"default" : "geometry.croc"
+			},
+			"textures" : {
+				"default" : "textures/entity/croc/croc"
+			},
+			"animations" : {
+				"walk" : "animation.croc.walk",
+				"look_at_target" : "animation.croc.look_at_target"
+			},
+			"scripts" : {
+				"pre_animation" : [
+					"variable.tcos_right_side = (Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed / variable.gliding_speed_value) * 57.3;",
+					"variable.tcos_left_side = -variable.tcos_right_side;"
+				]
+			},
+			"animation_controllers" : [
+				{ "look_at_target" : "controller.animation.croc.look_at_target" },
+				{ "walk" : "controller.animation.croc.walk" }
+			]
+		}
+	}
+}

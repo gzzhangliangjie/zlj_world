@@ -1,0 +1,21 @@
+{
+	"format_version" : "1.10.0",
+	"animation_controllers" : {
+		"controller.animation.croc.look_at_target" : {
+			"initial_state" : "default",
+			"states" : {
+				"default" : {
+					"animations" : [ "look_at_target" ]
+				}
+			}
+		},
+		"controller.animation.croc.walk" : {
+			"initial_state" : "walking",
+			"states" : {
+				"walking" : {
+					"animations" : [ "walk" ]
+				}
+			}
+		}
+	}
+}

@@ -92,6 +92,7 @@ namespace VoxelCraft.Editor
                 ("salmon", null, false, "walk"),
                 ("pufferfish", null, false, "walk"),
                 ("axolotl", null, false, "walk"),
+                ("croc", null, false, "walk"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for

@@ -1,6 +1,14 @@
 {
   "//": "Data-driven creature registry. Drop Geo/<sp>.geo + Textures/<sp>_skin.png + Anims/<sp>.animation.json + an entry here = new species, no code changes.",
   "species": {
+    "croc": {
+      "walkClip": "animation.croc.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "var:tcos",
+      "controllers": true
+    },
     "chicken": {
       "walkClip": "animation.chicken.move",
       "biped": true,

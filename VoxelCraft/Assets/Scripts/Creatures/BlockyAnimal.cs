@@ -279,6 +279,14 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 1, 8, 5, 5);
                     leg = BoxBuilder.McNet(2, 13, 3, 5, 3);
                     break;
+                case "croc":
+                    // Custom species (Blockbench MCP build): 128x64 sheet.
+                    // body 14x6x20 uv(0,0), head(skull) 12x4x8,
+                    // legs 6x8x4 (sprawled), feeds SelfTest m9.
+                    body = BoxBuilder.McNet(0, 0, 14, 6, 20);
+                    head = BoxBuilder.McNet(68, 0, 12, 4, 8);
+                    leg = BoxBuilder.McNet(0, 26, 6, 8, 4);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -976,6 +984,14 @@ namespace VoxelCraft.Creatures
                     legH = 0.375f;                                   // 6 px legs
                     headBox = new Vector3(0.5f, 0.375f, 0.375f);     // 8 x 6 x 6 px
                     legThick = 0.125f;                               // 2 px legs
+                    break;
+                case "croc":
+                    // Custom crocodile (Blockbench MCP): body 14x6x20 px,
+                    // legs ~8 px, skull 12x4x8. Feeds the capsule collider.
+                    bodySize = new Vector3(0.875f, 0.375f, 1.25f);  // 14 x 6 x 20 px
+                    legH = 0.5f;
+                    headBox = new Vector3(0.75f, 0.25f, 0.5f);      // 12 x 4 x 8 px
+                    legThick = 0.25f;
                     break;
                 case "mooshroom":
                     goto case "cow";

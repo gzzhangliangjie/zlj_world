@@ -1,0 +1,26 @@
+{
+	"format_version" : "1.8.0",
+	"animations" : {
+		"animation.croc.walk" : {
+			"loop" : true,
+			"bones" : {
+				"leg0" : { "rotation" : [ "variable.tcos_right_side", 0, 0 ] },
+				"leg1" : { "rotation" : [ "-variable.tcos_right_side", 0, 0 ] },
+				"leg2" : { "rotation" : [ "variable.tcos_left_side", 0, 0 ] },
+				"leg3" : { "rotation" : [ "variable.tcos_right_side", 0, 0 ] },
+				"tail1" : { "rotation" : [ 0, "6 * math.cos(query.modified_distance_moved * 38.17)", 0 ] },
+				"tail2" : { "rotation" : [ 0, "4 * math.cos(query.modified_distance_moved * 38.17 + 60)", 0 ] },
+				"tail3" : { "rotation" : [ 0, "3 * math.cos(query.modified_distance_moved * 38.17 + 120)", 0 ] }
+			}
+		},
+		"animation.croc.look_at_target" : {
+			"loop" : true,
+			"bones" : {
+				"head" : {
+					"relative_to" : { "rotation" : "entity" },
+					"rotation" : [ 0, "query.target_y_rotation - this", 0 ]
+				}
+			}
+		}
+	}
+}
