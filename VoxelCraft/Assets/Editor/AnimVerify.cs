@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin" };
 
             foreach (var sp in speciesList)
             {
@@ -683,6 +683,9 @@ if (flyer)
             // salmon head eyes live on the left/right side faces (bedrock
             // fish sheets paint one eye per flank - pixel-verified M25).
             if (sp == "salmon") sideEyes = true;
+            // dolphin head eyes also live on the side faces (bedrock dolphin
+            // paints them on the head east/west flanks, texel (3,10)/(16,10))
+            if (sp == "dolphin") sideEyes = true;
             if (ovr == null && !HeadFaceRectFromGeo(sp, out rect))
             {
                 Add("face", sp, true, "no geo head rect (skipped)", 0, 0, 1);
@@ -736,6 +739,7 @@ if (flyer)
                 int D = H;
                 int sx = (int)rect.x - D, sy = (int)rect.y;
                 if (sp == "salmon") { sx = 22; sy = 25; } // Unity bottom-up y: png rows 4..7 = head +X flank, eyes at png x=23 (pixel-verified)
+                if (sp == "dolphin") { sx = 0; sy = 51; D = 6; } // head east flank png (0..6, 6..13), eye texel (3,10)=[8,9,31] (pixel-verified)
                 eyePair = false;
                 if (sx >= 0 && sx + D <= tex.width && sy + H <= tex.height)
                 {

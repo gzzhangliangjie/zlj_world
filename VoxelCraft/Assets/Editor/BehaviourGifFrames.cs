@@ -93,6 +93,9 @@ namespace VoxelCraft.Editor
                 ("pufferfish", null, false, "walk"),
                 ("axolotl", null, false, "walk"),
                 ("croc", null, false, "walk"),
+                // dolphin: vanilla move clip is life_time driven (tail beat
+                // 343.8 deg/s, fins 229.2) - animTime clock, no gait vars.
+                ("dolphin", null, false, "walk"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for

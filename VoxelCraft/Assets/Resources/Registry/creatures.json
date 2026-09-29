@@ -348,6 +348,16 @@
       "controllers": true,
       "walkSpeed": "0.35",
       "groundOffset": "0"
+    },
+    "dolphin": {
+      "walkClip": "animation.dolphin.move",
+      "archetype": "fish",
+      "locomotion": "swim",
+      "gait": "none",
+      "behaviours": [],
+      "controllers": true,
+      "walkSpeed": "0.4",
+      "groundOffset": "0"
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
@@ -428,6 +438,12 @@
       22,
       25,
       8,
+      4
+    ],
+    "croc": [
+      110,
+      6,
+      12,
       4
     ]
   },

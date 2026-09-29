@@ -1,0 +1,38 @@
+{
+  "format_version": "1.8.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:dolphin",
+      "materials": {
+        "default": "dolphin"
+      },
+      "textures": {
+        "default": "textures/entity/dolphin"
+      },
+      "geometry": {
+        "default": "geometry.dolphin"
+      },
+      "animations": {
+        "general": "controller.animation.fish.general",
+        "swim": "animation.dolphin.move",
+        "move": "animation.dolphin.move"
+      },
+      "animation_controllers": [
+        {
+          "general": "controller.animation.fish.general"
+        }
+      ],
+      "render_controllers": [
+        "controller.render.dolphin"
+      ],
+      "spawn_egg": {
+        "texture": "spawn_egg_dolphin"
+      },
+      "scripts": {
+        "animate": [
+          "general"
+        ]
+      }
+    }
+  }
+}

@@ -379,12 +379,25 @@ namespace VoxelCraft.Creatures
                 // bones), so world-space sizes pass straight through.
                 foreach (var c in cubes)
                 {
-                    var cube = (Dictionary<string, object>)c;
-                    var origin = (List<object>)cube["origin"];
-                    var size = (List<object>)cube["size"];
-                    var uv = cube.TryGetValue("uv", out object uvl) ? (List<object>)uvl : null;
-                    int u = uv != null ? (int)ToFloat(uv[0]) : 0;
-                    int v = uv != null ? (int)ToFloat(uv[1]) : 0;
+                    int u = 0, v = 0;
+                    if (!(c is Dictionary<string, object> cube)) continue;
+                    if (!(cube.TryGetValue("origin", out object ov) && ov is List<object> origin)) continue;
+                    if (!(cube.TryGetValue("size", out object sv) && sv is List<object> size)) continue;
+                    // uv may be a box-uv [u,v] list OR a per-face dict (1.12+).
+                    // A per-face dict has no single u/v origin: unwrap each
+                    // face rect separately below (BuildNet override path).
+                    Dictionary<string, object> uvFaces = null;
+                    if (cube.TryGetValue("uv", out object uvl) && uvl is List<object> uvList && uvList.Count >= 2)
+                    {
+                        u = (int)ToFloat(uvList[0]);
+                        v = (int)ToFloat(uvList[1]);
+                    }
+                    else if (uvl is Dictionary<string, object> uvDict)
+                    {
+                        uvFaces = uvDict;
+                        u = v = 0;
+                    }
+                    else { u = v = 0; }
                     float sx = ToFloat(size[0]), sy = ToFloat(size[1]), sz = ToFloat(size[2]);
                     int W = (int)sx, H = (int)sy, D = (int)sz;
                     // Zero-thickness plates (bee wing 9x0x6, legs 7x2x0):
@@ -441,7 +454,7 @@ namespace VoxelCraft.Creatures
                     // (horse head cube riding above the tilted neck).
                     Vector3 local = centre - modelPos[name];
 
-                    Vector4[] net = BuildNet(u, v, nW, nH, nD, boneMirror);
+                    Vector4[] net = uvFaces != null ? BuildNetPerFace(uvFaces, boneMirror) : BuildNet(u, v, nW, nH, nD, boneMirror);
                     var box = Art.BoxBuilder.SkinnedBox(bone, "cube_" + W + "x" + H + "x" + D,
                         local, new Vector3(Mathf.Max(sx, 0.5f) * Px, Mathf.Max(sy, 0.5f) * Px, Mathf.Max(sz, 0.5f) * Px), skin, net, texW, texH,
                         null, boneMirror ? MirrorFlips : null);
@@ -805,9 +818,42 @@ namespace VoxelCraft.Creatures
         /// top/bottom WxD at v, front (+Z ours) and back WxH at v+D. Mirrored
         /// x flips left/right nets; v runs top-down.
         /// </summary>
+        /// <summary>
+        /// Bedrock per-cube UV net. Bedrock unwraps: +X/-X flanks D wide,
+        /// top/bottom WxD at v, front (+Z ours) and back WxH at v+D. Mirrored
+        /// x flips left/right nets; v runs top-down.
+        /// </summary>
+        /// <summary>Per-face UV dict (1.12+ "uv": {"north": {"uv":[u,v],...}}).
+        /// Face name mapping: bedrock north = our -Z (front of the model faces
+        /// north/-z in bedrock; our flipped frame +Z shows the bedrock SOUTH/
+        /// back... conservative mapping by bedrock axis names: east/west are
+        /// the X flanks, north/south the Z faces, up/down the Y faces.</summary>
+        private static Vector4[] BuildNetPerFace(Dictionary<string, object> uvFaces, bool mirror = false)
+        {
+            var net = new Vector4[6]; // +X -X +Y -Y +Z -Z (0-size rects = blank)
+            void Put(int idx, string key)
+            {
+                if (!uvFaces.TryGetValue(key, out object fv) || !(fv is Dictionary<string, object> fd)) return;
+                if (!fd.TryGetValue("uv", out object uvl) || !(uvl is List<object> ul) || ul.Count < 2) return;
+                int fu = (int)ToFloat(ul[0]), fv2 = (int)ToFloat(ul[1]);
+                int fw = 4, fh = 4;
+                if (fd.TryGetValue("uv_size", out object szl) && szl is List<object> sl && sl.Count >= 2)
+                { fw = (int)ToFloat(sl[0]); fh = (int)ToFloat(sl[1]); }
+                net[idx] = new Vector4(fu, fv2, fw, fh);
+            }
+            // bedrock east(+X)/west(-X) are our X flanks; north(-Z)/south(+Z)
+            // swap through the flipped frame: our +Z face = bedrock south.
+            Put(0, "east"); Put(1, "west"); Put(2, "up"); Put(3, "down");
+            Put(4, "south"); Put(5, "north");
+            if (mirror)
+            {
+                var t = net[0]; net[0] = net[1]; net[1] = t;
+            }
+            return net;
+        }
+
         private static Vector4[] BuildNet(int u, int v, int W, int H, int D, bool mirror = false)
         {
-            // same layout as BoxBuilder.McNet but with the +Z/-Z rects swapped
             // for the flipped-frame front: our +Z face shows the bedrock front.
             var net = new Vector4[]
             {

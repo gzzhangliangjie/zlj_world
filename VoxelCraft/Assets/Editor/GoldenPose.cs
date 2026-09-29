@@ -32,7 +32,7 @@ namespace VoxelCraft.Editor
         const float RotTolDeg = 0.5f;
         const float PosTolM = 0.005f;
 
-        static string[] Species = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc" };
+        static string[] Species = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin" };
         static string LogDir => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "_logs", "golden");
 
         public static void Run()

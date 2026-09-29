@@ -279,6 +279,16 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 1, 8, 5, 5);
                     leg = BoxBuilder.McNet(2, 13, 3, 5, 3);
                     break;
+                case "dolphin":
+                    // Bedrock dolphin geo (64x64 sheet): body 8x7x13
+                    // uv(0,13), head 8x7x6 uv(0,0), nose 2x2x4 uv(0,13),
+                    // tail 4x5x11 uv(0,33), tail_fin 10x1x6 uv(0,49),
+                    // back_fin 1x5x4 uv(29,0), fins 8x1x4 uv(40,0)/(40,6).
+                    // Fins are 1px plates - the plate-face m9 rule applies.
+                    body = BoxBuilder.McNet(0, 13, 8, 7, 13);
+                    head = BoxBuilder.McNet(0, 0, 8, 7, 6);
+                    leg = BoxBuilder.McNet(40, 0, 8, 1, 4);
+                    break;
                 case "croc":
                     // Custom species (Blockbench MCP build): 128x64 sheet.
                     // body 14x6x20 uv(0,0), head(skull) 12x4x8,
@@ -991,6 +1001,14 @@ namespace VoxelCraft.Creatures
                     bodySize = new Vector3(0.875f, 0.375f, 1.25f);  // 14 x 6 x 20 px
                     legH = 0.5f;
                     headBox = new Vector3(0.75f, 0.25f, 0.5f);      // 12 x 4 x 8 px
+                    legThick = 0.25f;
+                    break;
+                case "dolphin":
+                    // Bedrock dolphin geo: body 8x7x13 + head 8x7x6 + nose
+                    // 2x2x4 (no legs, fins are 1px plates). Collider dims.
+                    bodySize = new Vector3(0.5f, 0.4375f, 0.8125f); // 8 x 7 x 13 px
+                    legH = 0f;
+                    headBox = new Vector3(0.5f, 0.4375f, 0.375f);   // 8 x 7 x 6 px
                     legThick = 0.25f;
                     break;
                 case "mooshroom":
