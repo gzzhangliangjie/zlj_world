@@ -1,21 +1,63 @@
 {
-	"format_version" : "1.10.0",
-	"animation_controllers" : {
-		"controller.animation.croc.look_at_target" : {
-			"initial_state" : "default",
-			"states" : {
-				"default" : {
-					"animations" : [ "look_at_target" ]
-				}
-			}
-		},
-		"controller.animation.croc.walk" : {
-			"initial_state" : "walking",
-			"states" : {
-				"walking" : {
-					"animations" : [ "walk" ]
-				}
-			}
-		}
-	}
+ "format_version": "1.10.0",
+ "animation_controllers": {
+  "controller.animation.croc.look_at_target": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "animations": [
+      "look_at_target"
+     ]
+    }
+   }
+  },
+  "controller.animation.croc.walk": {
+   "initial_state": "walking",
+   "states": {
+    "walking": {
+     "animations": [
+      "walk"
+     ],
+     "transitions": [
+      {
+       "crawling": "query.is_in_water"
+      }
+     ]
+    },
+    "crawling": {
+     "animations": [
+      "crawl",
+      "look_at_target"
+     ],
+     "transitions": [
+      {
+       "walking": "!query.is_in_water"
+      }
+     ]
+    }
+   }
+  },
+  "controller.animation.croc.attack": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "attack": "variable.has_target && variable.attack_time >= 0.0"
+      }
+     ]
+    },
+    "attack": {
+     "animations": [
+      "bite"
+     ],
+     "transitions": [
+      {
+       "default": "!variable.has_target || variable.attack_time < 0.0"
+      }
+     ]
+    }
+   }
+  }
+ }
 }
