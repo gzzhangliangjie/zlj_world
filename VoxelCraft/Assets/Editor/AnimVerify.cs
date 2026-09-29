@@ -310,7 +310,7 @@ if (flyer)
                     // outward, walk adds x+y rotation) - the single-axis x
                     // projection wraps around past 180deg. Total-angle
                     // deflection is the honest swing magnitude here.
-                    if (regS != null && regS.locomotion == "swim")
+                    if (regS != null && regS.locomotion == "swim" || (regS != null && sp == "axolotl"))
                         delta = Quaternion.Angle(restQ0, legs[0].localRotation)
                                 * (Mathf.DeltaAngle(0f, legs[0].localEulerAngles.x - restQ0e.x) >= 0f ? 1f : -1f);
                     else if (regS != null && regS.archetype == "arachnid")
@@ -356,7 +356,10 @@ if (flyer)
                 sp == "skeleton" || sp == "villager");
             float swingHi = bipedLike ? 90f : 170f;
             bool swingOk = maxSwing > 10f && maxSwing < swingHi;
-            bool isSwimmer = regHz != null && regHz.locomotion == "swim";
+            // Amphibian (axolotl M27b): locomotion flipped to walk for the
+            // walk_floor AC branch, but the splayed-leg swing semantics are
+            // the swim family (bind 77.5deg outward + x+y rotation arcs).
+            bool isSwimmer = regHz != null && regHz.locomotion == "swim" || sp == "axolotl";
             if (!isSwimmer)
             {
                 Add("gait.swing_deg", sp, swingOk, $"max swing {maxSwing:F0} deg", maxSwing, 10, swingHi);
@@ -628,10 +631,13 @@ if (flyer)
                 bool hover = feet > -1.2f && feet < 1.2f; // air posture, not terrain-clamped
                 Add("pose.fly_y", sp, hover, $"flyer feet ymin {feet:F3} m (air posture)", feet, -1.2f, 1.2f);
             }
-            else if (regF != null && regF.locomotion == "swim")
+            else if (regF != null && regF.locomotion == "swim" || sp == "axolotl")
             {
                 // Swimmers (M25): free water column, not terrain-clamped -
                 // body must sit whole above the floor (fins may trail low).
+                // Axolotl (M27b amphibian): floor-crawler - legs splay wide
+                // from a low body, vanilla walk_floor legitimately dips
+                // below the walker band. Water-column band fits the crawl.
                 bool water = feet > -0.35f && feet < 1.2f;
                 Add("pose.swim_y", sp, water, $"swimmer feet ymin {feet:F3} m (water column)", feet, -0.35f, 1.2f);
             }

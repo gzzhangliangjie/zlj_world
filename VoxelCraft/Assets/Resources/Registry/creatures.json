@@ -340,9 +340,9 @@
       "groundOffset": "0"
     },
     "axolotl": {
-      "walkClip": "animation.axolotl.swim",
+      "walkClip": "animation.axolotl.walk_floor",
       "archetype": "quadruped",
-      "locomotion": "swim",
+      "locomotion": "walk",
       "gait": "dist-cos",
       "behaviours": [],
       "controllers": true,
