@@ -297,6 +297,13 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(68, 0, 12, 4, 8);
                     leg = BoxBuilder.McNet(0, 26, 6, 8, 4);
                     break;
+                case "goose":
+                    // Custom species (Blockbench MCP build): 128x128 sheet.
+                    // body_core 7x5.4x14 uv(0,19), head 4x4x4, leg 1.1x4.3x1.1.
+                    body = BoxBuilder.McNet(0, 19, 7, 5, 14);
+                    head = BoxBuilder.McNet(0, 0, 4, 4, 4);
+                    leg = BoxBuilder.McNet(0, 40, 2, 4, 2);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -1002,6 +1009,14 @@ namespace VoxelCraft.Creatures
                     legH = 0.5f;
                     headBox = new Vector3(0.75f, 0.25f, 0.5f);      // 12 x 4 x 8 px
                     legThick = 0.25f;
+                    break;
+                case "goose":
+                    // Custom goose (Blockbench MCP): body 7x5.4x14 px, long
+                    // neck 4x4x4 head on 15px neck, legs 1.1x4.3x1.1 + feet.
+                    bodySize = new Vector3(0.4375f, 0.3375f, 0.875f); // 7 x 5.4 x 14 px
+                    legH = 0.27f;                                   // 4.3 px legs
+                    headBox = new Vector3(0.25f, 0.25f, 0.25f);     // 4 x 4 x 4 px
+                    legThick = 0.07f;                               // 1.1 px legs
                     break;
                 case "dolphin":
                     // Bedrock dolphin geo: body 8x7x13 + head 8x7x6 + nose

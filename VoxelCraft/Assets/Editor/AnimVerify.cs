@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin", "goose" };
 
             foreach (var sp in speciesList)
             {
@@ -56,7 +56,13 @@ namespace VoxelCraft.Editor
                 VerifyGait(sp, go, ani);
                 // Pose must be measured at REST (gait blending eases legs back
                 // to the rest pose; measuring mid-swing read feet 0.2 m up).
-                // Reset the model first: BuildModel() captures the bind pose.
+                // The gait + idle windows may leave AC pose clips applied (and
+                // Bind() would capture the polluted pose as REST), so rebuild
+                // from a FRESH object - the true geo bind.
+                UnityEngine.Object.DestroyImmediate(go);
+                go = new GameObject("Verify2_" + sp);
+                ani = go.AddComponent<Creatures.BlockyAnimal>();
+                ani.species = sp;
                 ani.BuildModel();
                 go.transform.rotation = Quaternion.identity;
                 VerifyStructure(sp, go);
@@ -393,11 +399,22 @@ if (flyer)
             {
                 player.moving = false;
                 float settle = 0f;
-                for (int f = 0; f < 120; f++) player.Tick(1f / 60f); // 2s settle
+                // Controllers must keep ticking while idle (game runtime
+                // semantics: TickControllers(moving=false) re-evaluates AC
+                // weight expressions like query.modified_move_speed -> 0,
+                // blending keyframed clips (goose walk) back to bind. Without
+                // this the last ticked weight (1.0) stays frozen and legs
+                // keep swinging after stop.
+                for (int f = 0; f < 120; f++)
+                {
+                    player.Tick(1f / 60f);
+                    ani.TickControllers(1f / 60f, moving: false);
+                }
                 float a0 = legs[0].localEulerAngles.x;
                 for (int f = 0; f < 60; f++)
                 {
                     player.Tick(1f / 60f);
+                    ani.TickControllers(1f / 60f, moving: false);
                     settle = Mathf.Max(settle, Mathf.Abs(
                         Mathf.DeltaAngle(a0, legs[0].localEulerAngles.x)));
                 }

@@ -269,7 +269,7 @@
       "gait": "dist-cos",
       "behaviours": [],
       "gaitWeight": "1.0",
-      "groundOffset": "0.31",
+      "groundOffset": "0.1446",
       "walkSpeed": "0.3",
       "controllers": true
     },
@@ -358,6 +358,15 @@
       "controllers": true,
       "walkSpeed": "0.4",
       "groundOffset": "0"
+    },
+    "goose": {
+      "walkClip": "animation.goose.walk",
+      "behaviours": [],
+      "archetype": "quadruped",
+      "locomotion": "walk",
+      "gait": "var:tcos",
+      "controllers": true,
+      "groundOffset": "-0.1625"
     }
   },
   "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
@@ -445,6 +454,12 @@
       6,
       12,
       4
+    ],
+    "goose": [
+      35,
+      97,
+      7,
+      2
     ]
   },
   "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."

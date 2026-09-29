@@ -543,11 +543,12 @@ namespace VoxelCraft.Creatures
                 }
                 if (a.TryGetValue("loop", out object lp))
                 {
-                    // bedrock: true | false | "hold_on_last_frame"
+                    // bedrock: true | false | "hold_on_last_frame";
+                    // Blockbench exports strings: "loop" | "once".
                     if (lp is bool lb) clip.loop = lb;
                     else if (lp is string ls)
                     {
-                        clip.loop = false;
+                        clip.loop = ls == "loop";
                         clip.holdOnLast = ls.Contains("hold");
                     }
                 }

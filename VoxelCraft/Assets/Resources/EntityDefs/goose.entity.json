@@ -1,0 +1,32 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "minecraft:goose",
+   "min_engine_version": "1.10.0",
+   "geometry": {
+    "default": "geometry.goose"
+   },
+   "textures": {
+    "default": "textures/entity/goose/goose"
+   },
+   "animations": {
+    "walk": "animation.goose.walk",
+    "flap_chase": "animation.goose.flap_chase",
+    "attack": "animation.goose.attack",
+    "swim": "animation.goose.swim"
+   },
+   "scripts": {
+    "pre_animation": [
+     "variable.tcos_right_side = (Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed / variable.gliding_speed_value) * 57.3;",
+     "variable.tcos_left_side = -variable.tcos_right_side;"
+    ]
+   },
+   "animation_controllers": [
+    {
+     "walk": "controller.animation.goose.walk"
+    }
+   ]
+  }
+ }
+}
