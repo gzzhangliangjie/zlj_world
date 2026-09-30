@@ -13,6 +13,8 @@
 - **bedrock.dev 官方 schema**:`relative_to:{rotation:"entity"}` = 旋转相对实体而非父骨
 - **bedrock-samples v1.21.80.3**:全部原版实体资产(唯一真值)
 
+> **新动物总入口:Docs/creature-intake-spec.md(双入口分流:官方已有→本文件§三;自建 bbmodel→Docs/blockbench-import-spec.md)**
+
 ## 一、机制层(引擎必须原生支持的语义 —— 已实现)
 
 | # | 语义 | 实现 | 证据/事故 |

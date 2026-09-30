@@ -1,6 +1,6 @@
 # Blockbench (bbmodel) → VoxelCraft 导入规范
 
-> 适用:用户自建物种(如 goose)。vanilla 生物一律走 bedrock-samples 固定 tag 移植流程,不经本规范。
+> 适用:用户自建物种(如 goose)。**分流判定先走总入口 Docs/creature-intake-spec.md**:bedrock-samples v1.21.80.3 已有的物种一律走官方移植(SPEC.md §三),不经本规范。
 > 依据:goose 全链路踩坑实录(M28b,2026-09-30)。每条规则背后都是一次实际返工。
 
 ## 0. 总览
