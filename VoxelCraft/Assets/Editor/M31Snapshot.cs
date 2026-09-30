@@ -16,7 +16,7 @@ namespace VoxelCraft.Editor
             var sim = new WorldSim(1337);
             var atlas = Art.TextureFactory.Build();
             var rects = new Rect[59];
-            for (int i = 0; i < 49; i++) { rects[i] = atlas.TileRect((TileId)i); }
+            for (int i = 0; i < rects.Length; i++) { rects[i] = atlas.TileRect((TileId)i); }
             sim.tileRects = rects;
 
             // find a furnished cottage anchor (same gates as the generator)
@@ -155,7 +155,65 @@ namespace VoxelCraft.Editor
             cam.transform.LookAt(new Vector3(anchor.x + 5, baseY + 1.4f, anchor.y + 1.0f));
             Render(cam, "m31_door.jpg", 1f);
             Debug.Log("[M31] shot6 door closeup saved");
-            Debug.Log("[M31] shot4 furnace closeup saved");
+
+            // Shot 7: house5 (mmmm obj_house5 /2) - anchor gates (flat>=W/4 above
+            // sea) find no valid spot for a 33-wide footprint on this terrain, so
+            // verify the pipeline on a built platform at a known-flat area instead.
+            {
+                var h5 = Vox.StructureRegistry.Load("house5");
+                int px = 60, pz = -80; // near cottage area, terrain ~y32 flat-ish
+                int top = 0;
+                {
+                    var remP = new List<Chunk>();
+                    sim.dataRadius = 6; sim.meshRadius = 6;
+                    int pcx = VoxelMath.ChunkCoord(px + 20), pcz = VoxelMath.ChunkCoord(pz + 20);
+                    sim.Step(pcx, pcz, 100000f, 100000f, remP, null);
+                    foreach (var cP in remP) attach(cP);
+                    int mn = int.MaxValue, mx = int.MinValue;
+                    for (int x = 0; x < 44; x += 2)
+                        for (int z = 0; z < 44; z += 2)
+                        {
+                            int g = sim.generator.HeightAt(px + x, pz + z);
+                            mn = Mathf.Min(mn, g); mx = Mathf.Max(mx, g);
+                        }
+                    int platBaseY = mx;
+                    var aff = new List<Chunk>();
+                    for (int x = -2; x < 46; x++)
+                        for (int z = -2; z < 46; z++)
+                        {
+                            // fill from the REAL terrain column top up to platform base
+                            int colTop = sim.SurfaceHeight(px + x, pz + z, true);
+                            for (int y = colTop; y <= platBaseY; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Grass, aff);
+                            for (int y = platBaseY + 1; y <= platBaseY + h5.Height + 2; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Air, aff);
+                        }
+                    for (int y = 0; y < h5.Height; y++)
+                        for (int z = 0; z < h5.Depth; z++)
+                            for (int x = 0; x < h5.Width; x++)
+                            {
+                                var t = h5.blocks[x, y, z];
+                                if (t != BlockType.Air) sim.SetBlock(px + x, platBaseY + 1 + y, pz + z, t, aff);
+                            }
+                    sim.dataRadius = 6; sim.meshRadius = 6;
+                    var rem2 = new List<Chunk>();
+                    sim.Step(pcx, pcz, 100000f, 100000f, rem2, null);
+                    foreach (var c2 in rem2) attach(c2);
+                    top = platBaseY;
+                }
+                // house body is x[10..21] y[8..31] z[0..14]: a tall narrow slab.
+                // Stand off its left face, 3/4 angle, aim mid-body.
+                Vector3 c5 = new Vector3(px + 16, top + 14, pz + 7);
+                Vector3[] dirs = {
+                    new Vector3( 26,  4,   0), new Vector3(-26,  4,   0),
+                    new Vector3(  0,  4,  26), new Vector3(  0,  4, -26) };
+                string[] names = { "N", "S", "E", "W" };
+                for (int d = 0; d < 4; d++)
+                {
+                    cam.transform.position = c5 + dirs[d];
+                    cam.transform.LookAt(c5);
+                    Render(cam, $"m31_house5_{names[d]}.jpg", 1f);
+                }
+                Debug.Log($"[M31] shot7 house5 on platform at ({px},{pz}) base={top}");
+            }
 
             Debug.Log("M31SNAPSHOT RESULT: PASS");
         }

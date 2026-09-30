@@ -172,7 +172,7 @@ namespace VoxelCraft.Gen
         }
 
         /// <summary>Structure names stamped during world gen (Resources/VoxStructures/*.bytes).</summary>
-        public static readonly string[] StructureSet = { "cottage" };
+        public static readonly string[] StructureSet = { "cottage", "house5" };
 
         /// <summary>
         /// Stamps .vox structures near chunk borders deterministically: anchors come
@@ -212,7 +212,10 @@ namespace VoxelCraft.Gen
                             if (h < minH) { minH = h; }
                         }
                     }
-                    if (maxH - minH > 6)
+                    // Tolerance scales with footprint: small cottages get 6, a
+                    // 32-wide house would never find flat-enough ground at 6.
+                    int tol = Mathf.Max(6, vox.Width / 4);
+                    if (maxH - minH > tol)
                     {
                         continue;
                     }
@@ -261,6 +264,9 @@ namespace VoxelCraft.Gen
 
                     // M31 furniture pass: door in the doorway, torches on the front
                     // wall, a chest, a bed, and a fence patch by the entrance.
+                    // Offsets mirror cottage.bytes; other structures (house5...)
+                    // get no furniture pass in this trial.
+                    if (name != "cottage") { continue; }
                     int fx = anchor.x, fz = anchor.y, fy = baseY;
                     // cottage layout: doorway at (x=4..6, z=0), windows z=3..5,
                     // interior floor y=1. All offsets mirror cottage.bytes.
