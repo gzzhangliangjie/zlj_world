@@ -7,13 +7,14 @@
 ## 方块贴图 resource_pack/textures/blocks/
 - 床: bed_feet_end / bed_feet_side / bed_feet_top / bed_head_end / bed_head_side / bed_head_top .png ✅已用
 - 熔炉: furnace_front_off / furnace_front_on / furnace_side / furnace_top .png ✅已用
+- 门: door_wood_lower / door_wood_upper .png ✅已用（其余材质 spruce/birch/jungle/acacia/dark_oak/iron 同命名式）
 - 高炉: blast_furnace_front_off / blast_furnace_front_on / blast_furnace_side / blast_furnace_top .png
 - 门(每材质 lower/upper 一对): door_wood / door_spruce / door_birch / door_jungle / door_acacia / door_dark_oak / door_iron .png ✅door_wood 本轮使用
 - bedrock.png
 - （其余 300+ 常规方块贴图按名字直接拼路径即可，如 stone.png、cobblestone.png、planks_oak.png——不用再列目录）
 
 ## 实体贴图 resource_pack/textures/entity/
-- 箱子: chest/normal.png（64×64 图集，含 latch 可定位正面）、chest/double_normal.png、chest/ender.png、chest/trapped.png ✅normal 本轮使用
+- 箱子: chest/normal.png ✅已用（64×64 图集；**已验证 UV 布局**：盖沿 lid@texOffs(0,0) 14×5、箱体 base@texOffs(0,19) 14×10；正面=盖(14,14)+体(14,33)竖拼中央锁扣、侧面=(0,14)+(0,33)、顶=(14,0) 14×14。成品 16×16 tile 缓存在 scratch/vanilla_blocks/chest_{front,side,top}_v.png）、chest/double_normal.png、chest/ender.png、chest/trapped.png
 - 生物: chicken.png / cow.png / fox.png / goat.png / mooshroom.png / pig.png / sheep.png / sheep_fur.png / wolf.png（已缓存在 _refs/vanilla/textures/）
 
 ## 实体几何 resource_pack/models/entity/
