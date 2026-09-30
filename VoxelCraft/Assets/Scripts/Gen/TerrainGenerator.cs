@@ -258,6 +258,37 @@ namespace VoxelCraft.Gen
                             }
                         }
                     }
+
+                    // M31 furniture pass: door in the doorway, torches on the front
+                    // wall, a chest, a bed, and a fence patch by the entrance.
+                    int fx = anchor.x, fz = anchor.y, fy = baseY;
+                    // cottage layout: doorway at (x=4..6, z=0), windows z=3..5,
+                    // interior floor y=1. All offsets mirror cottage.bytes.
+                    // door (lower + upper) at x=5, z=0
+                    TrySet(chunk, fx + 5, fy + 1, fz + 0, BlockType.DoorClosed, overwrite: true);
+                    TrySet(chunk, fx + 5, fy + 2, fz + 0, BlockType.DoorClosed, overwrite: true);
+                    // torches: two standing on the lip in front of the door (z=-1,
+                    // OUT of the wall so they no longer punch holes in it), one on
+                    // the interior floor next to the back wall
+                    TrySet(chunk, fx + 2, fy + 0, fz - 1, BlockType.Torch, overwrite: false);
+                    TrySet(chunk, fx + 8, fy + 0, fz - 1, BlockType.Torch, overwrite: false);
+                    TrySet(chunk, fx + 5, fy + 1, fz + 6, BlockType.Torch, overwrite: false);
+                    // chest against the back wall
+                    TrySet(chunk, fx + 2, fy + 1, fz + 6, BlockType.Chest, overwrite: true);
+                    // furnace beside the chest, facing the doorway (-Z)
+                    TrySet(chunk, fx + 1, fy + 1, fz + 6, BlockType.Furnace, overwrite: true);
+                    // bed in the back-right corner (foot toward the wall opening)
+                    TrySet(chunk, fx + 8, fy + 1, fz + 6, BlockType.BedHead, overwrite: true);
+                    TrySet(chunk, fx + 8, fy + 1, fz + 5, BlockType.BedFoot, overwrite: true);
+                    // fence pen in front of the house (3x3 with a gap at the door path)
+                    for (int pz = -3; pz <= -1; pz++)
+                    {
+                        for (int px = 3; px <= 7; px++)
+                        {
+                            if (px == 5 && pz == -3) { continue; } // gate gap
+                            TrySet(chunk, fx + px, fy + 1, fz + pz, BlockType.Fence, overwrite: false);
+                        }
+                    }
                 }
             }
         }

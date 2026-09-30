@@ -60,6 +60,14 @@ namespace VoxelCraft.World
                         MeshData target = isWater ? water : solid;
                         int wx = baseX + x;
                         int wz = baseZ + z;
+
+                        // M31: partial blocks (torch/door/chest/bed/fence) emit custom geometry.
+                        if (!def.fullCube && !isWater)
+                        {
+                            PartialShapes.Emit(block, x, y, z, wx, wz, sim, tileRects, target);
+                            continue;
+                        }
+
                         bool lowerWaterTop = isWater && sim.GetBlock(wx, y + 1, wz) != BlockType.Water;
 
                         for (int f = 0; f < 6; f++)

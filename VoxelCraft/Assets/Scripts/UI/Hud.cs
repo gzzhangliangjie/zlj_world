@@ -126,7 +126,11 @@ namespace VoxelCraft.UI
             GUI.Label(new Rect(Screen.width - 150f, Screen.height - 22f, 140f, 18f),
                 "build " + Core.Game.BuildId, labelStyle);
 
-            if (bagOpen)
+            if (interaction != null && interaction.openChest.HasValue)
+            {
+                DrawChestPanel();
+            }
+            else if (bagOpen)
             {
                 DrawToolBag();
             }
@@ -348,6 +352,53 @@ namespace VoxelCraft.UI
                 GUI.Label(new Rect(x + 32f, row + 1f, 128f, 18f),
                     BlockDatabase.Get(kv.Key).name + " x" + kv.Value, labelStyle);
                 row += 24f;
+            }
+        }
+
+        private void DrawChestPanel()
+        {
+            var chestPos = interaction.openChest.Value;
+            var contents = Items.Furniture.ChestContents(chestPos);
+            if (contents == null)
+            {
+                interaction.openChest = null;
+                return;
+            }
+            float w = 320f, h = 150f;
+            float x0 = (Screen.width - w) * 0.5f, y0 = (Screen.height - h) * 0.5f;
+            GUI.Box(new Rect(x0, y0, w, h), "Chest");
+            // 9 slots, 3x3
+            for (int i = 0; i < Items.Furniture.ChestSlots; i++)
+            {
+                int r = i / 3, c = i % 3;
+                var rect = new Rect(x0 + 16f + c * 96f, y0 + 30f + r * 34f, 92f, 30f);
+                bool has = i < contents.Count;
+                GUI.Label(rect, has ? BlockDatabase.Get(contents[i]).name : "-");
+                if (has && GUI.Button(rect, GUIContent.none))
+                {
+                    if (Items.Furniture.ChestTake(chestPos, out var item))
+                    {
+                        Inventory.Add(item);
+                    }
+                }
+            }
+            // deposit the selected hotbar block
+            if (GUI.Button(new Rect(x0 + 16f, y0 + h - 36f, 140f, 26f), "Store [selected]"))
+            {
+                var sel = interaction.SelectedBlock;
+                if (Inventory.TryConsume(sel))
+                {
+                    if (!Items.Furniture.ChestAdd(chestPos, sel))
+                    {
+                        Inventory.Add(sel); // chest full: refund
+                    }
+                }
+            }
+            if (GUI.Button(new Rect(x0 + w - 96f, y0 + h - 36f, 80f, 26f), "Close") ||
+                Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+            {
+                interaction.openChest = null;
+                Cursor.lockState = CursorLockMode.Locked;
             }
         }
 

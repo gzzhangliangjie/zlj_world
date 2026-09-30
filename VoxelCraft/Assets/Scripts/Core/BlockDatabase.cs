@@ -41,6 +41,19 @@ namespace VoxelCraft.Core
         WoolBlue = 33,
         WoolGreen = 34,
         WoolBlack = 35,
+        Torch = 36,
+        DoorTile = 37,
+        DoorTileTop = 38,
+        ChestSide = 39,
+        ChestTop = 40,
+        ChestFront = 41,
+        BedHeadTop = 42,
+        BedFootTop = 43,
+        BedSide = 44,
+        FenceLink = 45,
+        FurnaceSide = 46,
+        FurnaceFront = 47,
+        FurnaceLit = 48,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>
@@ -54,6 +67,8 @@ namespace VoxelCraft.Core
             public bool liquid;        // water-like: non-solid, swimmable
             public bool placeable;     // allowed on the hotbar
             public bool unbreakable;   // cannot be destroyed by the player
+            public bool fullCube;      // M31: false = custom partial geometry
+            public bool emissive;      // M31: vertex-color glow bit (torch)
             public TileId top;
             public TileId side;
             public TileId bottom;
@@ -76,7 +91,7 @@ namespace VoxelCraft.Core
 
         static BlockDatabase()
         {
-            defs = new BlockDef[35];
+            defs = new BlockDef[43]; // BlockType 0..42 (Furnace)
 
             defs[(int)BlockType.Air] = new BlockDef
             {
@@ -280,10 +295,68 @@ namespace VoxelCraft.Core
                 defs[(int)type] = new BlockDef
                 {
                     name = label, opaque = true, solid = true, liquid = false,
-                    placeable = true, unbreakable = false,
+                    placeable = true, unbreakable = false, fullCube = true,
                     top = tile, side = tile, bottom = tile, soundGroup = "grass",
                 };
             }
+
+            // ---- M31 furniture ----
+            // Backfill legacy defs (written before fullCube existed) to full cubes.
+            for (int i = 0; i < defs.Length; i++)
+            {
+                if (defs[i].name == null) { continue; }
+                defs[i].fullCube = true;
+            }
+
+            defs[(int)BlockType.Torch] = new BlockDef
+            {
+                name = "Torch", opaque = false, solid = false, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false, emissive = true,
+                top = TileId.Torch, side = TileId.Torch, bottom = TileId.Torch, soundGroup = "wood",
+            };
+            defs[(int)BlockType.DoorClosed] = new BlockDef
+            {
+                name = "Door", opaque = false, solid = true, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.DoorTileTop, side = TileId.DoorTile, bottom = TileId.DoorTile, soundGroup = "wood",
+            };
+            defs[(int)BlockType.DoorOpen] = new BlockDef
+            {
+                name = "Door (open)", opaque = false, solid = false, liquid = false,
+                placeable = false, unbreakable = false, fullCube = false,
+                top = TileId.DoorTileTop, side = TileId.DoorTile, bottom = TileId.DoorTile, soundGroup = "wood",
+            };
+            defs[(int)BlockType.Chest] = new BlockDef
+            {
+                name = "Chest", opaque = false, solid = true, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.ChestTop, side = TileId.ChestSide, bottom = TileId.ChestTop, soundGroup = "wood",
+            };
+            defs[(int)BlockType.BedFoot] = new BlockDef
+            {
+                name = "Bed", opaque = false, solid = true, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.BedFootTop, side = TileId.BedSide, bottom = TileId.Plank, soundGroup = "grass",
+            };
+            defs[(int)BlockType.BedHead] = new BlockDef
+{
+                name = "Bed (head)", opaque = false, solid = true, liquid = false,
+                placeable = false, unbreakable = false, fullCube = false,
+                top = TileId.BedHeadTop, side = TileId.BedSide, bottom = TileId.Plank, soundGroup = "grass",
+            };
+            defs[(int)BlockType.Fence] = new BlockDef
+            {
+                name = "Fence", opaque = false, solid = true, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.LogSide, side = TileId.LogSide, bottom = TileId.LogSide, soundGroup = "wood",
+            };
+            defs[(int)BlockType.Furnace] = new BlockDef
+            {
+                name = "Furnace", opaque = false, solid = true, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.FurnaceSide, side = TileId.FurnaceSide, bottom = TileId.FurnaceSide,
+                soundGroup = "stone",
+            };
         }
     }
 }

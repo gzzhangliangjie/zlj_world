@@ -34,7 +34,7 @@ namespace VoxelCraft.Editor
                     atlas.atlas.width == TextureFactory.AtlasCols * TextureFactory.TileSize &&
                     atlas.atlas.height == TextureFactory.AtlasRows * TextureFactory.TileSize,
                     $"{atlas.atlas.width}x{atlas.atlas.height}");
-                Eval("m1.icons", atlas.icons.Count == 30, $"icon count {atlas.icons.Count}/30");
+                Eval("m1.icons", atlas.icons.Count == 38, $"icon count {atlas.icons.Count}/30");
 
                 // Every non-air block must have a name (validates the def table size).
                 bool defsOk = true;
@@ -55,7 +55,7 @@ namespace VoxelCraft.Editor
                 //  glass / leaves / water do not false-fail).
                 bool tilesAlive = true;
                 string deadTile = "";
-                for (int tile = 0; tile < 36 && tilesAlive; tile++)
+                for (int tile = 0; tile < 46 && tilesAlive; tile++)
                 {
                     var rect = atlas.TileRect((TileId)tile);
                     bool anyOpaque = false;
@@ -162,8 +162,8 @@ namespace VoxelCraft.Editor
                 $"minH={minH} maxH={maxH} bounds=[1,{TerrainGenerator.MaxTerrainHeight}]");
 
             // ----- M3: meshing + streaming -----
-            var rects = new Rect[36];
-            for (int i = 0; i < 36; i++)
+            var rects = new Rect[49];
+            for (int i = 0; i < 48; i++)
             {
                 rects[i] = atlas.TileRect((TileId)i);
             }
@@ -379,7 +379,7 @@ namespace VoxelCraft.Editor
 
             var biGo = new GameObject("BiTest");
             var bi = biGo.AddComponent<BlockInteraction>();
-            bool pagesOk = bi.hotbarPages.Length == 3 && bi.hotbar.Length == 9;
+            bool pagesOk = bi.hotbarPages.Length == 4 && bi.hotbar.Length == 9;
             for (int p = 0; p < bi.hotbarPages.Length && pagesOk; p++)
             {
                 for (int s = 0; s < bi.hotbarPages[p].Length; s++)
@@ -935,6 +935,111 @@ namespace VoxelCraft.Editor
                 bool restored = simBt.GetBlock(anchor.x, anchor.y, anchor.z) == changes[anchor];
                 Eval("m30.build_edit_undo", filled && restored,
                     $"18-block fill applied={filled}, undo restored={restored}");
+                // ---- M31 furniture ----
+                // defs sanity: partial blocks flagged non-full, torch emissive
+                var torchDef = BlockDatabase.Get(BlockType.Torch);
+                var furnaceDef31 = BlockDatabase.Get(BlockType.Furnace);
+                Eval("m31.furnace_def", !furnaceDef31.fullCube && furnaceDef31.solid, "furnace partial+solid");
+                Eval("m31.defs", !torchDef.fullCube && torchDef.emissive &&
+                    !BlockDatabase.Get(BlockType.DoorClosed).fullCube &&
+                    !BlockDatabase.Get(BlockType.Chest).fullCube &&
+                    !BlockDatabase.Get(BlockType.BedFoot).fullCube &&
+                    !BlockDatabase.Get(BlockType.Fence).fullCube,
+                    "partial-block flags set");
+
+                // mesher: torch emits geometry with glow verts; door/chest/bed/fence emit
+                var rects31 = new Rect[49];
+                for (int i = 0; i < 48; i++) { rects31[i] = atlas.TileRect((TileId)i); }
+                var sim31 = new WorldSim(1337) { tileRects = rects31, dataRadius = 1, meshRadius = 0, unloadRadius = 2 };
+                var rem31 = new List<Chunk>();
+                sim31.Step(0, 0, 5000f, 5000f, rem31, null);
+                int groundY31 = sim31.generator.HeightAt(4, 4);
+                var solid31 = new MeshData();
+                var water31 = new MeshData();
+                int glowVerts = 0, torchQuads = 0, doorQuads = 0, chestQuads = 0, bedQuads = 0, fenceQuads = 0;
+                var types31 = new[] { BlockType.Torch, BlockType.DoorClosed, BlockType.Chest, BlockType.BedFoot, BlockType.Fence };
+                var pos31 = new Vector3Int(4, groundY31 + 1, 4);
+                for (int k = 0; k < types31.Length; k++)
+                {
+                    solid31.Clear(); water31.Clear();
+                    var before31 = solid31.Vertices.Count;
+                    World.PartialShapes.Emit(types31[k], pos31.x, pos31.y, pos31.z, pos31.x, pos31.z, sim31, rects31, solid31);
+                    int added = (solid31.Vertices.Count - before31) / 4;
+                    if (types31[k] == BlockType.Torch) { glowVerts = CountGlowVerts(solid31); torchQuads = added; }
+                    else if (types31[k] == BlockType.DoorClosed) { doorQuads = added; }
+                    else if (types31[k] == BlockType.Chest) { chestQuads = added; }
+                    else if (types31[k] == BlockType.BedFoot) { bedQuads = added; }
+                    else if (types31[k] == BlockType.Fence) { fenceQuads = added; }
+                }
+                Eval("m31.shapes", torchQuads > 10 && doorQuads >= 6 && chestQuads >= 10 && bedQuads >= 6 && fenceQuads >= 6,
+                    $"quads torch={torchQuads} door={doorQuads} chest={chestQuads} bed={bedQuads} fence={fenceQuads}");
+                Eval("m31.glow_bit", glowVerts >= 4, "torch emits fullbright vertices");
+
+                // furniture registry round-trip
+                Items.Furniture.Reset();
+                var doorPos = new Vector3Int(10, 20, 10);
+                Items.Furniture.RegisterDoor(doorPos, 0);
+                Items.Furniture.ToggleDoor(doorPos);
+                bool doorOpenOk = Items.Furniture.IsDoorOpen(doorPos);
+                Items.Furniture.ToggleDoor(doorPos);
+                bool doorClosedOk = !Items.Furniture.IsDoorOpen(doorPos);
+                var chestPos31 = new Vector3Int(30, 20, 30);
+                Items.Furniture.RegisterChest(chestPos31);
+                bool chestAddOk = Items.Furniture.ChestAdd(chestPos31, BlockType.Plank) &&
+                                  Items.Furniture.ChestAdd(chestPos31, BlockType.Glass);
+                bool chestTakeOk = Items.Furniture.ChestTake(chestPos31, out var taken) && taken == BlockType.Glass;
+                var bedPos31 = new Vector3Int(50, 20, 50);
+                Items.Furniture.SetSpawnBed(bedPos31);
+                bool bedOk = Items.Furniture.IsSpawnBed(bedPos31) && Items.Furniture.spawnBedHead == bedPos31;
+                Eval("m31.registry", doorOpenOk && doorClosedOk && chestAddOk && chestTakeOk && bedOk,
+                    $"door open/closed={doorOpenOk}/{doorClosedOk} chest={chestAddOk}/{chestTakeOk} bed={bedOk}");
+
+                // furnace: smelt recipe + lit registry + lit-face quads
+                bool smeltOk = Items.Furniture.TryGetSmelt(BlockType.Sand, out var smelted) && smelted == BlockType.Glass;
+                bool smeltDeny = !Items.Furniture.TryGetSmelt(BlockType.Dirt, out _);
+                var furnPos = new Vector3Int(pos31.x, pos31.y, pos31.z);
+                Items.Furniture.SetFurnaceLit(furnPos, true);
+                bool furnLit = Items.Furniture.IsFurnaceLit(furnPos);
+                solid31.Clear();
+                var furnBefore = solid31.Vertices.Count;
+                World.PartialShapes.Emit(BlockType.Furnace, pos31.x, pos31.y, pos31.z, pos31.x, pos31.z, sim31, rects31, solid31);
+                int furnQuads = (solid31.Vertices.Count - furnBefore) / 4;
+                int furnGlow = CountGlowVerts(solid31);
+                Items.Furniture.SetFurnaceLit(furnPos, false);
+                bool furnUnlit = !Items.Furniture.IsFurnaceLit(furnPos);
+                Eval("m31.furnace", smeltOk && smeltDeny && furnLit && furnQuads >= 7 && furnGlow >= 4 && furnUnlit,
+                    $"smelt={smeltOk} deny={smeltDeny} lit={furnLit} quads={furnQuads} glow={furnGlow} unlit={furnUnlit}");
+
+                // cottage furniture: regenerated chunk contains the full set
+                var tg31 = new Gen.TerrainGenerator(1337);
+                int found31 = 0;
+                bool doorInCottage = false, torchInCottage = false, chestInCottage = false, bedInCottage = false, fenceInCottage = false, furnaceInCottage = false;
+                for (int cz = -8; cz <= 8 && found31 < 4; cz++)
+                {
+                    for (int cx = -8; cx <= 8; cx++)
+                    {
+                        var c31 = new Chunk(cx, cz);
+                        tg31.Generate(c31);
+                        for (int bidx = 0; bidx < c31.blocks.Length; bidx++)
+                        {
+                            var bt = (BlockType)c31.blocks[bidx];
+                            if (bt == BlockType.DoorClosed) doorInCottage = true;
+                            else if (bt == BlockType.Torch) torchInCottage = true;
+                            else if (bt == BlockType.Chest) chestInCottage = true;
+                            else if (bt == BlockType.Furnace) furnaceInCottage = true;
+                            else if (bt == BlockType.BedHead || bt == BlockType.BedFoot) bedInCottage = true;
+                            else if (bt == BlockType.Fence) fenceInCottage = true;
+                        }
+                        if (doorInCottage && torchInCottage && chestInCottage && bedInCottage && fenceInCottage && furnaceInCottage)
+                        {
+                            found31 = 4;
+                            break;
+                        }
+                    }
+                }
+                Eval("m31.cottage_furnished", doorInCottage && torchInCottage && chestInCottage && bedInCottage && fenceInCottage,
+                    $"cottage contains door={doorInCottage} torch={torchInCottage} chest={chestInCottage} bed={bedInCottage} fence={fenceInCottage}");
+
             }
             catch (System.Exception ex)
             {
@@ -1049,6 +1154,16 @@ namespace VoxelCraft.Editor
             Debug.Log(ok
                 ? $"SELFTEST PASS {name} : {detail}"
                 : $"SELFTEST FAIL {name} : {detail}");
+        }
+
+        private static int CountGlowVerts(MeshData md)
+        {
+            int n = 0;
+            for (int i = 0; i < md.Colors.Count; i++)
+            {
+                if (md.Colors[i].a == 250) { n++; }
+            }
+            return n;
         }
     }
 }

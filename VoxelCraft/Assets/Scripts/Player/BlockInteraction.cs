@@ -35,6 +35,11 @@ namespace VoxelCraft.Player
                 BlockType.Glowstone, BlockType.Path, BlockType.WoolWhite, BlockType.WoolRed, BlockType.WoolYellow,
                 BlockType.WoolBlue, BlockType.WoolGreen, BlockType.WoolBlack, BlockType.DiamondOre,
             },
+            new[]
+            {
+                BlockType.Torch, BlockType.DoorClosed, BlockType.Chest, BlockType.BedFoot, BlockType.Fence,
+                BlockType.Furnace, BlockType.Glass, BlockType.Plank, BlockType.Path,
+            },
         };
         public int activePage;
         public int selectedIndex;
@@ -210,6 +215,7 @@ namespace VoxelCraft.Player
                             Inventory.AddSeeds(1);
                         }
                         world.SetBlockAndApply(hit, BlockType.Air);
+                        BreakFurnitureCleanup(target, hit);
                         nextBreakTime = Time.time + interval;
                     }
                     else
@@ -226,10 +232,27 @@ namespace VoxelCraft.Player
             {
                 OnUse?.Invoke();
                 var current = world.sim.GetBlock(place.x, place.y, place.z);
-                if ((current == BlockType.Air || current == BlockType.Water) && !OverlapsPlayer(place))
+
+                // M31 furniture use: interact with the block being looked at.
+                if (UseFurniture(hit))
                 {
-                    if (Inventory.TryConsume(SelectedBlock))
+                }
+                else if ((current == BlockType.Air || current == BlockType.Water) && !OverlapsPlayer(place))
+                {
+                    if (SelectedBlock == BlockType.DoorClosed)
                     {
+                        PlaceDoor(place);
+                    }
+                    else if (SelectedBlock == BlockType.BedFoot)
+                    {
+                        PlaceBed(place);
+                    }
+                    else if (Inventory.TryConsume(SelectedBlock))
+                    {
+                        if (SelectedBlock == BlockType.Chest)
+                        {
+                            Items.Furniture.RegisterChest(place);
+                        }
                         world.SetBlockAndApply(place, SelectedBlock);
                         OnPlace?.Invoke(SelectedBlock);
                     }
@@ -358,6 +381,201 @@ namespace VoxelCraft.Player
                 line.SetPosition(0, center + CornerOffsets[Edges[e, 0]]);
                 line.SetPosition(1, center + CornerOffsets[Edges[e, 1]]);
             }
+        }
+
+        // ---- M31 furniture ----
+
+        /// <summary>Right-click on a door/chest/bed. Returns true when handled.</summary>
+        private bool UseFurniture(Vector3Int hit)
+        {
+            var t = world.sim.GetBlock(hit.x, hit.y, hit.z);
+            if (t == BlockType.DoorClosed || t == BlockType.DoorOpen)
+            {
+                // normalise to the lower block
+                var lower = hit;
+                var below = world.sim.GetBlock(hit.x, hit.y - 1, hit.z);
+                if (below == BlockType.DoorClosed || below == BlockType.DoorOpen)
+                {
+                    lower = new Vector3Int(hit.x, hit.y - 1, hit.z);
+                }
+                if (!Items.Furniture.IsDoorLower(lower))
+                {
+                    Items.Furniture.RegisterDoor(lower, InferDoorFacing(lower));
+                }
+                bool open = !Items.Furniture.IsDoorOpen(lower);
+                Items.Furniture.ToggleDoor(lower);
+                var newType = open ? BlockType.DoorOpen : BlockType.DoorClosed;
+                world.SetBlockAndApply(lower, newType);
+                world.SetBlockAndApply(new Vector3Int(lower.x, lower.y + 1, lower.z), newType);
+                OnUse?.Invoke();
+                return true;
+            }
+            if (t == BlockType.Chest)
+            {
+                if (!Items.Furniture.HasChest(hit))
+                {
+                    Items.Furniture.RegisterChest(hit);
+                }
+                openChest = hit;
+                Cursor.lockState = CursorLockMode.None;
+                return true;
+            }
+            if (t == BlockType.BedHead || t == BlockType.BedFoot)
+            {
+                var head = t == BlockType.BedHead ? hit : BedHeadOf(hit);
+                Items.Furniture.SetSpawnBed(head);
+                ShowDeny("Spawn point set - you will respawn at your bed");
+                return true;
+            }
+            if (t == BlockType.Furnace)
+            {
+                // RMB with a smeltable selected: smelt it instantly (demo-grade
+                // smelting, no fuel timer) and light the firemouth.
+                var sel = SelectedBlock;
+                if (Items.Furniture.TryGetSmelt(sel, out var cooked))
+                {
+                    if (Inventory.TryConsume(sel))
+                    {
+                        Inventory.Add(cooked);
+                        Items.Furniture.SetFurnaceLit(hit, true);
+                        world.SetBlockAndApply(hit, BlockType.Furnace); // remesh: lit face
+                        ShowDeny("Smelted " + BlockDatabase.Get(cooked).name + " - firemouth lit");
+                        OnUse?.Invoke();
+                        return true;
+                    }
+                    ShowDeny("No " + BlockDatabase.Get(sel).name + " left to smelt");
+                    return true;
+                }
+                ShowDeny("Select Sand, Cobble or IronOre to smelt");
+                return true;
+            }
+            return false;
+        }
+
+        private Vector3Int BedHeadOf(Vector3Int foot)
+        {
+            // head = the adjacent bed half
+            foreach (var d in new[] { Vector3Int.right, Vector3Int.left, new Vector3Int(0, 0, 1), new Vector3Int(0, 0, -1) })
+            {
+                if (world.sim.GetBlock(foot.x + d.x, foot.y, foot.z + d.z) == BlockType.BedHead)
+                {
+                    return foot + d;
+                }
+            }
+            return foot;
+        }
+
+        private byte InferDoorFacing(Vector3Int lower)
+        {
+            bool solidX = BlockDatabase.IsSolid(world.sim.GetBlock(lower.x - 1, lower.y, lower.z)) ||
+                          BlockDatabase.IsSolid(world.sim.GetBlock(lower.x + 1, lower.y, lower.z));
+            return solidX ? (byte)0 : (byte)1;
+        }
+
+        private void PlaceDoor(Vector3Int lower)
+        {
+            // need two air blocks
+            bool twoAir = world.sim.GetBlock(lower.x, lower.y, lower.z) == BlockType.Air &&
+                          world.sim.GetBlock(lower.x, lower.y + 1, lower.z) == BlockType.Air;
+            bool grounded = BlockDatabase.IsSolid(world.sim.GetBlock(lower.x, lower.y - 1, lower.z));
+            if (!twoAir || !grounded)
+            {
+                ShowDeny("Doors need 2 blocks of space on solid ground");
+                return;
+            }
+            if (!Inventory.TryConsume(BlockType.DoorClosed))
+            {
+                ShowDeny("No Door left - break blocks to collect (G = creative)");
+                return;
+            }
+            Items.Furniture.RegisterDoor(lower, InferDoorFacing(lower));
+            world.SetBlockAndApply(lower, BlockType.DoorClosed);
+            world.SetBlockAndApply(new Vector3Int(lower.x, lower.y + 1, lower.z), BlockType.DoorClosed);
+            OnPlace?.Invoke(BlockType.DoorClosed);
+        }
+
+        private void PlaceBed(Vector3Int foot)
+        {
+            // foot placed at cursor, head extends away from the player
+            var away = viewCamera.transform.forward;
+            var dir = Mathf.Abs(away.x) > Mathf.Abs(away.z)
+                ? new Vector3Int(away.x > 0 ? 1 : -1, 0, 0)
+                : new Vector3Int(0, 0, away.z > 0 ? 1 : -1);
+            var head = foot + dir;
+            bool twoAir = world.sim.GetBlock(foot.x, foot.y, foot.z) == BlockType.Air &&
+                          world.sim.GetBlock(head.x, head.y, head.z) == BlockType.Air;
+            bool grounded = BlockDatabase.IsSolid(world.sim.GetBlock(foot.x, foot.y - 1, foot.z)) &&
+                            BlockDatabase.IsSolid(world.sim.GetBlock(head.x, head.y - 1, head.z));
+            if (!twoAir || !grounded)
+            {
+                ShowDeny("Beds need 2 blocks of space on solid ground");
+                return;
+            }
+            if (!Inventory.TryConsume(BlockType.BedFoot))
+            {
+                ShowDeny("No Bed left - break blocks to collect (G = creative)");
+                return;
+            }
+            world.SetBlockAndApply(foot, BlockType.BedFoot);
+            world.SetBlockAndApply(head, BlockType.BedHead);
+            OnPlace?.Invoke(BlockType.BedFoot);
+        }
+
+        /// <summary>Chest currently open in the UI (null = closed).</summary>
+        public Vector3Int? openChest;
+
+        private void BreakFurnitureCleanup(BlockType target, Vector3Int hit)
+        {
+            if (target == BlockType.DoorClosed || target == BlockType.DoorOpen)
+            {
+                var lower = world.sim.GetBlock(hit.x, hit.y - 1, hit.z) == BlockType.DoorClosed ||
+                            world.sim.GetBlock(hit.x, hit.y - 1, hit.z) == BlockType.DoorOpen
+                    ? new Vector3Int(hit.x, hit.y - 1, hit.z)
+                    : hit;
+                var upper = new Vector3Int(lower.x, lower.y + 1, lower.z);
+                Items.Furniture.UnregisterDoor(lower);
+                world.SetBlockAndApply(lower, BlockType.Air);
+                world.SetBlockAndApply(upper, BlockType.Air);
+            }
+            else if (target == BlockType.Chest)
+            {
+                // spill contents
+                var contents = Items.Furniture.ChestContents(hit);
+                if (contents != null)
+                {
+                    foreach (var item in contents)
+                    {
+                        Inventory.Add(item);
+                    }
+                }
+                Items.Furniture.UnregisterChest(hit);
+            }
+            else if (target == BlockType.BedFoot || target == BlockType.BedHead)
+            {
+                var other = target == BlockType.BedFoot ? BedHeadOf(hit) : BedFootOf(hit);
+                world.SetBlockAndApply(hit, BlockType.Air);
+                world.SetBlockAndApply(other, BlockType.Air);
+            }
+            else if (target == BlockType.Torch)
+            {
+                // torches drop themselves
+            }
+            else if (target == BlockType.Furnace)
+            {
+                Items.Furniture.UnregisterFurnace(hit);
+            }
+        }
+
+        private Vector3Int BedFootOf(Vector3Int head)
+        {
+            foreach (var d in new[] { Vector3Int.right, Vector3Int.left, new Vector3Int(0, 0, 1), new Vector3Int(0, 0, -1) })
+            {
+                if (world.sim.GetBlock(head.x + d.x, head.y, head.z + d.z) == BlockType.BedFoot)
+                {
+                    return head + d;
+                }
+            }
+            return head;
         }
     }
 }

@@ -38,5 +38,13 @@ namespace VoxelCraft.Core
         WoolBlue = 32,
         WoolGreen = 33,
         WoolBlack = 34,
+        Torch = 35,
+        DoorClosed = 36,
+        DoorOpen = 37,
+        Chest = 38,
+        BedFoot = 39,
+        BedHead = 40,
+        Fence = 41,
+        Furnace = 42,
     }
 }

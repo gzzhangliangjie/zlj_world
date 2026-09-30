@@ -149,6 +149,9 @@ namespace VoxelCraft.Items
                 case BlockType.Stone: return BlockType.Cobble;
                 case BlockType.Leaves: return BlockType.Air;
                 case BlockType.Ice: return BlockType.Air;
+                case BlockType.DoorOpen: return BlockType.DoorClosed;
+                case BlockType.DoorClosed: return BlockType.Air;   // lower half carries the drop
+                case BlockType.BedHead: return BlockType.Air;      // foot half carries the drop
                 default: return broken;
             }
         }

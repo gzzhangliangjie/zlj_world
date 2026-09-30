@@ -14,8 +14,8 @@ namespace VoxelCraft.Art
     public static class TextureFactory
     {
         public const int TileSize = 16;
-        public const int AtlasCols = 6;
-        public const int AtlasRows = 7;
+        public const int AtlasCols = 8;
+        public const int AtlasRows = 8;
 
         /// <summary>Canonical tile file names, parallel to the TileId enum.</summary>
         private static readonly string[] TileNames =
@@ -27,6 +27,9 @@ namespace VoxelCraft.Art
             "wheat0", "wheat1", "wheat2", "wheat3",
             "glowstone", "path", "wool_white", "wool_red", "wool_yellow",
             "wool_blue", "wool_green", "wool_black",
+            "torch", "door", "door_top", "chest_side", "chest_top",
+            "chest_front", "bed_head_top", "bed_foot_top", "bed_side", "fence_link",
+            "furnace_side", "furnace_front", "furnace_lit",
         };
 
         public sealed class AtlasResult
@@ -85,7 +88,7 @@ namespace VoxelCraft.Art
             result.white = MakeWhite();
 
             // Skip Wheat0..3 (no icons needed) but include all placeable blocks.
-            for (int t = 1; t < 35; t++)
+            for (int t = 1; t < 43; t++)
             {
                 if (t >= (int)BlockType.Wheat0 && t <= (int)BlockType.Wheat3)
                 {
@@ -238,6 +241,19 @@ namespace VoxelCraft.Art
                 case TileId.WoolBlue: Wool(px, rng, 53, 87, 178); break;
                 case TileId.WoolGreen: Wool(px, rng, 86, 128, 40); break;
                 case TileId.WoolBlack: Wool(px, rng, 32, 32, 38); break;
+                case TileId.Torch: TorchTile(px, rng); break;
+                case TileId.DoorTile: DoorTile(px, rng, false); break;
+                case TileId.DoorTileTop: DoorTile(px, rng, true); break;
+                case TileId.ChestSide: ChestTile(px, rng, "side"); break;
+                case TileId.ChestTop: ChestTile(px, rng, "top"); break;
+                case TileId.ChestFront: ChestTile(px, rng, "front"); break;
+                case TileId.BedHeadTop: BedTile(px, rng, true); break;
+                case TileId.BedFootTop: BedTile(px, rng, false); break;
+                case TileId.BedSide: BedSideTile(px, rng); break;
+                case TileId.FenceLink: FenceLinkTile(px, rng); break;
+                case TileId.FurnaceSide: FurnaceTile(px, rng, false, false); break;
+                case TileId.FurnaceFront: FurnaceTile(px, rng, true, false); break;
+                case TileId.FurnaceLit: FurnaceTile(px, rng, true, true); break;
             }
 
             return px;
@@ -518,6 +534,204 @@ namespace VoxelCraft.Art
         private static int Clamp(int v)
         {
             return v < 0 ? 0 : (v > 255 ? 255 : v);
+        }
+
+        // ---- M31 furniture tile painters ----
+
+        private static int Idx(int x, int y) { return y * TileSize + x; }
+
+        private static void Fill(Color32[] px, Color32 c)
+        {
+            for (int i = 0; i < px.Length; i++) { px[i] = c; }
+        }
+
+        private static void TorchTile(Color32[] px, System.Random rng)
+        {
+            // FULLY OPAQUE tile (no cutout): the torch geometry maps sub-rects of
+            // this tile; transparent texels anywhere on those rects got alpha-
+            // clipped and erased whole faces. Stick = full-height wood column,
+            // ember = bright head band at the top rows.
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    px[Idx(x, y)] = new Color32(104, 76, 46, 255); // stick base wood
+                }
+            }
+            // ember band rows 3..7 across the width
+            for (int y = 3; y <= 7; y++)
+            {
+                for (int x = 3; x <= 12; x++)
+                {
+                    bool core = x >= 6 && x <= 9 && y >= 4 && y <= 6;
+                    px[Idx(x, y)] = core ? new Color32(255, 231, 128, 255) : new Color32(228, 148, 56, 255);
+                }
+            }
+            for (int x = 5; x <= 10; x++) { px[Idx(x, 3)] = new Color32(255, 246, 180, 255); }
+        }
+
+        private static void DoorTile(Color32[] px, System.Random rng, bool top)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    int plank = x / 4;
+                    int shade = plank % 2 == 0 ? 0 : -14;
+                    Color32 c = new Color32((byte)(146 + shade), (byte)(114 + shade), (byte)(70 + shade), 255);
+                    if (x % 4 == 3) { c = new Color32(104, 78, 46, 255); }
+                    if (rng.Next(8) == 0) { c = new Color32((byte)(c.r - 10), (byte)(c.g - 8), (byte)(c.b - 6), 255); }
+                    px[Idx(x, y)] = c;
+                }
+            }
+            if (top)
+            {
+                for (int y = 3; y < 7; y++)
+                {
+                    for (int x = 4; x < 12; x++)
+                    {
+                        px[Idx(x, y)] = new Color32(58, 64, 74, 255);
+                    }
+                }
+                px[Idx(7, 3)] = new Color32(120, 130, 142, 255);
+                px[Idx(8, 4)] = new Color32(120, 130, 142, 255);
+            }
+            else
+            {
+                for (int x = 2; x < 14; x++)
+                {
+                    px[Idx(x, 4)] = new Color32(96, 72, 44, 255);
+                    px[Idx(x, 5)] = new Color32(96, 72, 44, 255);
+                }
+            }
+            for (int y = top ? 3 : 11; y < (top ? 6 : 14); y++)
+            {
+                px[Idx(1, y)] = new Color32(70, 70, 74, 255);
+            }
+        }
+
+        private static void ChestTile(Color32[] px, System.Random rng, string kind)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    Color32 c = new Color32(158, 116, 68, 255);
+                    if (y == 0 || y == 15 || x == 0 || x == 15) { c = new Color32(104, 74, 42, 255); }
+                    else if (rng.Next(6) == 0) { c = new Color32(146, 106, 62, 255); }
+                    px[Idx(x, y)] = c;
+                }
+            }
+            if (kind == "side" || kind == "top")
+            {
+                for (int x = 1; x < 15; x++)
+                {
+                    int bandY = kind == "top" ? 7 : 11;
+                    px[Idx(x, bandY)] = new Color32(88, 88, 92, 255);
+                    px[Idx(x, bandY + 1)] = new Color32(88, 88, 92, 255);
+                }
+            }
+            if (kind == "front")
+            {
+                for (int y = 5; y < 11; y++)
+                {
+                    px[Idx(7, y)] = new Color32(88, 88, 92, 255);
+                    px[Idx(8, y)] = new Color32(88, 88, 92, 255);
+                }
+                px[Idx(7, 7)] = new Color32(226, 176, 88, 255);
+                px[Idx(8, 7)] = new Color32(226, 176, 88, 255);
+            }
+        }
+
+        private static void BedTile(Color32[] px, System.Random rng, bool head)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    Color32 c = new Color32(168, 42, 40, 255);
+                    if (y < 3 || y > 12 || x < 2 || x > 13) { c = new Color32(126, 30, 28, 255); }
+                    px[Idx(x, y)] = c;
+                }
+            }
+            if (head)
+            {
+                for (int y = 4; y < 12; y++)
+                {
+                    for (int x = 3; x < 13; x++)
+                    {
+                        px[Idx(x, y)] = new Color32(236, 240, 242, 255);
+                    }
+                }
+                for (int x = 3; x < 13; x++) { px[Idx(x, 4)] = new Color32(214, 218, 222, 255); }
+            }
+            else
+            {
+                for (int x = 2; x < 14; x += 3)
+                {
+                    for (int y = 3; y < 13; y++)
+                    {
+                        px[Idx(x, y)] = new Color32(142, 34, 32, 255);
+                    }
+                }
+            }
+        }
+
+        private static void BedSideTile(Color32[] px, System.Random rng)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    Color32 c;
+                    if (y >= 10) { c = new Color32(110, 84, 52, 255); }
+                    else if (y >= 7) { c = new Color32(236, 240, 242, 255); }
+                    else { c = new Color32(168, 42, 40, 255); }
+                    px[Idx(x, y)] = c;
+                }
+            }
+            for (int x = 0; x < 16; x++) { px[Idx(x, 7)] = new Color32(214, 218, 222, 255); }
+        }
+
+        private static void FenceLinkTile(Color32[] px, System.Random rng)
+        {
+            Stripes(px, rng, 102, 81, 50, 18, true);
+        }
+
+        private static void FurnaceTile(Color32[] px, System.Random rng, bool front, bool lit)
+        {
+            // dark iron-stone body so it reads instantly against wood/plank;
+            // front carries a BIG black firemouth with an iron rim (glowing
+            // orange fire + fullbright glow bit when lit).
+            Speckle(px, rng, 96, 96, 100, 10);
+            // iron band across the top
+            for (int x = 0; x < 16; x++)
+            {
+                px[Idx(x, 13)] = new Color32(130, 130, 138, 255);
+                px[Idx(x, 14)] = new Color32(130, 130, 138, 255);
+            }
+            if (front)
+            {
+                // firemouth: wide black arch with bright iron rim
+                for (int y = 2; y <= 10; y++)
+                {
+                    for (int x = 2; x <= 13; x++)
+                    {
+                        bool rim = x == 2 || x == 13 || y == 2 || y == 10;
+                        px[Idx(x, y)] = rim
+                            ? new Color32(150, 150, 158, 255)
+                            : (lit ? new Color32(255, 150, 30, 255) : new Color32(18, 16, 16, 255));
+                    }
+                }
+                if (lit)
+                {
+                    for (int y = 4; y <= 8; y++)
+                        for (int x = 4; x <= 11; x++)
+                        {
+                            px[Idx(x, y)] = new Color32(255, 220, 120, 255);
+                        }
+                }
+            }
         }
     }
 }

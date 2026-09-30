@@ -51,7 +51,12 @@ Shader "Voxel/Blocks"
             {
                 fixed4 c = tex2D(_MainTex, i.uv) * i.color;
                 clip(c.a - 0.5);                       // cutout for glass frames etc.
-                c.rgb *= _VoxelDayBrightness;          // day/night dimming before fog
+                // M31 glow bit: vertex alpha 254/255 = fullbright (torches at night)
+                bool glow = abs(i.color.a - 250.0 / 255.0) < 0.004;
+                if (!glow)
+                {
+                    c.rgb *= _VoxelDayBrightness;      // day/night dimming before fog
+                }
                 c.rgb = lerp(c.rgb, _VoxelFogColor.rgb, i.fog);
                 return fixed4(c.rgb, 1.0);
             }
