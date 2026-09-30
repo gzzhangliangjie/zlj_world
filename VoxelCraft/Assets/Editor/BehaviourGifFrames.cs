@@ -94,6 +94,12 @@ namespace VoxelCraft.Editor
                 ("axolotl", null, false, "walk"),
                 ("croc", null, false, "walk"),
                 ("goose", null, false, "walk"),
+                // goose behaviour clips (Blockbench import M28): swim needs
+                // is_in_water=1 for the AC to pick it - the clip plays direct
+                // here (no AC), so plain playback shows the swim pose cycle.
+                ("goose", "animation.goose.flap_chase", false, "flap"),
+                ("goose", "animation.goose.attack", false, "attack"),
+                ("goose", "animation.goose.swim", false, "swim"),
                 // dolphin: vanilla move clip is life_time driven (tail beat
                 // 343.8 deg/s, fins 229.2) - animTime clock, no gait vars.
                 ("dolphin", null, false, "walk"),
