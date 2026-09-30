@@ -59,6 +59,11 @@ namespace VoxelCraft.Core
         BedHeadSide = 51,
         BedFeetSide = 52,
         FurnaceTop = 53,
+        DoorWoodLower = 54,
+        DoorWoodUpper = 55,
+        ChestFrontV = 56,
+        ChestSideV = 57,
+        ChestTopV = 58,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>

@@ -15,7 +15,7 @@ namespace VoxelCraft.Editor
         {
             var sim = new WorldSim(1337);
             var atlas = Art.TextureFactory.Build();
-            var rects = new Rect[54];
+            var rects = new Rect[59];
             for (int i = 0; i < 49; i++) { rects[i] = atlas.TileRect((TileId)i); }
             sim.tileRects = rects;
 
@@ -147,6 +147,14 @@ namespace VoxelCraft.Editor
             cam.transform.LookAt(new Vector3(anchor.x + 8.5f, baseY + 1.2f, anchor.y + 0.5f));
             Render(cam, "m31_bed.jpg", 1f);
             Debug.Log("[M31] shot5 bed closeup saved");
+
+            // Shot 6: door closeup - vanilla oak door texture (window + wood)
+            cam.backgroundColor = new Color(0.55f, 0.72f, 0.90f);
+            Shader.SetGlobalColor("_VoxelFogColor", new Color(0.55f, 0.72f, 0.90f));
+            cam.transform.position = new Vector3(anchor.x + 5, baseY + 2.2f, anchor.y - 7.5f);
+            cam.transform.LookAt(new Vector3(anchor.x + 5, baseY + 1.4f, anchor.y + 1.0f));
+            Render(cam, "m31_door.jpg", 1f);
+            Debug.Log("[M31] shot6 door closeup saved");
             Debug.Log("[M31] shot4 furnace closeup saved");
 
             Debug.Log("M31SNAPSHOT RESULT: PASS");

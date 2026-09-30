@@ -223,6 +223,14 @@ namespace VoxelCraft.World
             // base body 14/16 wide, 10/16 tall; lid 12/16 wide, 6/16 tall on top
             Box(target, x + m, y, z + m, x + 15 / 16f, y + 10 / 16f, z + 15 / 16f, tileRects, TileId.ChestSide, false);
             Box(target, x + m, y + 10 / 16f, z + m, x + 15 / 16f, y + 14 / 16f, z + 15 / 16f, tileRects, TileId.ChestTop, false);
+            // vanilla latch face: overlay the -Z side (toward the room) with the
+            // official front tile (lid seam + latch baked in), a hair in front of
+            // the body so it never z-fights. Winding as proven for the furnace front.
+            float zf = z + m - 0.01f;
+            Quad(target,
+                new Vector3(x + 15 / 16f, y, zf), new Vector3(x + m, y, zf),
+                new Vector3(x + m, y + 10 / 16f, zf), new Vector3(x + 15 / 16f, y + 10 / 16f, zf),
+                tileRects[(int)TileId.ChestFront], 0.80f, false);
         }
 
         // ---- bed: 16/16 x 9/16 tall slab; head half has the pillow top tile ----
