@@ -54,6 +54,11 @@ namespace VoxelCraft.Core
         FurnaceSide = 46,
         FurnaceFront = 47,
         FurnaceLit = 48,
+        BedFeetEnd = 49,
+        BedHeadEnd = 50,
+        BedHeadSide = 51,
+        BedFeetSide = 52,
+        FurnaceTop = 53,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>

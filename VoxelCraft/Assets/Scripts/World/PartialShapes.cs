@@ -72,21 +72,25 @@ namespace VoxelCraft.World
         // ---- torch: 2/16 stick + ember head, fullbright ----
         private static void Furnace(int x, int y, int z, int wx, int wz, WorldSim sim, Rect[] tileRects, MeshData target)
         {
-            // Chunky 14/16 stone body; the -Z face carries the firemouth tile
-            // (glowing, fullbright when lit). Faces the cottage doorway (-Z).
+            // Official furnace: full stone cube; the -Z face carries the
+            // vanilla front tile (mouth baked into the texture, lit version
+            // glows). Faces the cottage doorway (-Z).
             var lit = Items.Furniture.IsFurnaceLit(new Vector3Int(wx, y, wz));
             var front = lit ? tileRects[(int)TileId.FurnaceLit] : tileRects[(int)TileId.FurnaceFront];
-            // body: reuse the box helper (6 quads, opaque side tile)
-            Box(target, x + 1 / 16f, y, z + 1 / 16f, x + 15 / 16f, y + 14 / 16f, z + 15 / 16f,
-                tileRects, TileId.FurnaceSide, false, 1f);
-            // firemouth: quad on the -Z face, a hair in front of the body so it
-            // cannot z-fight, covering the lower middle of the face
-            float zF = z + 0.9f / 16f;
-            // winding: a→b→c must be CLOCKWISE seen from -Z (the doorway side),
-            // otherwise the mouth is a backface and invisible from inside.
+            var side = tileRects[(int)TileId.FurnaceSide];
+            var topT = tileRects[(int)TileId.FurnaceTop];
+            // +Y top / -Y bottom
+            Quad(target, new Vector3(x, y + 1, z), new Vector3(x + 1, y + 1, z), new Vector3(x + 1, y + 1, z + 1), new Vector3(x, y + 1, z + 1), topT, 1f, false);
+            Quad(target, new Vector3(x, y, z + 1), new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z), new Vector3(x, y, z), side, 0.55f, false);
+            // +X / -X sides
+            Quad(target, new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z), new Vector3(x + 1, y + 1, z), new Vector3(x + 1, y + 1, z + 1), side, 0.80f, false);
+            Quad(target, new Vector3(x, y, z), new Vector3(x, y, z + 1), new Vector3(x, y + 1, z + 1), new Vector3(x, y + 1, z), side, 0.80f, false);
+            // +Z back
+            Quad(target, new Vector3(x, y, z + 1), new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y + 1, z + 1), new Vector3(x, y + 1, z + 1), side, 0.70f, false);
+            // -Z FRONT toward doorway (winding as proven for torch)
             Quad(target,
-                new Vector3(x + 13 / 16f, y + 3f / 16f, zF), new Vector3(x + 3 / 16f, y + 3f / 16f, zF),
-                new Vector3(x + 3 / 16f, y + 11 / 16f, zF), new Vector3(x + 13 / 16f, y + 11 / 16f, zF),
+                new Vector3(x + 1, y, z), new Vector3(x, y, z),
+                new Vector3(x, y + 1, z), new Vector3(x + 1, y + 1, z),
                 front, 1f, lit);
         }
 
@@ -224,20 +228,26 @@ namespace VoxelCraft.World
         // ---- bed: 16/16 x 9/16 tall slab; head half has the pillow top tile ----
         private static void Bed(BlockType block, int x, int y, int z, int wx, int wz, WorldSim sim, Rect[] tileRects, MeshData target)
         {
+            // Official bed (bedrock-samples): 1x1 footprint, 9/16 tall blanket
+            // layer over a 3/16 leg frame; head/foot halves get their own
+            // per-face vanilla tiles. Cottage beds run along +X (foot, head).
+            bool head = block == BlockType.BedHead;
             float h = 9 / 16f;
-            float m = 0f;
-            TileId top = block == BlockType.BedHead ? TileId.BedHeadTop : TileId.BedFootTop;
-            TileId side = TileId.BedSide;
+            TileId top = head ? TileId.BedHeadTop : TileId.BedFootTop;
+            TileId side = head ? TileId.BedHeadSide : TileId.BedFeetSide;
+            TileId endF = head ? TileId.BedHeadEnd : TileId.BedFeetEnd;
             var rt = tileRects[(int)top];
             var rs = tileRects[(int)side];
+            var re = tileRects[(int)endF];
             var rb = tileRects[(int)TileId.Plank];
-            // top face
+            // top (blanket) face
             Quad(target, new Vector3(x, y + h, z + 1), new Vector3(x + 1, y + h, z + 1), new Vector3(x + 1, y + h, z), new Vector3(x, y + h, z), rt, 1f, false);
-            // bottom
+            // bottom (frame underside)
             Quad(target, new Vector3(x, y, z), new Vector3(x + 1, y, z), new Vector3(x + 1, y, z + 1), new Vector3(x, y, z + 1), rb, 0.55f, false);
-            // sides
-            Quad(target, new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z), new Vector3(x + 1, y + h, z), new Vector3(x + 1, y + h, z + 1), rs, 0.80f, false);
-            Quad(target, new Vector3(x, y, z), new Vector3(x, y, z + 1), new Vector3(x, y + h, z + 1), new Vector3(x, y + h, z), rs, 0.80f, false);
+            // -X / +X end faces (footboard / headboard)
+            Quad(target, new Vector3(x, y, z), new Vector3(x, y, z + 1), new Vector3(x, y + h, z + 1), new Vector3(x, y + h, z), re, 0.80f, false);
+            Quad(target, new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z), new Vector3(x + 1, y + h, z), new Vector3(x + 1, y + h, z + 1), re, 0.80f, false);
+            // -Z / +Z long sides
             Quad(target, new Vector3(x, y, z + 1), new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y + h, z + 1), new Vector3(x, y + h, z + 1), rs, 0.70f, false);
             Quad(target, new Vector3(x + 1, y, z), new Vector3(x, y, z), new Vector3(x, y + h, z), new Vector3(x + 1, y + h, z), rs, 0.70f, false);
         }

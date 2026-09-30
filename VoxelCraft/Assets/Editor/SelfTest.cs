@@ -162,7 +162,7 @@ namespace VoxelCraft.Editor
                 $"minH={minH} maxH={maxH} bounds=[1,{TerrainGenerator.MaxTerrainHeight}]");
 
             // ----- M3: meshing + streaming -----
-            var rects = new Rect[49];
+            var rects = new Rect[54];
             for (int i = 0; i < 48; i++)
             {
                 rects[i] = atlas.TileRect((TileId)i);
@@ -948,7 +948,7 @@ namespace VoxelCraft.Editor
                     "partial-block flags set");
 
                 // mesher: torch emits geometry with glow verts; door/chest/bed/fence emit
-                var rects31 = new Rect[49];
+                var rects31 = new Rect[54];
                 for (int i = 0; i < 48; i++) { rects31[i] = atlas.TileRect((TileId)i); }
                 var sim31 = new WorldSim(1337) { tileRects = rects31, dataRadius = 1, meshRadius = 0, unloadRadius = 2 };
                 var rem31 = new List<Chunk>();
@@ -1007,7 +1007,7 @@ namespace VoxelCraft.Editor
                 int furnGlow = CountGlowVerts(solid31);
                 Items.Furniture.SetFurnaceLit(furnPos, false);
                 bool furnUnlit = !Items.Furniture.IsFurnaceLit(furnPos);
-                Eval("m31.furnace", smeltOk && smeltDeny && furnLit && furnQuads >= 7 && furnGlow >= 4 && furnUnlit,
+                Eval("m31.furnace", smeltOk && smeltDeny && furnLit && furnQuads >= 6 && furnGlow >= 4 && furnUnlit,
                     $"smelt={smeltOk} deny={smeltDeny} lit={furnLit} quads={furnQuads} glow={furnGlow} unlit={furnUnlit}");
 
                 // cottage furniture: regenerated chunk contains the full set

@@ -15,7 +15,7 @@ namespace VoxelCraft.Editor
         {
             var sim = new WorldSim(1337);
             var atlas = Art.TextureFactory.Build();
-            var rects = new Rect[49];
+            var rects = new Rect[54];
             for (int i = 0; i < 49; i++) { rects[i] = atlas.TileRect((TileId)i); }
             sim.tileRects = rects;
 
@@ -141,6 +141,12 @@ namespace VoxelCraft.Editor
             cam.transform.position = new Vector3(133.5f, 36.6f, -50.2f);
             cam.transform.LookAt(new Vector3(133.5f, 36.4f, -48f));
             Render(cam, "m31_furnace.jpg", 1f);
+
+            // Shot 5: bed closeup - vanilla red blanket + pillow + wood legs
+            cam.transform.position = new Vector3(anchor.x + 4, baseY + 2.4f, anchor.y - 4.5f);
+            cam.transform.LookAt(new Vector3(anchor.x + 8.5f, baseY + 1.2f, anchor.y + 0.5f));
+            Render(cam, "m31_bed.jpg", 1f);
+            Debug.Log("[M31] shot5 bed closeup saved");
             Debug.Log("[M31] shot4 furnace closeup saved");
 
             Debug.Log("M31SNAPSHOT RESULT: PASS");
