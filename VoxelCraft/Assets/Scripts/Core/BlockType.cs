@@ -30,5 +30,13 @@ namespace VoxelCraft.Core
         Wheat1 = 24,
         Wheat2 = 25,
         Wheat3 = 26,
+        Glowstone = 27,
+        Path = 28,
+        WoolWhite = 29,
+        WoolRed = 30,
+        WoolYellow = 31,
+        WoolBlue = 32,
+        WoolGreen = 33,
+        WoolBlack = 34,
     }
 }

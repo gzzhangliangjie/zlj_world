@@ -15,7 +15,7 @@ namespace VoxelCraft.Art
     {
         public const int TileSize = 16;
         public const int AtlasCols = 6;
-        public const int AtlasRows = 5;
+        public const int AtlasRows = 7;
 
         /// <summary>Canonical tile file names, parallel to the TileId enum.</summary>
         private static readonly string[] TileNames =
@@ -25,6 +25,8 @@ namespace VoxelCraft.Art
             "snow", "brick", "bedrock", "coal_ore", "iron_ore", "gold_ore",
             "diamond_ore", "gravel", "ice", "obsidian", "mossy", "stone_brick",
             "wheat0", "wheat1", "wheat2", "wheat3",
+            "glowstone", "path", "wool_white", "wool_red", "wool_yellow",
+            "wool_blue", "wool_green", "wool_black",
         };
 
         public sealed class AtlasResult
@@ -82,8 +84,13 @@ namespace VoxelCraft.Art
             result.atlas = atlas;
             result.white = MakeWhite();
 
-            for (int t = 1; t < 23; t++)
+            // Skip Wheat0..3 (no icons needed) but include all placeable blocks.
+            for (int t = 1; t < 35; t++)
             {
+                if (t >= (int)BlockType.Wheat0 && t <= (int)BlockType.Wheat3)
+                {
+                    continue;
+                }
                 var type = (BlockType)t;
                 TileId iconTile = BlockDatabase.Get(type).top;
                 var icon = new Texture2D(TileSize, TileSize, TextureFormat.RGBA32, false)
@@ -223,9 +230,65 @@ namespace VoxelCraft.Art
                 case TileId.Wheat1: WheatStage(px, rng, 1); break;
                 case TileId.Wheat2: WheatStage(px, rng, 2); break;
                 case TileId.Wheat3: WheatStage(px, rng, 3); break;
+                case TileId.Glowstone: GlowstoneTile(px, rng); break;
+                case TileId.Path: PathTile(px, rng); break;
+                case TileId.WoolWhite: Wool(px, rng, 232, 236, 238); break;
+                case TileId.WoolRed: Wool(px, rng, 176, 46, 38); break;
+                case TileId.WoolYellow: Wool(px, rng, 234, 195, 55); break;
+                case TileId.WoolBlue: Wool(px, rng, 53, 87, 178); break;
+                case TileId.WoolGreen: Wool(px, rng, 86, 128, 40); break;
+                case TileId.WoolBlack: Wool(px, rng, 32, 32, 38); break;
             }
 
             return px;
+        }
+
+        private static void GlowstoneTile(Color32[] px, System.Random rng)
+        {
+            // warm amber base with brighter crystalline blobs
+            Speckle(px, rng, 196, 154, 92, 18);
+            for (int i = 0; i < 5; i++)
+            {
+                int cx = rng.Next(2, TileSize - 2);
+                int cy = rng.Next(2, TileSize - 2);
+                int rad = rng.Next(1, 3);
+                for (int y = cy - rad; y <= cy + rad; y++)
+                {
+                    for (int x = cx - rad; x <= cx + rad; x++)
+                    {
+                        if (x < 0 || x >= TileSize || y < 0 || y >= TileSize) continue;
+                        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > rad * rad) continue;
+                        px[y * TileSize + x] = new Color32(252, 224, 130, 255);
+                    }
+                }
+            }
+        }
+
+        private static void PathTile(Color32[] px, System.Random rng)
+        {
+            // trodden dirt path: lighter and more compact than farmland-style dirt
+            Speckle(px, rng, 152, 121, 85, 16);
+            for (int i = 0; i < 6; i++)
+            {
+                int x = rng.Next(0, TileSize);
+                int y = rng.Next(0, TileSize);
+                px[y * TileSize + x] = new Color32(170, 140, 100, 255);
+            }
+        }
+
+        private static void Wool(Color32[] px, System.Random rng, int r, int g, int b)
+        {
+            // soft fabric weave: base colour with faint horizontal/vertical banding
+            for (int y = 0; y < TileSize; y++)
+            {
+                for (int x = 0; x < TileSize; x++)
+                {
+                    int d = rng.Next(-8, 9);
+                    int band = (x + y) % 4 == 0 ? -10 : 0;
+                    px[y * TileSize + x] = new Color32(
+                        (byte)Clamp(r + d + band), (byte)Clamp(g + d + band), (byte)Clamp(b + d + band), 255);
+                }
+            }
         }
 
         private static void WheatStage(Color32[] px, System.Random rng, int stage)

@@ -30,6 +30,11 @@ namespace VoxelCraft.Player
                 BlockType.Snow, BlockType.Gravel, BlockType.Ice, BlockType.Obsidian, BlockType.MossyCobble,
                 BlockType.StoneBrick, BlockType.CoalOre, BlockType.IronOre, BlockType.GoldOre,
             },
+            new[]
+            {
+                BlockType.Glowstone, BlockType.Path, BlockType.WoolWhite, BlockType.WoolRed, BlockType.WoolYellow,
+                BlockType.WoolBlue, BlockType.WoolGreen, BlockType.WoolBlack, BlockType.DiamondOre,
+            },
         };
         public int activePage;
         public int selectedIndex;
@@ -47,6 +52,9 @@ namespace VoxelCraft.Player
 
         public float reach = 6f;
         public float breakInterval = 0.22f;
+
+        /// <summary>Build tool (B key) — when active, LMB is corner picking, not breaking.</summary>
+        public BuildTools.BuildToolController buildTool;
 
         private float nextBreakTime;
         private readonly List<LineRenderer> highlightLines = new List<LineRenderer>();
@@ -140,7 +148,8 @@ namespace VoxelCraft.Player
             // Sword: attack creatures first (physics ray against animal colliders),
             // fall through to block breaking rules when no creature is targeted.
             bool creatureAttacked = false;
-            if (currentTool == ToolType.Sword && Input.GetMouseButton(0) && Time.time >= nextBreakTime)
+            if (currentTool == ToolType.Sword && Input.GetMouseButton(0) && Time.time >= nextBreakTime &&
+                (buildTool == null || !buildTool.IsActive))
             {
                 var creatureHits = Physics.RaycastAll(
                     new Ray(viewCamera.transform.position, viewCamera.transform.forward), 3.8f);
@@ -165,7 +174,8 @@ namespace VoxelCraft.Player
             }
 
             bool cropHandled = false;
-            if (!creatureAttacked && currentTool != ToolType.Clock && Input.GetMouseButton(0) && Time.time >= nextBreakTime)
+            if (!creatureAttacked && currentTool != ToolType.Clock && Input.GetMouseButton(0) && Time.time >= nextBreakTime &&
+                (buildTool == null || !buildTool.IsActive))
             {
                 OnUse?.Invoke();
                 var target = world.sim.GetBlock(hit.x, hit.y, hit.z);

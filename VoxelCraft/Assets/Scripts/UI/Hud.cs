@@ -354,6 +354,19 @@ namespace VoxelCraft.UI
         private void DrawDenyHint()
         {
             string hint = interaction.ActiveDeny;
+            var bt = interaction.buildTool;
+            if (bt != null && bt.IsActive)
+            {
+                string sel = bt.SelectionText;
+                string st = bt.Status;
+                float bw = 640f;
+                var selRect = new Rect((Screen.width - bw) * 0.5f, Screen.height * 0.55f, bw, 20f);
+                GUI.Label(selRect, "[Build] " + sel, hintStyle);
+                if (!string.IsNullOrEmpty(st))
+                {
+                    GUI.Label(new Rect((Screen.width - bw) * 0.5f, Screen.height * 0.585f, bw, 20f), st, hintStyle);
+                }
+            }
             if (string.IsNullOrEmpty(hint))
             {
                 return;

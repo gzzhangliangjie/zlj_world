@@ -201,6 +201,14 @@ namespace VoxelCraft.Core
             Items.ItemDrops.player = playerGo.transform;
             Items.ItemDrops.iconOf = t => atlas.icons.TryGetValue(t, out var icon) ? icon : null;
 
+            // Build tool (WorldEdit-style selection/fill/copy/paste, B key).
+            var buildTool = playerGo.AddComponent<BuildTools.BuildToolController>();
+            buildTool.world = worldRoot;
+            buildTool.viewCamera = mainCamera;
+            buildTool.playerBody = playerGo.transform;
+            buildTool.interaction = interaction;
+            interaction.buildTool = buildTool;
+
             hud.dayNight = dayNight;
             hud.weather = weather;
 

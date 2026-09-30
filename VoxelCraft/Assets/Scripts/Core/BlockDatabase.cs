@@ -33,6 +33,14 @@ namespace VoxelCraft.Core
         Wheat1 = 25,
         Wheat2 = 26,
         Wheat3 = 27,
+        Glowstone = 28,
+        Path = 29,
+        WoolWhite = 30,
+        WoolRed = 31,
+        WoolYellow = 32,
+        WoolBlue = 33,
+        WoolGreen = 34,
+        WoolBlack = 35,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>
@@ -68,7 +76,7 @@ namespace VoxelCraft.Core
 
         static BlockDatabase()
         {
-            defs = new BlockDef[27];
+            defs = new BlockDef[35];
 
             defs[(int)BlockType.Air] = new BlockDef
             {
@@ -241,6 +249,39 @@ namespace VoxelCraft.Core
                     opaque = false, solid = false, liquid = false,
                     placeable = false, unbreakable = false,
                     top = wheatTile(wheat), side = wheatTile(wheat), bottom = wheatTile(wheat), soundGroup = "grass",
+                };
+            }
+
+            defs[(int)BlockType.Glowstone] = new BlockDef
+            {
+                name = "Glowstone", opaque = true, solid = true, liquid = false,
+                placeable = true, unbreakable = false,
+                top = TileId.Glowstone, side = TileId.Glowstone, bottom = TileId.Glowstone, soundGroup = "glass",
+            };
+
+            defs[(int)BlockType.Path] = new BlockDef
+            {
+                name = "Path", opaque = true, solid = true, liquid = false,
+                placeable = true, unbreakable = false,
+                top = TileId.Path, side = TileId.Path, bottom = TileId.Path, soundGroup = "dirt",
+            };
+
+            (BlockType, TileId, string)[] wools =
+            {
+                (BlockType.WoolWhite,  TileId.WoolWhite,  "White Wool"),
+                (BlockType.WoolRed,    TileId.WoolRed,    "Red Wool"),
+                (BlockType.WoolYellow, TileId.WoolYellow, "Yellow Wool"),
+                (BlockType.WoolBlue,   TileId.WoolBlue,   "Blue Wool"),
+                (BlockType.WoolGreen,  TileId.WoolGreen,  "Green Wool"),
+                (BlockType.WoolBlack,  TileId.WoolBlack,  "Black Wool"),
+            };
+            foreach (var (type, tile, label) in wools)
+            {
+                defs[(int)type] = new BlockDef
+                {
+                    name = label, opaque = true, solid = true, liquid = false,
+                    placeable = true, unbreakable = false,
+                    top = tile, side = tile, bottom = tile, soundGroup = "grass",
                 };
             }
         }

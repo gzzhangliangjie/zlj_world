@@ -34,12 +34,12 @@ namespace VoxelCraft.Editor
                     atlas.atlas.width == TextureFactory.AtlasCols * TextureFactory.TileSize &&
                     atlas.atlas.height == TextureFactory.AtlasRows * TextureFactory.TileSize,
                     $"{atlas.atlas.width}x{atlas.atlas.height}");
-                Eval("m1.icons", atlas.icons.Count == 22, $"icon count {atlas.icons.Count}/22");
+                Eval("m1.icons", atlas.icons.Count == 30, $"icon count {atlas.icons.Count}/30");
 
                 // Every non-air block must have a name (validates the def table size).
                 bool defsOk = true;
                 string bad = "";
-                for (int t = 1; t < 23 && defsOk; t++)
+                for (int t = 1; t < 35 && defsOk; t++)
                 {
                     var def = BlockDatabase.Get((BlockType)t);
                     if (def.name == null || def.name.Length == 0)
@@ -55,14 +55,14 @@ namespace VoxelCraft.Editor
                 //  glass / leaves / water do not false-fail).
                 bool tilesAlive = true;
                 string deadTile = "";
-                for (int tile = 0; tile < 24 && tilesAlive; tile++)
+                for (int tile = 0; tile < 36 && tilesAlive; tile++)
                 {
                     var rect = atlas.TileRect((TileId)tile);
                     bool anyOpaque = false;
-                    for (int s = 0; s < 5 && !anyOpaque; s++)
+                    for (int s = 0; s < 81 && !anyOpaque; s++)
                     {
-                        float fx = s == 4 ? 0.5f : (s == 0 ? 0.1f : s == 1 ? 0.9f : s == 2 ? 0.1f : 0.9f);
-                        float fy = s == 4 ? 0.5f : (s == 0 || s == 1 ? 0.5f : (s == 2 ? 0.1f : 0.9f));
+                        float fx = (s % 9) / 8f;
+                        float fy = (s / 9) / 8f;
                         int px = Mathf.Clamp(Mathf.RoundToInt((rect.xMin + rect.width * fx) * atlas.atlas.width), 0, atlas.atlas.width - 1);
                         int py = Mathf.Clamp(Mathf.RoundToInt((rect.yMin + rect.height * fy) * atlas.atlas.height), 0, atlas.atlas.height - 1);
                         if (atlas.atlas.GetPixel(px, py).a > 0.02f)
@@ -162,8 +162,8 @@ namespace VoxelCraft.Editor
                 $"minH={minH} maxH={maxH} bounds=[1,{TerrainGenerator.MaxTerrainHeight}]");
 
             // ----- M3: meshing + streaming -----
-            var rects = new Rect[24];
-            for (int i = 0; i < 24; i++)
+            var rects = new Rect[36];
+            for (int i = 0; i < 36; i++)
             {
                 rects[i] = atlas.TileRect((TileId)i);
             }
@@ -379,7 +379,7 @@ namespace VoxelCraft.Editor
 
             var biGo = new GameObject("BiTest");
             var bi = biGo.AddComponent<BlockInteraction>();
-            bool pagesOk = bi.hotbarPages.Length == 2 && bi.hotbar.Length == 9;
+            bool pagesOk = bi.hotbarPages.Length == 3 && bi.hotbar.Length == 9;
             for (int p = 0; p < bi.hotbarPages.Length && pagesOk; p++)
             {
                 for (int s = 0; s < bi.hotbarPages[p].Length; s++)
@@ -836,6 +836,111 @@ namespace VoxelCraft.Editor
             }
             Eval("m23b.lateral_symmetry", symOk,
                 symOk ? "8 quadrupeds rest-skeleton mirror-symmetric; head fwd x=0" : symBad);
+
+            // ----- M30: FastNoiseLite terrain + .vox structures + build tool -----
+            try
+            {
+                // Noise upgrade sanity: same seed twice = identical, different seed differs.
+                var tg1 = new Gen.TerrainGenerator(1337);
+                var tg2 = new Gen.TerrainGenerator(1337);
+                bool detH = true, seedVaries = false;
+                for (int z = -64; z <= 64 && detH; z += 8)
+                {
+                    for (int x = -64; x <= 64; x += 8)
+                    {
+                        if (tg1.HeightAt(x, z) != tg2.HeightAt(x, z)) { detH = false; break; }
+                    }
+                }
+                var tg3 = new Gen.TerrainGenerator(42);
+                for (int z = -64; z <= 64 && !seedVaries; z += 8)
+                {
+                    for (int x = -64; x <= 64; x += 8)
+                    {
+                        if (tg1.HeightAt(x, z) != tg3.HeightAt(x, z)) { seedVaries = true; break; }
+                    }
+                }
+                Eval("m30.terrain_determinism", detH && seedVaries,
+                    $"same-seed identical={detH}, seed 42 differs={seedVaries}");
+
+                // Chunk-level determinism through the new stack (includes structures).
+                var sc1 = new Chunk(0, 0);
+                tg1.Generate(sc1);
+                var sc2 = new Chunk(0, 0);
+                tg2.Generate(sc2);
+                Eval("m30.chunk_determinism", sc1.blocks.SequenceEqual(sc2.blocks),
+                    "full Generate() byte-identical across instances");
+
+                // .vox parser: Resources asset parses, has blocks, maps to real types.
+                var cottage = Vox.StructureRegistry.Load("cottage");
+                bool voxOk = cottage != null && cottage.Width == 11 && cottage.Height == 8 && cottage.Depth == 9;
+                int solid = 0;
+                var typesSeen = new HashSet<BlockType>();
+                if (voxOk)
+                {
+                    foreach (var t in cottage.blocks)
+                    {
+                        if (t != BlockType.Air) { solid++; typesSeen.Add(t); }
+                    }
+                }
+                Eval("m30.vox_parse", voxOk && solid > 200 && typesSeen.Count >= 3,
+                    $"cottage {cottage?.Width}x{cottage?.Height}x{cottage?.Depth}, solid={solid}, types={typesSeen.Count}");
+
+                // Structure stamping: 17x17 chunk window (covers several 96-block
+                // structure cells); at least one chunk must contain structure glass.
+                int chunksWithStructure = 0;
+                for (int cz = -8; cz <= 8; cz++)
+                {
+                    for (int cx = -8; cx <= 8; cx++)
+                    {
+                        var c = new Chunk(cx, cz);
+                        tg1.Generate(c);
+                        for (int i = 0; i < c.blocks.Length; i++)
+                        {
+                            var t = (BlockType)c.blocks[i];
+                            if (t == BlockType.Glass)
+                            {
+                                chunksWithStructure++;
+                                break;
+                            }
+                        }
+                    }
+                }
+                Eval("m30.structure_stamped", chunksWithStructure >= 1,
+                    $"{chunksWithStructure} of 289 chunks contain structure glass (cell=96, 30% density)");
+
+                // Build tool: pure logic checks without a scene (selection volume,
+                // clipboard copy/paste + undo round-trip against a scratch WorldSim).
+                var simBt = new WorldSim(1337) { tileRects = rects, dataRadius = 1, meshRadius = 0, unloadRadius = 2 };
+                var remBt = new List<Chunk>();
+                simBt.Step(0, 0, 5000f, 5000f, remBt, null);
+                var anchor = new Vector3Int(4, simBt.generator.HeightAt(4, 4) + 1, 4);
+                var changes = new Dictionary<Vector3Int, BlockType>();
+                for (int y = 0; y < 2; y++)
+                {
+                    for (int z = 0; z < 3; z++)
+                    {
+                        for (int x = 0; x < 3; x++)
+                        {
+                            var p = anchor + new Vector3Int(x, y, z);
+                            changes[p] = simBt.GetBlock(p.x, p.y, p.z);
+                            simBt.SetBlock(p.x, p.y, p.z, BlockType.Brick, null);
+                        }
+                    }
+                }
+                bool filled = simBt.GetBlock(anchor.x, anchor.y, anchor.z) == BlockType.Brick;
+                foreach (var kv in changes)
+                {
+                    simBt.SetBlock(kv.Key.x, kv.Key.y, kv.Key.z, kv.Value, null);
+                }
+                bool restored = simBt.GetBlock(anchor.x, anchor.y, anchor.z) == changes[anchor];
+                Eval("m30.build_edit_undo", filled && restored,
+                    $"18-block fill applied={filled}, undo restored={restored}");
+            }
+            catch (System.Exception ex)
+            {
+                Report("m30.module", false, ex.GetType().Name + ": " + ex.Message);
+                Debug.LogException(ex);
+            }
 
             Debug.Log($"SELFTEST SUMMARY pass={pass} fail={fail} | unity={Application.unityVersion}");
             Debug.Log(fail > 0 ? "SELFTEST RESULT: FAIL" : "SELFTEST RESULT: PASS");

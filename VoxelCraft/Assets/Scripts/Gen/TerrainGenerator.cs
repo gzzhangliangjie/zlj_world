@@ -18,37 +18,79 @@ namespace VoxelCraft.Gen
         public const float TreeThreshold = 0.02f;
 
         private readonly int seed;
-        private readonly Noise continentNoise;
-        private readonly Noise mountainNoise;
-        private readonly Noise roughnessNoise;
-        private readonly Noise biomeNoise;
+        private readonly FastNoiseLite continentNoise;
+        private readonly FastNoiseLite mountainNoise;
+        private readonly FastNoiseLite roughnessNoise;
+        private readonly FastNoiseLite biomeNoise;
+        private readonly FastNoiseLite biomeRegions;
 
         public TerrainGenerator(int seed)
         {
             this.seed = seed;
-            continentNoise = new Noise(seed ^ 0x1a2b3c);
-            mountainNoise = new Noise(seed ^ 0x4d5e6f);
-            roughnessNoise = new Noise(seed ^ 0x778899);
-            biomeNoise = new Noise(seed ^ 0xaabbcc);
+            continentNoise = BuildSimplex(seed ^ 0x1a2b3c, 0.0015f, 4, warpAmp: 90f);
+            mountainNoise = BuildSimplex(seed ^ 0x4d5e6f, 0.004f, 4, warpAmp: 25f);
+            roughnessNoise = BuildSimplex(seed ^ 0x778899, 0.02f, 3, warpAmp: 0f);
+            biomeNoise = BuildSimplex(seed ^ 0xaabbcc, 0.0025f, 3, warpAmp: 0f);
+            biomeRegions = BuildCellular(seed ^ 0x33ccdd, 0.0018f);
+        }
+
+        private static FastNoiseLite BuildSimplex(int seed, float frequency, int octaves, float warpAmp)
+        {
+            var n = new FastNoiseLite();
+            n.SetSeed(seed);
+            n.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+            n.SetFrequency(frequency);
+            n.SetFractalType(FastNoiseLite.FractalType.FBm);
+            n.SetFractalOctaves(octaves);
+            n.SetFractalLacunarity(2f);
+            n.SetFractalGain(0.5f);
+            if (warpAmp > 0f)
+            {
+                n.SetDomainWarpType(FastNoiseLite.DomainWarpType.OpenSimplex2);
+                n.SetDomainWarpAmp(warpAmp);
+            }
+            return n;
+        }
+
+        private static FastNoiseLite BuildCellular(int seed, float frequency)
+        {
+            var n = new FastNoiseLite();
+            n.SetSeed(seed);
+            n.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+            n.SetFrequency(frequency);
+            n.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
+            n.SetCellularReturnType(FastNoiseLite.CellularReturnType.CellValue);
+            return n;
         }
 
         /// <summary>Terrain surface height (top solid block Y) at a world column.</summary>
         public int HeightAt(int wx, int wz)
         {
-            float c = continentNoise.Fbm(wx * 0.0015f, wz * 0.0015f, 4);
-            float m = mountainNoise.Fbm(wx * 0.004f, wz * 0.004f, 4);
+            float xf = wx, zf = wz;
+            continentNoise.DomainWarp(ref xf, ref zf);
+            float c = continentNoise.GetNoise(xf, zf) * 0.5f + 0.5f;
+
+            float xm = wx, zm = wz;
+            mountainNoise.DomainWarp(ref xm, ref zm);
+            float m = mountainNoise.GetNoise(xm, zm) * 0.5f + 0.5f;
             float ridge = 1f - Mathf.Abs(2f * m - 1f);
             ridge *= ridge;
-            float r = roughnessNoise.Fbm(wx * 0.02f, wz * 0.02f, 3);
+
+            float r = roughnessNoise.GetNoise(wx, wz) * 0.5f + 0.5f;
+
             float mountainMask = Mathf.Clamp01((c - 0.50f) * 5f);
             float h = 20f + c * 14f + ridge * 40f * mountainMask + r * 4f;
             return Mathf.Clamp(Mathf.FloorToInt(h), 1, MaxTerrainHeight);
         }
 
-        /// <summary>Temperature/biome field in [0, 1]; high values are desert.</summary>
+        /// <summary>Temperature/biome field in [0, 1]; high values are desert.
+        /// Half smooth large-scale drift, half cellular regions so biome borders
+        /// read as distinct zones instead of noise contours.</summary>
         public float BiomeAt(int wx, int wz)
         {
-            return biomeNoise.Fbm(wx * 0.0025f, wz * 0.0025f, 3);
+            float drift = biomeNoise.GetNoise(wx, wz) * 0.5f + 0.5f;
+            float region = biomeRegions.GetNoise(wx, wz) * 0.5f + 0.5f;
+            return drift * 0.6f + region * 0.4f;
         }
 
         public bool IsDesert(int wx, int wz)
@@ -71,7 +113,9 @@ namespace VoxelCraft.Gen
             return !IsDesert(wx, wz);
         }
 
-        /// <summary>Fills the chunk voxel array with terrain, water and trees.</summary>
+        /// <summary>
+        /// Fills the chunk voxel array with terrain, water, trees and .vox structures.
+        /// </summary>
         public void Generate(Chunk chunk)
         {
             var blocks = chunk.blocks;
@@ -124,6 +168,98 @@ namespace VoxelCraft.Gen
             }
 
             PlantTrees(chunk);
+            StampStructures(chunk);
+        }
+
+        /// <summary>Structure names stamped during world gen (Resources/VoxStructures/*.bytes).</summary>
+        public static readonly string[] StructureSet = { "cottage" };
+
+        /// <summary>
+        /// Stamps .vox structures near chunk borders deterministically: anchors come
+        /// from a per-cell hash, the structure sits on the terrain surface at its
+        /// anchor column, footprint clipped to this chunk.
+        /// </summary>
+        private void StampStructures(Chunk chunk)
+        {
+            int baseX = chunk.cx * VoxelMath.ChunkSize;
+            int baseZ = chunk.cz * VoxelMath.ChunkSize;
+
+            foreach (string name in StructureSet)
+            {
+                var vox = Vox.StructureRegistry.Load(name);
+                if (vox == null)
+                {
+                    continue;
+                }
+                foreach (var anchor in Vox.StructureRegistry.AnchorsNear(
+                    name, baseX, baseZ, baseX + VoxelMath.ChunkSize - 1, baseZ + VoxelMath.ChunkSize - 1, seed))
+                {
+                    int groundY = HeightAt(anchor.x, anchor.y);
+                    if (groundY <= VoxelMath.SeaLevel + 1 || groundY >= SnowLine - 2 || IsDesert(anchor.x, anchor.y))
+                    {
+                        continue; // no cottages on beaches, underwater, on snow or in deserts
+                    }
+                    // flatness gate: if terrain rises more than 3 blocks across the
+                    // footprint the walls would be buried — skip this anchor entirely
+                    // (stays deterministic: same seed, same skip)
+                    int maxH = groundY, minH = groundY;
+                    for (int z = 0; z < vox.Depth; z++)
+                    {
+                        for (int x = 0; x < vox.Width; x++)
+                        {
+                            int h = HeightAt(anchor.x + x, anchor.y + z);
+                            if (h > maxH) { maxH = h; }
+                            if (h < minH) { minH = h; }
+                        }
+                    }
+                    if (maxH - minH > 6)
+                    {
+                        continue;
+                    }
+                    // Flatten under the whole footprint: base at the HIGHEST terrain
+                    // column of the footprint so no wall is buried on slopes; fill
+                    // gaps below with dirt and clear any terrain bump above the base
+                    // up past the roof so the full structure shows.
+                    int baseY = groundY;
+                    for (int z = -1; z <= vox.Depth; z++)
+                    {
+                        for (int x = -1; x <= vox.Width; x++)
+                        {
+                            baseY = Mathf.Max(baseY, HeightAt(anchor.x + x, anchor.y + z));
+                        }
+                    }
+                    for (int z = -1; z <= vox.Depth; z++)
+                    {
+                        for (int x = -1; x <= vox.Width; x++)
+                        {
+                            int colTop = baseY - 1; // one-block lip around the structure
+                            for (int y = groundY - 3; y < colTop; y++)
+                            {
+                                TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Dirt, overwrite: true);
+                            }
+                            for (int y = colTop; y <= baseY + vox.Height + 1; y++)
+                            {
+                                TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Air, overwrite: true);
+                            }
+                        }
+                    }
+                    for (int y = 0; y < vox.Height; y++)
+                    {
+                        for (int z = 0; z < vox.Depth; z++)
+                        {
+                            for (int x = 0; x < vox.Width; x++)
+                            {
+                                var type = vox.blocks[x, y, z];
+                                if (type == BlockType.Air)
+                                {
+                                    continue;
+                                }
+                                TrySet(chunk, anchor.x + x, baseY + y, anchor.y + z, type, overwrite: true);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private static byte SurfaceBlock(bool beach, bool desert, bool snowy)
