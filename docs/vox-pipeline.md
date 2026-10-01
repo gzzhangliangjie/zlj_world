@@ -42,8 +42,11 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
 
 ## 验证清单（改完任何 .bytes 必须）
 
+0. **`python Tools/vox_lint.py`（离线门禁，Unity 之前跑）**：尺寸/高度≤16、底面非空、
+   每件期望角色齐（stlight 必须有 Glowstone、trashcan 必须 Stone+WoolBlack……）、
+   多件道具禁单色塌缩。退出码非 0 = 禁止进 Unity。新增道具必须同步 EXPECT 表
 1. Python 解析 .bytes：尺寸、每色 voxel 数、逐层切片形状（确认立着、有干有冠）
-2. SelfTest 58/58 全绿
+2. SelfTest 58/58 全绿；M31Snapshot 内建 ROLE-GATE（census 缺角色直接 FAIL）
 3. M31Snapshot 单拍特写（一物一镜：放置→视锥公式相机→渲染→移除）：
    `dist = max(extV/tan(fovV/2), 对角/2/tan(fovH/2)) × 1.25`
 4. PIL 像素仲裁（vision 超时/可疑时）：非天空像素 >12% 且质心在画面中央带
