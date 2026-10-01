@@ -41,28 +41,28 @@
    "bones": {
     "leg0": {
      "rotation": [
-      "math.cos(query.anim_time * 9.54) * 26.0",
+      "math.cos(query.anim_time * 38.17 + 90.0) * 26.0",
       0.0,
       0.0
      ]
     },
     "leg1": {
      "rotation": [
-      "math.cos(query.anim_time * 9.54 + 3.1416) * 26.0",
+      "math.cos(query.anim_time * 38.17 + 270.0) * 26.0",
       0.0,
       0.0
      ]
     },
     "leg2": {
      "rotation": [
-      "math.cos(query.anim_time * 9.54 + 3.1416) * 26.0",
+      "math.cos(query.anim_time * 38.17 + 270.0) * 26.0",
       0.0,
       0.0
      ]
     },
     "leg3": {
      "rotation": [
-      "math.cos(query.anim_time * 9.54) * 26.0",
+      "math.cos(query.anim_time * 38.17 + 90.0) * 26.0",
       0.0,
       0.0
      ]
@@ -70,7 +70,7 @@
     "tail": {
      "rotation": [
       0.0,
-      "math.sin(query.anim_time * 9.54) * 25.0",
+      "math.sin(query.anim_time * 38.17 + 90.0) * 22.0",
       0.0
      ]
     }

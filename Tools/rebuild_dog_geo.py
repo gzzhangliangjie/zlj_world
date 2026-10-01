@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image
 
 ATLAS = 128
+FACE_ID = {'up': 1, 'down': 2, 'north': 3, 'south': 4, 'east': 5, 'west': 6}
 
 
 def load_vox(path):
@@ -101,6 +102,28 @@ class ShelfPacker:
         return r
 
 
+def enhance(c, face, bone, sx, sy, sz, uu, vv):
+    """平涂 -> 有层次的皮毛:五阶噪点 + 方向光 + 浅肚 + 深爪。
+    深色特征色(眼/鼻 32,32,32)原样保留。哈希用固定盐,不含 Python 随机化的 hash()。"""
+    r, g, b = c
+    if (r, g, b) == (32, 32, 32):
+        return c
+    h = (sx * 73856093) ^ (sz * 19349663) ^ (sy * 83492791) \
+        ^ (uu * 2654435761) ^ (vv * 40503) ^ (FACE_ID[face] * 918731)
+    noise = (-14, -7, 0, 7, 12)[h % 5]
+    if face == 'up':
+        noise += 10
+    elif face == 'down':
+        noise -= 22
+    if bone in ('body', 'neck') and face in ('north', 'south', 'east', 'west') and sy <= 3:
+        r, g, b = min(255, r + 26), min(255, g + 24), min(255, b + 18)
+    if bone.startswith('leg') and face in ('north', 'south', 'east', 'west') and sy == 0:
+        noise -= 20
+    return (max(0, min(255, r + noise)),
+            max(0, min(255, g + noise)),
+            max(0, min(255, b + noise)))
+
+
 def build():
     brown = load_vox('_refs/mmmm/vox/mob_dog2.vox')
     urban = load_vox('_refs/mmmm/vox/mob_dog1.vox')
@@ -130,8 +153,8 @@ def build():
     bone_json = []
     pivots = {'head': [3, 3, 3], 'neck': None, 'body': [3, 4, 7],
               'tail': [3, 4, 11],
-              'leg0': [0.5, 2, 5], 'leg1': [5.5, 2, 5],
-              'leg2': [0.5, 2, 10], 'leg3': [5.5, 2, 10]}
+              'leg0': [0.5, 2.5, 5], 'leg1': [5.5, 2.5, 5],
+              'leg2': [0.5, 2.5, 10], 'leg3': [5.5, 2.5, 10]}
     order = ['body', 'head', 'neck', 'tail', 'leg0', 'leg1', 'leg2', 'leg3']
     cube_all = []
     for bn in order:
@@ -140,6 +163,8 @@ def build():
             continue
         cjson = []
         for (x0, y0, z0, w, h, d) in cubes:
+            if bn.startswith('leg'):
+                y0, h = 0, max(h, 3)   # 腿埋进身体底层 y2,摆动时腿根不露缝
             faces = {'north': (w, h), 'south': (w, h), 'up': (w, d), 'down': (w, d),
                      'east': (d, h), 'west': (d, h)}
             uv = {}
@@ -147,7 +172,7 @@ def build():
                 u, v = packer.alloc(fw, fh)
                 uv[f] = {'uv': [u, v], 'uv_size': [fw, fh]}
             cjson.append({'origin': [x0, y0, z0], 'size': [w, h, d], 'uv': uv})
-            cube_all.append((x0, y0, z0, w, h, d, uv))
+            cube_all.append((bn, x0, y0, z0, w, h, d, uv))
         bone = {'name': bn, 'pivot': pivots[bn], 'cubes': cjson}
         if bn == 'neck':                 # 颈并入 body 骨(不单独动)
             bone_json.insert(0, bone)
@@ -160,18 +185,15 @@ def build():
                'bones': bone_json}]}
     json.dump(geo, open('VoxelCraft/Assets/Resources/Geo/dog.geo.json', 'w', encoding='utf-8'), indent=1)
 
-    # ---- 双变体逐体素上色 ----
+    # ---- 贴图增强:官方风格的毛发层次(模块级函数,见文件顶部 enhance) ----
+    # ---- 双变体逐体素上色(带增强) ----
     for variant, grid in [('default', brown), ('urban', urban)]:
         occ_v, col_v = to_geo_grid(grid)
         img = Image.new('RGB', (ATLAS, ATLAS), (154, 154, 154))
         px = img.load()
 
-        def sample(gx, gy, gz):
-            # geo -> vox: vx=gx, vy=gz, vz=gy
-            return col_v.get((gx, gy, gz))
-
         painted = 0
-        for (x0, y0, z0, w, h, d, uv) in cube_all:
+        for (bn, x0, y0, z0, w, h, d, uv) in cube_all:
             for face, (axis, fixed, ulen, vlen) in {
                 'up':    ('y', y0 + h - 1, w, d),
                 'down':  ('y', y0, w, d),
@@ -188,19 +210,20 @@ def build():
                         fu = uu / (tw - 1) if tw > 1 else 0.0
                         fv = vv / (th - 1) if th > 1 else 0.0
                         if axis == 'y':
-                            gx = x0 + int(round(fu * (ulen - 1))) if ulen > 1 else x0
-                            gz = z0 + int(round(fv * (vlen - 1))) if vlen > 1 else z0
-                            c = sample(gx, fixed, gz)
+                            sx = x0 + int(round(fu * (ulen - 1))) if ulen > 1 else x0
+                            sy = fixed
+                            sz = z0 + int(round(fv * (vlen - 1))) if vlen > 1 else z0
                         elif axis == 'z':
-                            gx = x0 + int(round(fu * (ulen - 1))) if ulen > 1 else x0
-                            gy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
-                            c = sample(gx, gy, fixed)
+                            sx = x0 + int(round(fu * (ulen - 1))) if ulen > 1 else x0
+                            sy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
+                            sz = fixed
                         else:
-                            gz = z0 + int(round(fu * (ulen - 1))) if ulen > 1 else z0
-                            gy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
-                            c = sample(fixed, gy, gz)
+                            sx = fixed
+                            sy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
+                            sz = z0 + int(round(fu * (ulen - 1))) if ulen > 1 else z0
+                        c = col_v.get((sx, sy, sz))
                         if c is not None:
-                            px[u + uu, v + vv] = c
+                            px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv)
                             painted += 1
         name = 'dog_skin' if variant == 'default' else 'dog_urban_skin'
         buf = io.BytesIO()
