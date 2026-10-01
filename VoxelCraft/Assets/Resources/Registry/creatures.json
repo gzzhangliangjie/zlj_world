@@ -372,6 +372,32 @@
    "archetype": "biped",
    "locomotion": "walk",
    "biped": true
+  },
+  "camel": {
+   "walkClip": "animation.camel.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "controllers": true
+  },
+  "frog": {
+   "walkClip": "animation.frog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "walkSpeed": "0.15",
+   "controllers": true
+  },
+  "turtle": {
+   "walkClip": "animation.turtle.ground_move",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "walkSpeed": "0.2",
+   "controllers": true
   }
  },
  "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",

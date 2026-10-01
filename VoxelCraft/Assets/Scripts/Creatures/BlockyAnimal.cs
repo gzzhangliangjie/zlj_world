@@ -304,6 +304,29 @@ namespace VoxelCraft.Creatures
                     head = BoxBuilder.McNet(0, 0, 4, 4, 4);
                     leg = BoxBuilder.McNet(0, 40, 2, 4, 2);
                     break;
+                case "camel":
+                    // Fallback net only (geo pipeline is primary): camel.png
+                    // is 128x128; body 15x12x27 uv(0,25).
+                    body = BoxBuilder.McNet(0, 25, 15, 12, 27);
+                    head = BoxBuilder.McNet(21, 0, 7, 14, 7);
+                    leg = BoxBuilder.McNet(0, 0, 5, 21, 5);
+                    break;
+                case "frog":
+                    // Fallback net (48x48 sheet), real geo UVs: body
+                    // 7x3x9 uv(3,1), head 7x3x9 uv(0,13), leg 3x3x4
+                    // uv(0,25) (right_leg column, left mirrors at 14,25).
+                    body = BoxBuilder.McNet(3, 1, 7, 3, 9);
+                    head = BoxBuilder.McNet(0, 13, 7, 3, 9);
+                    leg = BoxBuilder.McNet(0, 25, 3, 3, 4);
+                    break;
+                case "turtle":
+                    // Fallback net (sea_turtle.png 128x64 legacy sheet), real
+                    // geo UVs: shell 19x20x6 uv(6,37), head 6x5x6 uv(2,0),
+                    // flipper leg0 4x1x10 uv(0,23).
+                    body = BoxBuilder.McNet(6, 37, 19, 20, 6);
+                    head = BoxBuilder.McNet(2, 0, 6, 5, 6);
+                    leg = BoxBuilder.McNet(0, 23, 4, 1, 10);
+                    break;
                 case "mooshroom":
                     goto case "cow";
                 default: // pig
@@ -1017,6 +1040,31 @@ namespace VoxelCraft.Creatures
                     legH = 0.27f;                                   // 4.3 px legs
                     headBox = new Vector3(0.25f, 0.25f, 0.25f);     // 4 x 4 x 4 px
                     legThick = 0.07f;                               // 1.1 px legs
+                    break;
+                case "camel":
+                    // Bedrock camel geo: body 15x12x27 px + hump, legs 21 px,
+                    // head on 14 px neck. Collider dims (saddle variant cubes
+                    // are hidden via part_visibility is_saddled=false).
+                    bodySize = new Vector3(0.9375f, 0.75f, 1.6875f); // 15 x 12 x 27 px
+                    legH = 1.3125f;                                // 21 px legs
+                    headBox = new Vector3(0.4375f, 0.5f, 0.375f);  // 7 x 8 x 6 px snout
+                    legThick = 0.3125f;                            // 5 px legs
+                    break;
+                case "frog":
+                    // Bedrock frog geo: body 7x3x9 + eyes, arms 3 px, legs
+                    // 4 px with big feet (8 px). Low-slung hopper.
+                    bodySize = new Vector3(0.4375f, 0.1875f, 0.5625f); // 7 x 3 x 9 px
+                    legH = 0.25f;                                  // 4 px legs
+                    headBox = new Vector3(0.4375f, 0.1875f, 0.5625f); // 7 x 3 x 9 px
+                    legThick = 0.1875f;                            // 3 px arms
+                    break;
+                case "turtle":
+                    // Bedrock sea turtle geo (1.8 format, body bpr [90,0,0]):
+                    // shell 19x20x6 + belly 11x18x3, flipper legs 13x1x5.
+                    bodySize = new Vector3(1.1875f, 0.375f, 1.25f); // 19 x 6 x 20 px
+                    legH = 0.0625f;                                // 1 px flippers
+                    headBox = new Vector3(0.375f, 0.3125f, 0.375f); // 6 x 5 x 6 px
+                    legThick = 0.3125f;                            // flipper width
                     break;
                 case "dolphin":
                     // Bedrock dolphin geo: body 8x7x13 + head 8x7x6 + nose

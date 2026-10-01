@@ -103,6 +103,12 @@ namespace VoxelCraft.Editor
                 // dolphin: vanilla move clip is life_time driven (tail beat
                 // 343.8 deg/s, fins 229.2) - animTime clock, no gait vars.
                 ("dolphin", null, false, "walk"),
+                // 2026-10-01 batch: vanilla camel/frog/turtle (bedrock-samples
+                // v1.21.80.3 geo+anims+entity, temperate frog texture).
+                ("camel", null, false, "walk"),
+                ("frog", null, false, "walk"),
+                ("turtle", null, false, "walk"),
+                ("camel", "animation.camel.sit", false, "sit"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for

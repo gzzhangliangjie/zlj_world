@@ -43,7 +43,7 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             checks.Clear();
-            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin", "goose" };
+            string[] speciesList = { "pig", "cow", "sheep", "chicken", "wolf", "fox", "mooshroom", "goat", "ocelot", "creeper", "horse", "donkey", "rabbit", "panda", "armadillo", "llama", "steve", "bee", "bat", "zombie", "skeleton", "villager", "spider", "parrot", "hoglin", "polar_bear", "salmon", "pufferfish", "axolotl", "croc", "dolphin", "goose", "camel", "frog", "turtle" };
 
             foreach (var sp in speciesList)
             {

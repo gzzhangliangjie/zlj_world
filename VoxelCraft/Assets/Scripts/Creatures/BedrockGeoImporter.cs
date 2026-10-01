@@ -488,6 +488,14 @@ namespace VoxelCraft.Creatures
             if (byName.TryGetValue("right_front_leg", out var rfl)) legsOut[1] = rfl;
             if (byName.TryGetValue("left_back_leg", out var lbl)) legsOut[2] = lbl;
             if (byName.TryGetValue("right_back_leg", out var rbl)) legsOut[3] = rbl;
+            // camel uses left/right + front/hind naming
+            if (byName.TryGetValue("left_hind_leg", out var lhl)) legsOut[2] = lhl;
+            if (byName.TryGetValue("right_hind_leg", out var rhl2)) legsOut[3] = rhl2;
+            // frog: left/right arm (front) + left/right leg (hind)
+            if (byName.TryGetValue("left_arm", out var fal)) legsOut[0] = fal;
+            if (byName.TryGetValue("right_arm", out var far)) legsOut[1] = far;
+            if (byName.TryGetValue("left_leg", out var fll2)) legsOut[2] = fll2;
+            if (byName.TryGetValue("right_leg", out var flr2)) legsOut[3] = flr2;
             // ocelot (1.8 geo) uses backLegL/R + frontLegL/R
             if (byName.TryGetValue("frontLegL", out var fll)) legsOut[0] = fll;
             if (byName.TryGetValue("frontLegR", out var flr)) legsOut[1] = flr;
