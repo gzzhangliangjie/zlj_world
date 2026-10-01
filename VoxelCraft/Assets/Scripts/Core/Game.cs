@@ -187,6 +187,25 @@ namespace VoxelCraft.Core
             spawner.world = worldRoot;
             spawner.player = playerGo.transform;
 
+            // Drivable vehicles near spawn (right-click to enter, F to exit):
+            // horse + donkey mounts reuse the animated BlockyAnimal models;
+            // car1 + police1 are vox_to_creature.py geo vehicles.
+            for (int vi = 0; vi < 4; vi++)
+            {
+                bool isMount = vi < 2;
+                string vn = isMount ? (vi == 0 ? "horse" : "donkey") : (vi == 2 ? "car1" : "police1");
+                var vgo = new GameObject($"Vehicle_{vn}");
+                int vx = 8 + vi * 4, vz = 14;
+                int vg = worldRoot.sim.SurfaceHeight(vx, vz, ignoreTrees: true);
+                vgo.transform.position = new Vector3(vx + 0.5f, vg + 1f, vz + 0.5f);
+                var veh = vgo.AddComponent<Creatures.DrivableVehicle>();
+                veh.world = worldRoot;
+                veh.vehicleName = vn;
+                veh.mountCreature = isMount;
+                if (isMount) { veh.maxSpeed = 11f; veh.turnSpeed = 110f; }
+                veh.BuildModel();
+            }
+
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");
             var dayNight = envGo.AddComponent<Environment.DayNightCycle>();

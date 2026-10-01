@@ -30,9 +30,38 @@ namespace VoxelCraft.Player
 
         public bool IsFlying => flying;
 
+        /// <summary>Non-null while riding a DrivableVehicle: player input is
+        /// forwarded to the vehicle, the character controller is disabled.</summary>
+        public Creatures.DrivableVehicle riding;
+
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+        }
+
+        /// <summary>Mount/dismount helper. Exiting places the player beside the vehicle.</summary>
+        public void Ride(Creatures.DrivableVehicle vehicle)
+        {
+            if (vehicle == null || riding != null) return;
+            riding = vehicle;
+            if (!vehicle.Enter(transform)) { riding = null; return; }
+            controller.enabled = false;
+            verticalVelocity = 0f;
+        }
+
+        public void Dismount()
+        {
+            if (riding == null) return;
+            var v = riding;
+            riding = null;
+            v.Exit();
+            controller.enabled = true;
+            // step out sideways, on top of ground
+            Vector3 outPos = v.transform.position + v.transform.right * v.seatExitOffset;
+            int wx = Mathf.FloorToInt(outPos.x), wz = Mathf.FloorToInt(outPos.z);
+            int g = world != null && world.sim != null ? world.sim.SurfaceHeight(wx, wz, true) : Mathf.FloorToInt(v.transform.position.y);
+            transform.position = new Vector3(outPos.x, g + 1.05f, outPos.z);
+            verticalVelocity = 0f;
         }
 
         public void ToggleFly()
@@ -43,6 +72,14 @@ namespace VoxelCraft.Player
 
         private void Update()
         {
+            // Riding: input goes to the vehicle, not the character.
+            if (riding != null)
+            {
+                if (Input.GetKeyDown(KeyCode.F)) Dismount();
+                transform.position = riding.Seat.position;
+                transform.rotation = Quaternion.Euler(0f, riding.transform.eulerAngles.y, 0f);
+                return;
+            }
             if (Cursor.lockState != CursorLockMode.Locked)
             {
                 return;

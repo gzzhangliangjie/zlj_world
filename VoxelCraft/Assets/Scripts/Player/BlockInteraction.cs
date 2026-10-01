@@ -115,6 +115,28 @@ namespace VoxelCraft.Player
 
             Ray ray = new Ray(viewCamera.transform.position, viewCamera.transform.forward);
             bool hasTarget = world.sim.Raycast(ray.origin, ray.direction, reach, out Vector3Int hit, out Vector3Int place);
+
+            // Vehicle: right-click a DrivableVehicle collider to mount. The
+            // voxel ray above may be blocked by the vehicle mesh, so this
+            // check runs before any block interaction.
+            if (Input.GetMouseButtonDown(1))
+            {
+                var vhHits = Physics.RaycastAll(ray, 4.5f);
+                float nearestV = float.PositiveInfinity;
+                Creatures.DrivableVehicle veh = null;
+                foreach (var h in vhHits)
+                {
+                    var v = h.collider != null ? h.collider.GetComponentInParent<Creatures.DrivableVehicle>() : null;
+                    if (v != null && h.distance < nearestV) { nearestV = h.distance; veh = v; }
+                }
+                var motor = GetComponent<PlayerMotor>();
+                if (veh != null && motor != null && motor.riding == null)
+                {
+                    motor.Ride(veh);
+                    return;
+                }
+            }
+
             SetHighlight(hasTarget);
             if (hasTarget)
             {
