@@ -357,6 +357,29 @@ namespace VoxelCraft.Editor
                                 if (b != BlockType.Air) cens[b] = cens.TryGetValue(b, out var n0) ? n0 + 1 : 1;
                             }
                     Debug.Log($"[M31] shot8 census {pn}: {string.Join(",", cens.Select(kv => kv.Key + ":" + kv.Value))}");
+                    // palette-collapse gate (0d51d97 lesson): expected roles per
+                    // prop; single-color or missing role = FAIL, not PASS.
+                    var expect = new System.Collections.Generic.Dictionary<string, BlockType[]>
+                    {
+                        { "tree1", new[]{ BlockType.Leaves, BlockType.Log } },
+                        { "tree2", new[]{ BlockType.Leaves, BlockType.Log } },
+                        { "tree3", new[]{ BlockType.Leaves, BlockType.Log } },
+                        { "tree4", new[]{ BlockType.Leaves, BlockType.Log } },
+                        { "fence2", new[]{ BlockType.Leaves } },
+                        { "stlight", new[]{ BlockType.Glowstone, BlockType.Stone } },
+                        { "trashcan", new[]{ BlockType.Stone, BlockType.WoolBlack } },
+                        { "planter", new[]{ BlockType.Leaves, BlockType.Stone } },
+                    };
+                    if (expect.TryGetValue(pn, out var need))
+                    {
+                        var missing = need.Where(t => !cens.ContainsKey(t)).ToList();
+                        if (missing.Count > 0)
+                        {
+                            Debug.LogError($"[M31] shot8 ROLE-GATE FAIL {pn}: missing {string.Join(",", missing)} in census");
+                            Debug.Log("M31SNAPSHOT RESULT: FAIL");
+                            return;
+                        }
+                    }
                     Render(cam, $"m31_prop_{pn}.jpg", 1f);
                     Debug.Log($"[M31] shot8 solo {pn} box={pv.Width}x{pv.Height}x{pv.Depth} blocks={placed} dist={dist:F1}");
                     // remove this item so the next one renders alone
