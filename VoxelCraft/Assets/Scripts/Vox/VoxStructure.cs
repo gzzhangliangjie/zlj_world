@@ -264,12 +264,21 @@ namespace VoxelCraft.Vox
             int d1 = Mathf.FloorToInt((float)(wz1 + margin) / cell);
             for (int cz = d0; cz <= d1; cz++)
             {
+                // Mix the structure NAME into every hash so two structures never
+                // share a cell (otherwise every 30%-roll cell would host ALL
+                // gate-passing structures stacked on the same anchor).
+                int nameSeed = seed;
+                unchecked
+                {
+                    foreach (char ch in name) { nameSeed = nameSeed * 31 + ch; }
+                    nameSeed ^= (int)0x566f78;
+                }
                 for (int cx = c0; cx <= c1; cx++)
                 {
-                    float roll = Gen.Noise.Hash01(cx, cz, seed ^ 0x566f78); // "Vox"
+                    float roll = Gen.Noise.Hash01(cx, cz, nameSeed);
                     if (roll > 0.30f) continue; // ~30% of cells host a structure
-                    int ax = cx * cell + Mathf.FloorToInt(Gen.Noise.Hash01(cx, cz, seed ^ 0xa1) * (cell - 2 * margin)) + margin;
-                    int az = cz * cell + Mathf.FloorToInt(Gen.Noise.Hash01(cx, cz, seed ^ 0xb2) * (cell - 2 * margin)) + margin;
+                    int ax = cx * cell + Mathf.FloorToInt(Gen.Noise.Hash01(cx, cz, nameSeed ^ 0xa1) * (cell - 2 * margin)) + margin;
+                    int az = cz * cell + Mathf.FloorToInt(Gen.Noise.Hash01(cx, cz, nameSeed ^ 0xb2) * (cell - 2 * margin)) + margin;
                     yield return new Vector2Int(ax, az);
                 }
             }

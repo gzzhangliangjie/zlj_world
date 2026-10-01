@@ -888,9 +888,9 @@ namespace VoxelCraft.Editor
                 // Structure stamping: 17x17 chunk window (covers several 96-block
                 // structure cells); at least one chunk must contain structure glass.
                 int chunksWithStructure = 0;
-                for (int cz = -8; cz <= 8; cz++)
+                for (int cz = -16; cz <= 16; cz++)
                 {
-                    for (int cx = -8; cx <= 8; cx++)
+                    for (int cx = -16; cx <= 16; cx++)
                     {
                         var c = new Chunk(cx, cz);
                         tg1.Generate(c);
@@ -1014,9 +1014,9 @@ namespace VoxelCraft.Editor
                 var tg31 = new Gen.TerrainGenerator(1337);
                 int found31 = 0;
                 bool doorInCottage = false, torchInCottage = false, chestInCottage = false, bedInCottage = false, fenceInCottage = false, furnaceInCottage = false;
-                for (int cz = -8; cz <= 8 && found31 < 4; cz++)
+                for (int cz = -16; cz <= 16 && found31 < 4; cz++)
                 {
-                    for (int cx = -8; cx <= 8; cx++)
+                    for (int cx = -16; cx <= 16; cx++)
                     {
                         var c31 = new Chunk(cx, cz);
                         tg31.Generate(c31);
