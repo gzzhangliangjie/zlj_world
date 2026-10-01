@@ -178,6 +178,8 @@ namespace VoxelCraft.Creatures
             public float isBaby, isSitting, isSleeping, isOnGround = 1f, isRiding, isJumping,
                 isDancing, hasTarget, isStalking, isInterested, isStunned,
                 isShakingWetness, isResting, isGrazing, isInWater, sitAmount, lieAmount,
+                markVariant, isStanding = 1f, shakeAngle, facingTargetToRangeAttack,
+                isJumpGoalJumping, isEatingMob, isCroaking, hasDashCooldown,
                 rollCounter, allAnimationsFinished, modifiedMoveSpeed;
             public Dictionary<string, float> properties = new Dictionary<string, float>();
             public Dictionary<string, float> variables = new Dictionary<string, float>();
@@ -210,6 +212,14 @@ namespace VoxelCraft.Creatures
                 rollCounter = state.rollCounter,
                 allAnimationsFinished = state.allAnimationsFinished,
                 modifiedMoveSpeed = state.modifiedMoveSpeed,
+                markVariant = state.markVariant,
+                isStanding = state.isStanding,
+                shakeAngle = state.shakeAngle,
+                facingTargetToRangeAttack = state.facingTargetToRangeAttack,
+                isJumpGoalJumping = state.isJumpGoalJumping,
+                isEatingMob = state.isEatingMob,
+                isCroaking = state.isCroaking,
+                hasDashCooldown = state.hasDashCooldown,
                 vars = state.variables,
                 propertyLookup = k => state.properties.TryGetValue(k, out var v) ? v : 0f,
             };

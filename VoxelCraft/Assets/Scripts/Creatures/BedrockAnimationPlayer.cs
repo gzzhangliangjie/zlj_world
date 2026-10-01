@@ -1182,12 +1182,20 @@ namespace VoxelCraft.Creatures
                 wingFlapSpeed = wingFlapSpd,
                 targetXRotation = 0f,
                 targetYRotation = 0f,
-                // Engine ground truth: mobs in harness scenes stand on the
-                // ground (parrot pre_anim: !is_on_ground -> flying state).
-                isOnGround = 1f,
+                // Engine ground truth: pushed from the behaviour-event
+                // mirror below (isOnGround in the ev* block).
                 // Aquatic species live in water (fish.general controller:
                 // is_in_water keeps the swimming state; ZRot flop = 0).
                 isInWater = inWater ? 1f : 0f,
+                isGrazing = evIsGrazing, isSitting = evIsSitting,
+                isSleeping = evIsSleeping, isBaby = evIsBaby,
+                hasTarget = evHasTarget, isStanding = evIsStanding,
+                shakeAngle = evShakeAngle, markVariant = evMarkVariant,
+                isInterested = evIsInterested, isShakingWetness = evIsShakingWetness,
+                isStalking = evIsStalking, isOnGround = evIsOnGround != 0f ? 1f : 0f,
+                facingTargetToRangeAttack = evFacingRangeAttack,
+                isJumpGoalJumping = evJumpGoal, isEatingMob = evEatingMob,
+                isCroaking = evCroaking,
                 propertyLookup = molangProperties,
                 // String-property defaults (engine role): the registry's
                 // BP properties table is the single source (armadillo:
@@ -1203,6 +1211,14 @@ namespace VoxelCraft.Creatures
                 },
             };
         }
+        /// <summary>Engine behaviour-event flags (M36): pushed by the
+        /// controller runtime each tick so pre_animation lines reading
+        /// engine queries (is_grazing, is_sitting...) see event state.</summary>
+        public float evIsGrazing, evIsSitting, evIsSleeping, evIsBaby, evHasTarget,
+            evIsStanding = 1f, evShakeAngle, evMarkVariant, evIsInterested,
+            evIsShakingWetness, evIsStalking, evIsOnGround = 1f, evIsInWater,
+            evAttackTime, evFacingRangeAttack, evJumpGoal, evEatingMob, evCroaking;
+
         /// <summary>Optional property table for query.property('...')
         /// lookups (populated by the controller runtime / game layer).</summary>
         public System.Func<string, float> molangProperties;
@@ -1258,7 +1274,9 @@ namespace VoxelCraft.Creatures
                     isJumping, isDancing, hasTarget, isStalking, isInterested,
                     isStunned, isShakingWetness, isResting, isGrazing, isInWater,
                     sitAmount, lieAmount, rollCounter, allAnimationsFinished,
-                    modifiedMoveSpeed;
+                    modifiedMoveSpeed, markVariant, isStanding, shakeAngle,
+                    facingTargetToRangeAttack, isJumpGoalJumping, isEatingMob,
+                    isCroaking, hasDashCooldown;
                 internal Dictionary<string, float> vars;
                 internal System.Func<string, string, bool> stringPropertyEq;
                 internal System.Func<string, float> propertyLookup;
@@ -1528,6 +1546,14 @@ namespace VoxelCraft.Creatures
                         case "query.is_grazing": return ctx.isGrazing;
                         case "query.is_in_water": return ctx.isInWater;
                         case "query.is_levitating": return 0f;
+                        case "query.mark_variant": return ctx.markVariant;
+                        case "query.is_standing": return ctx.isStanding;
+                        case "query.shake_angle": return ctx.shakeAngle;
+                        case "query.facing_target_to_range_attack": return ctx.facingTargetToRangeAttack;
+                        case "query.is_jump_goal_jumping": return ctx.isJumpGoalJumping;
+                        case "query.is_eating_mob": return ctx.isEatingMob;
+                        case "query.is_croaking": return ctx.isCroaking;
+                        case "query.has_dash_cooldown": return ctx.hasDashCooldown;
                         case "query.is_playing_dead": return 0f;
                         case "query.time_stamp": return ctx.animTime;
                         case "query.frame_alpha": return 0f;

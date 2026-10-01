@@ -113,6 +113,16 @@ namespace VoxelCraft.Editor
                 // enters "jumping" on query.is_jump_goal_jumping (engine goal,
                 // not wired); showcase the 0.375s jump clip directly.
                 ("frog", "animation.frog.jump", false, "jump"),
+                // M36 engine-event showcases: these clips are gated by
+                // engine events the behaviour-event layer now fires.
+                ("horse", null, false, "walk_eat"),      // rear/eat/tail via events
+                ("goat", null, false, "walk_ram"),
+                ("wolf", null, false, "walk_shake"),
+                ("fox", null, false, "walk_pounce"),
+                ("skeleton", null, false, "walk_attack"),
+                ("villager", null, false, "walk_arms"),
+                ("croc", null, false, "walk_bite"),
+                ("frog", null, false, "walk_croak"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for
@@ -127,6 +137,10 @@ namespace VoxelCraft.Editor
                 var ani = go.AddComponent<BlockyAnimal>();
                 ani.species = sp;
                 ani.BuildModel();
+                // M36: event jobs fire their engine event mid-shot so the
+                // clip before/after is visible in one GIF
+                string forcedEvent = EventForTag(tag);
+                int evFrame = 20;
                 var player = go.GetComponent<BedrockAnimationPlayer>();
                 var regH = Creatures.CreatureRegistry.Get(sp);
                 // Flying hoppers (parrot): the wing flap lives in the MOVING
@@ -181,6 +195,10 @@ namespace VoxelCraft.Editor
                     }
                     if (player != null) player.Tick(dt);
                     if (ani != null) DriveBlockyTick(ani, dt, ani.walking);
+                    if (ani != null && forcedEvent != null && i == evFrame)
+                        ani.ForceBehaviourEvent(forcedEvent, 60f / Fps * 12f);
+                    if (ani != null && forcedEvent != null)
+                        ani.TickBehaviourEvents(dt);
                     if (flap && player != null)
                     {
                         // vanilla pre_anim: (sin(pos*57.3)+1)*speed, pos
@@ -264,6 +282,24 @@ namespace VoxelCraft.Editor
                 else break;
             }
             return seg;
+        }
+
+        /// <summary>Map an M36 event-job tag to the engine event to fire
+        /// at frame 20 (walk_eat -> graze etc.).</summary>
+        static string EventForTag(string tag)
+        {
+            switch (tag)
+            {
+                case "walk_eat": return "graze";
+                case "walk_ram": return "ram_attack";
+                case "walk_shake": return "shake";
+                case "walk_pounce": return "pounce";
+                case "walk_attack": return "attack";
+                case "walk_arms": return "raise_arms";
+                case "walk_bite": return "bite";
+                case "walk_croak": return "croak";
+                default: return null;
+            }
         }
 
         static void StartChainedOrSingle(BedrockAnimationPlayer player, string clip, bool absolute, string forceSeg = null)

@@ -1113,6 +1113,170 @@ namespace VoxelCraft.Creatures
 
         /// <summary>Public controller tick for batch harnesses (Update never
         /// runs in batchmode). Same state feeding as Update does.</summary>
+        /// <summary>Engine behaviour-event layer (M36): fires the vanilla
+        /// engine events the official controllers/weights gate on —
+        /// graze/rear/shake/attack-pose/raise-arms/pounce/croak etc. — on an
+        /// idle cadence, setting the EntityState flags/variables each event's
+        /// vanilla-plausible duration. Drives the previously-unreachable
+        /// event clips for both the live game and the GIF harness.</summary>
+        public void TickBehaviourEvents(float dt)
+        {
+            if (controllers == null || geoAnimPlayer == null) { return; }
+            var st = controllers.State;
+            evTimer -= dt;
+            if (evTimer <= 0f)
+            {
+                // decay previous event's vars
+                ClearEventVars(st);
+                var ev = PickEvent();
+                if (ev != null)
+                {
+                    activeEvent = ev.Value.name;
+                    evTimer = ev.Value.duration;
+                    evLeft = ev.Value.duration;
+                    ApplyEventVars(st, ev.Value.name);
+                }
+                else { activeEvent = null; evTimer = Random.Range(4f, 9f); }
+            }
+            if (evLeft > 0f)
+            {
+                evLeft -= dt;
+                AdvanceEventVars(st, activeEvent, dt);
+                if (evLeft <= 0f) { ClearEventVars(st); activeEvent = null; }
+            }
+        }
+
+        /// <summary>Force one behaviour event (GIF harness / testing): sets
+        /// the event vars for the given duration and returns false if the
+        /// species has no such event.</summary>
+        public bool ForceBehaviourEvent(string evName, float duration)
+        {
+            if (controllers == null) return false;
+            var set = EventSet();
+            if (!set.Contains(evName)) return false;
+            ClearEventVars(controllers.State);
+            activeEvent = evName; evTimer = 0f; evLeft = duration;
+            ApplyEventVars(controllers.State, evName);
+            return true;
+        }
+
+        public string ActiveBehaviourEvent => activeEvent;
+
+        string activeEvent;
+        float evTimer = 6f, evLeft;
+
+        // (name, duration, weight) tuples per event; weight = relative idle
+        // frequency. Durations follow vanilla feel (rear ~2.5s, shake ~1.6s,
+        // graze 3-5s, attack pose one-shot ~0.4s windows).
+        (string name, float duration, float weight)[] Events()
+        {
+            switch (species)
+            {
+                case "horse": case "donkey": case "mule":
+                    return new[] { ("rear", 2.6f, 1f), ("graze", 4.0f, 3f), ("tail_shake", 1.6f, 2f) };
+                case "cow": case "sheep": case "pig": case "mooshroom": case "llama": case "chicken":
+                    return new[] { ("graze", 4.0f, 3f), ("baby", 3.0f, 0.6f) };
+                case "goat":
+                    return new[] { ("ram_attack", 1.4f, 1f), ("attack", 0.8f, 1f), ("graze", 3.5f, 2f) };
+                case "wolf":
+                    return new[] { ("shake", 1.6f, 2f), ("interested", 2.5f, 1f), ("sit", 4f, 1.5f) };
+                case "fox":
+                    return new[] { ("pounce", 0.9f, 1f), ("crouch", 2.5f, 1.5f), ("wiggle", 1.2f, 1f), ("sit", 3f, 1f), ("sleep", 4f, 1f) };
+                case "croc":
+                    return new[] { ("bite", 0.7f, 1f), ("swim", 4f, 2f) };
+                case "goose":
+                    return new[] { ("swim", 4f, 2f), ("attack", 0.8f, 1f) };
+                case "bee":
+                    return new[] { ("nectar", 4f, 1.5f), ("sting", 1.2f, 1f) };
+                case "skeleton": case "zombie":
+                    return new[] { ("attack", 0.5f, 1f) };
+                case "villager":
+                    return new[] { ("raise_arms", 2.2f, 1f), ("sleep", 4f, 1f) };
+                case "frog":
+                    return new[] { ("jump_goal", 0.6f, 1f), ("croak", 1.8f, 2f), ("eat_mob", 0.5f, 0.8f) };
+                case "camel":
+                    return new[] { ("sit", 5f, 1.5f), ("dash", 1.5f, 1f) };
+                default:
+                    return null;
+            }
+        }
+
+        HashSet<string> EventSet()
+        {
+            var evs = Events();
+            var hs = new HashSet<string>();
+            if (evs != null) foreach (var e in evs) hs.Add(e.name);
+            return hs;
+        }
+
+        (string name, float duration, float weight)? PickEvent()
+        {
+            var evs = Events();
+            if (evs == null || evs.Length == 0) return null;
+            float total = 0f; foreach (var e in evs) total += e.weight;
+            float r = Random.value * total;
+            foreach (var e in evs) { r -= e.weight; if (r <= 0f) return e; }
+            return evs[evs.Length - 1];
+        }
+
+        void ApplyEventVars(BedrockControllerRuntime.EntityState st, string ev)
+        {
+            var vars = st.variables;
+            var pvars = geoAnimPlayer != null ? geoAnimPlayer.variables : vars;
+            switch (ev)
+            {
+                case "rear":      vars["stand_anim"] = 1f; pvars["stand_anim"] = 1f; break;
+                case "graze":     st.isGrazing = 1f; st.isStanding = 0f; break;
+                case "tail_shake": vars["shake_tail"] = 1f; pvars["shake_tail"] = 1f; break;
+                case "baby":      st.isBaby = 1f; break;
+                case "ram_attack": pvars["should_bow_head"] = 1f; break;
+                case "attack":    st.hasTarget = 1f; st.facingTargetToRangeAttack = 0f;
+                                  vars["attack_time"] = 0f; pvars["attack_time"] = 0f; break;
+                case "shake":     st.isShakingWetness = 1f; break;
+                case "interested": st.isInterested = 1f; break;
+                case "sit":       st.isSitting = 1f; break;
+                case "sleep":     st.isSleeping = 1f; break;
+                case "pounce":    st.isOnGround = 0f; break;
+                case "crouch":    st.isStalking = 1f; break;
+                case "wiggle":    st.isInterested = 1f; break;
+                case "bite":      st.hasTarget = 1f; vars["attack_time"] = 0f; pvars["attack_time"] = 0f; break;
+                case "swim":      st.isInWater = 1f; st.isOnGround = 0f; break;
+                case "nectar":    st.properties["minecraft:has_nectar"] = 1f; break;
+                case "sting":     st.markVariant = 1f; break;
+                case "raise_arms": pvars["raise_arms"] = 1f; break;
+                case "jump_goal": st.isJumpGoalJumping = 1f; break;
+                case "croak":     st.isCroaking = 1f; break;
+                case "eat_mob":   st.isEatingMob = 1f; break;
+                case "dash":      st.hasDashCooldown = 1f; st.isOnGround = 0f; break;
+            }
+        }
+
+        void AdvanceEventVars(BedrockControllerRuntime.EntityState st, string ev, float dt)
+        {
+            if (geoAnimPlayer == null) return;
+            // attack_time animates 0->1 over the event (vanilla head-strike
+            // math: sin(attack_time*180)*-37.3 deg for goat)
+            if ((ev == "attack" || ev == "bite") && evLeft > 0f)
+                geoAnimPlayer.variables["attack_time"] =
+                    1f - Mathf.Clamp01(evLeft / 0.8f);
+        }
+
+        void ClearEventVars(BedrockControllerRuntime.EntityState st)
+        {
+            st.isGrazing = 0f; st.isStanding = 1f; st.isBaby = 0f;
+            st.hasTarget = 0f; st.facingTargetToRangeAttack = 0f;
+            st.isShakingWetness = 0f; st.isInterested = 0f; st.isSitting = 0f;
+            st.isSleeping = 0f; st.isOnGround = 1f; st.isStalking = 0f;
+            st.isInWater = 0f; st.markVariant = 0f; st.properties["minecraft:has_nectar"] = 0f;
+            st.isJumpGoalJumping = 0f; st.isCroaking = 0f; st.isEatingMob = 0f;
+            st.hasDashCooldown = 0f;
+            if (geoAnimPlayer != null)
+                foreach (var k in new[] { "stand_anim", "shake_tail", "attack_time",
+                        "should_bow_head", "raise_arms" })
+                    geoAnimPlayer.variables.Remove(k);
+            st.variables.Remove("stand_anim"); st.variables.Remove("attack_time");
+        }
+
         public void TickControllers(float dt, bool moving)
         {
             if (controllers == null || geoAnimPlayer == null) return;
@@ -1129,8 +1293,12 @@ namespace VoxelCraft.Creatures
             }
             else
             {
-                controllers.State.isOnGround = 1f;
-                controllers.State.isInWater = 0f;
+                // behaviour-event layer may override ground/water flags
+                // (swim/pounce/dash events) - keep its values while active
+                if (activeEvent != "swim" && activeEvent != "pounce" && activeEvent != "dash")
+                    controllers.State.isOnGround = 1f;
+                if (activeEvent != "swim")
+                    controllers.State.isInWater = 0f;
             }
             controllers.State.hasTarget = 0f;
             // Engine role: ocelot-family variable.state (behavior-layer
@@ -1154,6 +1322,26 @@ namespace VoxelCraft.Creatures
             // full walk speed, so moving => 1.0 (sprint-equivalent), idle => 0.
             // This keeps {walk: query.modified_move_speed} entries behavior-
             // equivalent to the legacy gaitWeight 0.3 baseline (gates at golden).
+            // M36: mirror engine flags into the player ctx so entity
+            // pre_animation lines reading engine queries see event state
+            var st = controllers.State;
+            geoAnimPlayer.evIsGrazing = st.isGrazing;
+            geoAnimPlayer.evIsSitting = st.isSitting;
+            geoAnimPlayer.evIsSleeping = st.isSleeping;
+            geoAnimPlayer.evIsBaby = st.isBaby;
+            geoAnimPlayer.evHasTarget = st.hasTarget;
+            geoAnimPlayer.evIsStanding = st.isStanding;
+            geoAnimPlayer.evShakeAngle = st.shakeAngle;
+            geoAnimPlayer.evMarkVariant = st.markVariant;
+            geoAnimPlayer.evIsInterested = st.isInterested;
+            geoAnimPlayer.evIsShakingWetness = st.isShakingWetness;
+            geoAnimPlayer.evIsStalking = st.isStalking;
+            geoAnimPlayer.evIsOnGround = st.isOnGround;
+            geoAnimPlayer.evIsInWater = st.isInWater;
+            geoAnimPlayer.evFacingRangeAttack = st.facingTargetToRangeAttack;
+            geoAnimPlayer.evJumpGoal = st.isJumpGoalJumping;
+            geoAnimPlayer.evEatingMob = st.isEatingMob;
+            geoAnimPlayer.evCroaking = st.isCroaking;
             controllers.State.modifiedMoveSpeed = moving ? 1f : 0f;
             controllers.Tick(dt);
         }
@@ -1276,6 +1464,7 @@ namespace VoxelCraft.Creatures
                             : (0.25f + 0.06f * Mathf.Sin(animPhase * 0.7f)) * 57.3f;
                 // B-plan: advance the vanilla controller state machine; it
                 // schedules clips itself (walk weight = query.modified_move_speed).
+                TickBehaviourEvents(Time.deltaTime);
                 TickControllers(Time.deltaTime, geoAnimPlayer.moving);
                 return;
             }
