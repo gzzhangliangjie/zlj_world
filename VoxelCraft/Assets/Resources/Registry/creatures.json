@@ -475,21 +475,17 @@
    "walkSpeed": "0.2",
    "controllers": true
   },
-  "dog_brown": {
+  "dog": {
    "walkClip": "animation.quadruped.walk",
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
    "controllers": false,
+   "variants": [
+    "default",
+    "urban"
+   ],
    "entityScale": "0.9"
-  },
-  "dog_urban": {
-   "walkClip": "animation.quadruped.walk",
-   "archetype": "quadruped",
-   "locomotion": "walk",
-   "gait": "dist-cos",
-   "controllers": false,
-   "entityScale": "0.95"
   }
  },
  "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",

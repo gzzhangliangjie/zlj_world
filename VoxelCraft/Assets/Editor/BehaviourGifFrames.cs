@@ -133,8 +133,8 @@ namespace VoxelCraft.Editor
                 ("panda", null, false, "var_brown"),
                 ("ocelot", null, false, "var_black"),
                 ("ocelot", null, false, "var_siamese"),
-                ("dog_brown", null, false, "walk"),
-                ("dog_urban", null, false, "walk"),
+                ("dog", null, false, "walk"),
+                ("dog", null, false, "var_urban"),
                 ("wolf", null, false, "tamed"),
             };
 
@@ -151,6 +151,7 @@ namespace VoxelCraft.Editor
                 ani.species = sp;
                 if (tag != null && tag.StartsWith("var_"))
                     ani.variant = tag.Substring(4);
+
                 bool tameAt20 = tag == "tamed";
                 ani.BuildModel();
                 // M36: event jobs fire their engine event mid-shot so the
