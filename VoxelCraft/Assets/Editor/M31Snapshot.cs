@@ -309,7 +309,7 @@ namespace VoxelCraft.Editor
                 // lifted high above terrain (base8+40) so the backdrop is pure
                 // sky - no world trees photobombing 2-tall props. Camera fitted
                 // from the prop's known WxHxD via the frustum formula.
-                string[] propsOrder = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter" };
+                string[] propsOrder = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter", "bench3", "bench4", "hydrant", "pumpkin", "trlight2", "newsbox1", "cone1" };
                 int spotX = p8x + 40, spotZ = p8z + 12;
                 int studioY = Mathf.Min(base8 + 55, VoxelMath.ChunkHeight - 20); // high but INSIDE the chunk (props top out at +19)
                 var studioAff = new List<Chunk>();
@@ -369,6 +369,13 @@ namespace VoxelCraft.Editor
                         { "stlight", new[]{ BlockType.Glowstone, BlockType.Stone } },
                         { "trashcan", new[]{ BlockType.Stone, BlockType.WoolBlack } },
                         { "planter", new[]{ BlockType.Leaves, BlockType.Stone } },
+                        { "bench3", new[]{ BlockType.WoolWhite } },
+                        { "bench4", new[]{ BlockType.Stone, BlockType.WoolBlack } },
+                        { "hydrant", new[]{ BlockType.WoolRed } },
+                        { "pumpkin", new[]{ BlockType.WoolYellow } },
+                        { "trlight2", new[]{ BlockType.WoolBlack, BlockType.Glowstone } },
+                        { "newsbox1", new[]{ BlockType.Stone, BlockType.WoolBlack, BlockType.WoolBlue } },
+                        { "cone1", new[]{ BlockType.WoolYellow, BlockType.WoolWhite } },
                     };
                     if (expect.TryGetValue(pn, out var need))
                     {

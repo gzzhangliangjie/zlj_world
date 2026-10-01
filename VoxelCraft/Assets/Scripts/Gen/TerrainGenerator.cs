@@ -177,6 +177,8 @@ namespace VoxelCraft.Gen
             // so small props go first and buildings (which add furniture) last.
             "tree1", "tree2", "tree3", "tree4",   // trees: near-everywhere
             "fence2", "stlight", "trashcan", "planter", // street props
+            "bench3", "bench4", "hydrant", "pumpkin",   // batch 2 street props
+            "trlight2", "newsbox1", "cone1",
             "cottage", "house5",
         };
 

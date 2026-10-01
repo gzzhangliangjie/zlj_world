@@ -19,6 +19,8 @@ BLOCK = {
     (252, 224, 130): 'Glowstone', (32, 32, 38): 'WoolBlack',
     (176, 46, 38): 'WoolRed', (219, 207, 163): 'Sand', (150, 97, 83): 'Brick',
     (156, 127, 78): 'Plank', (200, 220, 228): 'Glass', (106, 170, 64): 'Grass',
+    (232, 236, 238): 'WoolWhite', (234, 195, 55): 'WoolYellow',
+    (53, 87, 178): 'WoolBlue', (86, 128, 40): 'WoolGreen',
 }
 # per-prop expectations: (min distinct colors, required roles)
 EXPECT = {
@@ -32,6 +34,14 @@ EXPECT = {
     'planter':  (3, {'Leaves', 'Stone'}),        # plant + pot (+Log trunk)
     'cottage':  (2, {'Plank'}),                  # hand-built, lenient
     'house5':   (2, {'Brick'}),                  # hand-built, lenient
+    # batch 2
+    'bench3':   (1, {'WoolWhite'}),
+    'bench4':   (2, {'Stone', 'WoolBlack'}),
+    'hydrant':  (1, {'WoolRed'}),
+    'pumpkin':  (1, {'WoolYellow'}),             # +WoolGreen stem (1 voxel)
+    'trlight2': (3, {'WoolBlack', 'Glowstone'}), # traffic light w/ lamp
+    'newsbox1': (3, {'Stone', 'WoolBlack', 'WoolBlue'}),
+    'cone1':    (2, {'WoolYellow', 'WoolWhite'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19}
 
