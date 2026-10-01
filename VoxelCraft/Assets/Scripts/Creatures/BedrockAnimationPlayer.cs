@@ -306,6 +306,15 @@ namespace VoxelCraft.Creatures
         /// its bind-conversion skip list from these).</summary>
         public IEnumerable<string> ClipNames => clips.Keys;
 
+        /// <summary>Diagnostics: currently-playing clip names with time (probe).</summary>
+        public string DebugPlaying()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var p in playing)
+                sb.Append(p.clip.name).Append("@").Append(p.time.ToString("0.00")).Append(" ");
+            return sb.ToString();
+        }
+
         public bool Play(string clipName)
         {
             return Play(clipName, false);
