@@ -218,9 +218,10 @@ namespace VoxelCraft.Gen
                             if (h < minH) { minH = h; }
                         }
                     }
-                    // Tolerance scales with footprint: small cottages get 6, a
-                    // 32-wide house would never find flat-enough ground at 6.
-                    int tol = Mathf.Max(6, vox.Width / 4);
+                    // Tolerance scales with footprint: small cottages get 6; big
+                    // houses accept real slopes because the flatten pass below
+                    // terraces a dirt platform under the whole footprint.
+                    int tol = Mathf.Max(6, vox.Width / 2);
                     if (maxH - minH > tol)
                     {
                         continue;
@@ -237,16 +238,38 @@ namespace VoxelCraft.Gen
                             baseY = Mathf.Max(baseY, HeightAt(anchor.x + x, anchor.y + z));
                         }
                     }
-                    for (int z = -1; z <= vox.Depth; z++)
+                    int skirt = Mathf.Clamp((baseY - minH) / 3, 0, 5); // taper width by slope
+                    for (int z = -1 - skirt; z <= vox.Depth + skirt; z++)
                     {
-                        for (int x = -1; x <= vox.Width; x++)
+                        for (int x = -1 - skirt; x <= vox.Width + skirt; x++)
                         {
-                            int colTop = baseY - 1; // one-block lip around the structure
+                            // skirt columns step DOWN with distance from the walls
+                            int dx = Mathf.Max(0, Mathf.Max(-1 - x, x - vox.Width));
+                            int dz = Mathf.Max(0, Mathf.Max(-1 - z, z - vox.Depth));
+                            int step = Mathf.Max(dx, dz);
+                            int colTop = baseY - 1 - step; // lip steps down 1 per skirt block
+                            if (colTop < minH) { colTop = minH; }
                             for (int y = groundY - 3; y < colTop; y++)
                             {
-                                TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Dirt, overwrite: true);
+                                // fill only into natural terrain or air, never
+                                // through another structure's blocks
+                                int lx3 = anchor.x + x - chunk.cx * VoxelMath.ChunkSize;
+                                int lz3 = anchor.y + z - chunk.cz * VoxelMath.ChunkSize;
+                                if (lx3 < 0 || lx3 >= VoxelMath.ChunkSize || lz3 < 0 || lz3 >= VoxelMath.ChunkSize) { continue; }
+                                var cur3 = (BlockType)chunk.blocks[VoxelMath.LocalIndex(lx3, y, lz3)];
+                                bool nat3 = cur3 == BlockType.Air || cur3 == BlockType.Stone ||
+                                    cur3 == BlockType.Dirt || cur3 == BlockType.Grass ||
+                                    cur3 == BlockType.Sand || cur3 == BlockType.Gravel ||
+                                    cur3 == BlockType.Water || cur3 == BlockType.Snow ||
+                                    cur3 == BlockType.Leaves || cur3 == BlockType.Log;
+                                if (nat3)
+                                {
+                                    TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Dirt, overwrite: true);
+                                }
                             }
-                            for (int y = colTop; y <= baseY + vox.Height + 1; y++)
+                            // only clear air above the platform INSIDE the footprint
+                            bool inside = (x >= 0 && x < vox.Width && z >= 0 && z < vox.Depth);
+                            for (int y = inside ? colTop : baseY + vox.Height + 1; y <= baseY + vox.Height + 1; y++)
                             {
                                 // Clear only NATURAL terrain so a later structure's
                                 // air pass never erases an earlier structure's blocks

@@ -157,11 +157,62 @@ namespace VoxelCraft.Editor
             Render(cam, "m31_door.jpg", 1f);
             Debug.Log("[M31] shot6 door closeup saved");
 
-            // Shot 7: house5 (mmmm obj_house5 /2) - anchor gates (flat>=W/4 above
-            // sea) find no valid spot for a 33-wide footprint on this terrain, so
-            // verify the pipeline on a built platform at a known-flat area instead.
+            // Shot 7: house5 - engine tol now max(6, W/2)=16 so real anchors pass.
+            // Try a natural anchor first; fall back to the platform.
             {
                 var h5 = Vox.StructureRegistry.Load("house5");
+                Vector2Int? nat = null;
+                foreach (var a in Vox.StructureRegistry.AnchorsNear("house5", -320, -320, 320, 320, 1337))
+                {
+                    if (sim.generator.IsDesert(a.x, a.y)) continue;
+                    int mnA = int.MaxValue, mxA = int.MinValue;
+                    for (int x = 0; x < h5.Width; x += 3)
+                        for (int z = 0; z < h5.Depth; z += 3)
+                        {
+                            int g = sim.generator.HeightAt(a.x + x, a.y + z);
+                            mnA = Mathf.Min(mnA, g); mxA = Mathf.Max(mxA, g);
+                        }
+                    if (mxA - mnA <= 16 && mnA > VoxelMath.SeaLevel + 1 && mxA < TerrainGenerator.SnowLine - 2)
+                    {
+                        nat = a;
+                        break;
+                    }
+                }
+                Debug.Log($"[M31] shot7 natural anchor={(nat.HasValue ? nat.Value.ToString() : "NONE")}");
+                if (nat.HasValue)
+                {
+                    var an = nat.Value;
+                    int hcx = VoxelMath.ChunkCoord(an.x + 16), hcz = VoxelMath.ChunkCoord(an.y + 16);
+                    sim.dataRadius = 5; sim.meshRadius = 5;
+                    var remN = new List<Chunk>();
+                    sim.Step(hcx, hcz, 100000f, 100000f, remN, null);
+                    foreach (var cN in remN) attach(cN);
+                    int bn = 0;
+                    for (int x = 0; x < h5.Width; x += 2)
+                        for (int z = 0; z < h5.Depth; z += 2)
+                            bn = Mathf.Max(bn, sim.generator.HeightAt(an.x + x, an.y + z));
+                    // numeric probe of the natural house: block census + wall heights
+                    var census = new System.Collections.Generic.Dictionary<BlockType, int>();
+                    int probeCount = 0;
+                    for (int y = bn; y < bn + 40; y++)
+                        for (int z = an.y - 2; z <= an.y + 34; z++)
+                            for (int x = an.x - 2; x <= an.x + 34; x++)
+                            {
+                                var b = sim.GetBlock(x, y, z);
+                                if (b != BlockType.Air && b != BlockType.Grass && b != BlockType.Dirt &&
+                                    b != BlockType.Stone && b != BlockType.Sand && b != BlockType.Water &&
+                                    b != BlockType.Snow && b != BlockType.Leaves && b != BlockType.Log)
+                                {
+                                    probeCount++;
+                                    census[b] = census.TryGetValue(b, out var ccc) ? ccc + 1 : 1;
+                                }
+                            }
+                    Debug.Log($"[M31] shot7 natural census n={probeCount} {string.Join(",", census.Select(kv => kv.Key + ":" + kv.Value))}");
+                    cam.transform.position = new Vector3(an.x - 26, bn + 30, an.y + 46);
+                    cam.transform.LookAt(new Vector3(an.x + 16, bn + 10, an.y + 14));
+                    Render(cam, "m31_house5_natural.jpg", 1f);
+                    Debug.Log($"[M31] shot7 NATURAL house5 at ({an.x},{an.y}) base~{bn}");
+                }
                 int px = 60, pz = -80; // near cottage area, terrain ~y32 flat-ish
                 int top = 0;
                 {
