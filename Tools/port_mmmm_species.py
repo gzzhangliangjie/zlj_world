@@ -131,21 +131,27 @@ def enhance(c, face, bone, sx, sy, sz, uu, vv):
 SPECIES = {
     'cat': dict(
         voxfile='mob_cat3.vox',
-        regions={'head': ('y', 0, 5), 'neck': ('y', 5, 5), 'body': ('y', 5, 12)},
+        regions={'head': ('y', 0, 5), 'neck': ('y', 5, 5), 'body': ('y', 5, 13)},
         leg_geo_y_max=0, front_split=6,
         tail_rule=lambda vx, vy, vz: vy >= 13 or (vy == 12 and vz >= 8),
+        leg_y_range=(0, 3, 11, 14),      # 腿只在前后肢段(vox y),身体底层不吃
+        leg_lift=2,
     ),
     'bear': dict(
         voxfile='mob_bear.vox',
         regions={'head': ('y', 0, 8), 'neck': ('y', 8, 9), 'body': ('y', 9, 19)},
         leg_geo_y_max=2, front_split=13,
         tail_rule=lambda vx, vy, vz: vy >= 19,
+        leg_lift=3,
     ),
     'penguin': dict(
         voxfile='mob_penguin.vox',
-        regions={'head': ('z', 6, 9), 'body': ('z', 1, 6)},
-        leg_geo_y_max=1, front_split=3,
+        regions={'head': ('z', 6, 9), 'body': ('z', 0, 6)},
+        leg_geo_y_max=0, front_split=3,
         tail_rule=lambda vx, vy, vz: vy >= 5 and vz <= 1 and 2 <= vx <= 3,
+        leg_x=lambda vx: vx <= 1 or vx >= 4,     # 只有两侧才是脚,身体底层不进腿
+        leg_lift=1,
+        orange_feet=True,
     ),
 }
 
@@ -172,8 +178,20 @@ def build_species(sp, cfg):
             if tr(gx, gz, gy):
                 tail_extra[gx, gy, gz] = True
 
-    # 腿规则:geo y(vox z) <= leg_geo_y_max,排除尾
+    # 腿规则:geo y(vox z) <= leg_geo_y_max,排除尾;企鹅仅两侧 x 是脚
     leg_mask = (occ & (np.arange(GY)[None, :, None] <= cfg['leg_geo_y_max'])) & ~tail_extra
+    lx = cfg.get('leg_x')
+    if lx:
+        keep = np.zeros_like(leg_mask)
+        for gx in range(GX):
+            if lx(gx):
+                keep[gx, :, :] = leg_mask[gx, :, :]
+        leg_mask = keep
+    lyr = cfg.get('leg_y_range')            # 腿只在前/后肢段(vox y)
+    if lyr:
+        lo1, hi1, lo2, hi2 = lyr
+        vy_ok = ((np.arange(GZ) >= lo1) & (np.arange(GZ) < hi1)) |                 ((np.arange(GZ) >= lo2) & (np.arange(GZ) < hi2))
+        leg_mask &= vy_ok[None, None, :]
 
     bones = {}
     xmid = GX / 2
@@ -190,8 +208,18 @@ def build_species(sp, cfg):
             parts = [(x0, w)]
         for (px0, pw) in parts:
             left = px0 < xmid
-            lk = ('leg0' if left else 'leg1') if front else ('leg2' if left else 'leg3')
-            bones.setdefault(lk, []).append((px0, y0, z0, pw, h, d))
+            # 盒子跨 front_split(geo z)时切前后两半(猫前爪与头底连通的 z 长条)
+            zparts = []
+            if z0 < cfg['front_split'] < z0 + d:
+                zs = int(cfg['front_split'] - z0)
+                if 0 < zs < d:
+                    zparts = [(z0, zs), (z0 + zs, d - zs)]
+            if not zparts:
+                zparts = [(z0, d)]
+            for (pz0, pd) in zparts:
+                front = pz0 + pd / 2 <= cfg['front_split']
+                lk = ('leg0' if left else 'leg1') if front else ('leg2' if left else 'leg3')
+                bones.setdefault(lk, []).append((px0, y0, pz0, pw, h, pd))
 
     for name, (axis, lo, hi) in cfg['regions'].items():
         m = occ & ~leg_mask & ~tail_extra
@@ -226,9 +254,14 @@ def build_species(sp, cfg):
         if not cubes:
             continue
         cjson = []
+        lift = cfg.get('leg_lift', 0)
         for (x0, y0, z0, w, h, d) in cubes:
+            oy0 = y0                            # 采样基准(未抬升)
             if bn.startswith('leg'):
                 y0, h = 0, max(h + y0, 3)     # 埋进身体底层,防摆动断连
+                oy0 = 0
+            elif lift:
+                y0 += lift                     # 身体抬升,腿撑地(站立感)
             faces = {'north': (w, h), 'south': (w, h), 'up': (w, d), 'down': (w, d),
                      'east': (d, h), 'west': (d, h)}
             uv = {}
@@ -236,7 +269,7 @@ def build_species(sp, cfg):
                 u, v = packer.alloc(fw, fh)
                 uv[f] = {'uv': [u, v], 'uv_size': [fw, fh]}
             cjson.append({'origin': [x0, y0, z0], 'size': [w, h, d], 'uv': uv})
-            cube_all.append((bn, x0, y0, z0, w, h, d, uv))
+            cube_all.append((bn, x0, y0, z0, w, h, d, uv, oy0))
         bone_json.append({'name': bn, 'pivot': pivots[bn], 'cubes': cjson})
 
     geo = {'format_version': '1.16.0',
@@ -249,10 +282,10 @@ def build_species(sp, cfg):
     img = Image.new('RGB', (ATLAS, ATLAS), (154, 154, 154))
     px = img.load()
     painted = 0
-    for (bn, x0, y0, z0, w, h, d, uv) in cube_all:
+    for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
         for face, (axis, fixed, ulen, vlen) in {
-            'up':    ('y', y0 + h - 1, w, d),
-            'down':  ('y', y0, w, d),
+            'up':    ('y', oy0 + h - 1, w, d),
+            'down':  ('y', oy0, w, d),
             'north': ('z', z0, w, h),
             'south': ('z', z0 + d - 1, w, h),
             'east':  ('x', x0 + w - 1, d, h),
@@ -271,16 +304,86 @@ def build_species(sp, cfg):
                         sz = z0 + int(round(fv * (vlen - 1))) if vlen > 1 else z0
                     elif axis == 'z':
                         sx = x0 + int(round(fu * (ulen - 1))) if ulen > 1 else x0
-                        sy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
+                        sy = oy0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
                         sz = fixed
                     else:
                         sx = fixed
-                        sy = y0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
+                        sy = oy0 + h - 1 - (int(round(fv * (vlen - 1))) if vlen > 1 else 0)
                         sz = z0 + int(round(fu * (ulen - 1))) if ulen > 1 else z0
                     c = col.get((sx, sy, sz))
+                    # 侧面(脸)采色:固定层为空或非腿骨时改射线投影,
+                    # 取该 texel 向内第一个非空体素(眼在内层也能投到脸上)
+                    if c is None and axis in ('z', 'x'):
+                        if axis == 'z':
+                            rz = z0 if face == 'north' else z0 + d - 1
+                            step = 1 if face == 'north' else -1
+                            rz += step
+                            while z0 <= rz < z0 + d:
+                                c = col.get((sx, sy, rz))
+                                if c is not None:
+                                    break
+                                rz += step
+                        else:
+                            rx = x0 if face == 'west' else x0 + w - 1
+                            step = 1 if face == 'west' else -1
+                            rx += step
+                            while x0 <= rx < x0 + w:
+                                c = col.get((rx, sy, sz))
+                                if c is not None:
+                                    break
+                                rx += step
                     if c is not None:
                         px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv)
                         painted += 1
+    # 企鹅橙蹼:脚盒侧面+底面统一涂橙(webbed feet)
+    if cfg.get('orange_feet'):
+        ORANGE = (232, 120, 40)
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            if not bn.startswith('leg'):
+                continue
+            for face in ('north', 'south', 'east', 'west', 'down'):
+                fd = uv[face]
+                u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                for vv in range(th):
+                    for uu in range(tw):
+                        px[u + uu, v + vv] = ORANGE
+    # 企鹅无眼(原作黑头无眼点):头盒 north face 手工补白眼
+    if sp == 'penguin':
+        WHITE = (255, 255, 255)
+        SOFT = (240, 240, 240)
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            if bn != 'head' or w < 4:
+                continue
+            u, v = int(uv['north']['uv'][0]), int(uv['north']['uv'][1])
+            px[u+1, v+1] = WHITE; px[u+2, v+1] = SOFT; px[u+1, v+2] = SOFT
+            px[u+w-2, v+1] = WHITE; px[u+w-3, v+1] = SOFT; px[u+w-2, v+2] = SOFT
+
+    # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
+    # 1-2 texel,渲染太小看不见)
+    for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+        if bn != 'head':
+            continue
+        for face in ('north', 'south'):
+            fd = uv[face]
+            u, v = int(fd['uv'][0]), int(fd['uv'][1])
+            tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+            grow = []
+            for vv in range(th):
+                for uu in range(tw):
+                    c = px[u + uu, v + vv]
+                    if c[0] > 200 and c[1] > 200 and c[2] > 200:      # 白眼
+                        grow.append((uu, vv))
+                    elif c[0] < 60 and c[1] < 60 and c[2] < 60:       # 深眼/鼻
+                        grow.append((uu, vv))
+            for (uu, vv) in grow:
+                for du, dv in ((1,0),(-1,0),(0,1),(0,-1)):
+                    nu, nv = uu+du, vv+dv
+                    if 0 <= nu < tw and 0 <= nv < th:
+                        cc = px[u+nu, v+nv]
+                        # 只覆盖非特征区(不吞喙橙/别的眼)
+                        if not (cc[0] < 60 and cc[1] < 60) and not (cc[0] > 200 and cc[1] > 200 and cc[2] > 200):
+                            px[u+nu, v+nv] = px[u+uu, v+vv]
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     open(f'VoxelCraft/Assets/Resources/Textures/{sp}_skin.png.bytes', 'wb').write(buf.getvalue())
