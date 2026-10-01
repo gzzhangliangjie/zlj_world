@@ -41,6 +41,8 @@ namespace VoxelCraft.Creatures
         [Tooltip("Roaming state; verification harness forces this true/false.")]
         public bool walking = true;
         private float targetYaw;
+        private float peckCd;          // goose chase: peck cooldown
+        private bool geoAnimPlaying;   // goose chase: flap_chase overlay active
         private float smoothY;
         private readonly Collider[] overlapBuffer = new Collider[8];
 
@@ -1119,7 +1121,56 @@ namespace VoxelCraft.Creatures
         /// idle cadence, setting the EntityState flags/variables each event's
         /// vanilla-plausible duration. Drives the previously-unreachable
         /// event clips for both the live game and the GIF harness.</summary>
-        public void TickBehaviourEvents(float dt)
+        /// <summary>Goose territorial chase AI (user-added species, no
+        /// vanilla controller). Returns true while chasing. Extracted from
+        /// Update so the batch probe can drive it without MonoBehaviour.</summary>
+        public bool TickGooseChase(float dt)
+        {
+            bool chasing = false;
+            if (playerRef == null || species != "goose") return false;
+            Vector3 toP = playerRef.position - transform.position;
+            toP.y = 0f;
+            float distP = toP.magnitude;
+            if (distP >= 6f) return false;
+            chasing = true;
+            walking = true;
+            stateTimer = Mathf.Max(stateTimer, 0.6f);
+            targetYaw = Quaternion.LookRotation(toP).eulerAngles.y;
+            peckCd -= dt;
+            if (distP < 1.6f && peckCd <= 0f && geoAnimPlayer != null)
+            {
+                // face the player and peck (non-looping official clip)
+                transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+                geoAnimPlayer.Play("animation.goose.attack", false);
+                peckCd = 1.2f;
+            }
+            // flap_chase overlay while chasing (wings out, faster cadence);
+            // suppressed while the one-shot peck is mid-swing.
+            if (geoAnimPlayer != null && controllers != null &&
+                !IsPecking())
+            {
+                if (!geoAnimPlaying)
+                    geoAnimPlayer.Play("animation.goose.flap_chase", false);
+                geoAnimPlaying = true;
+                geoAnimPlayer.SetClipWeight("animation.goose.flap_chase", 1f);
+            }
+            return chasing;
+        }
+
+        bool IsPecking()
+        {
+            return geoAnimPlayer != null && geoAnimPlayer.IsPlaying("animation.goose.attack");
+        }
+
+        /// <summary>Stop the chase overlay (called when the player escapes).</summary>
+        public void StopGooseChaseOverlay()
+        {
+            if (geoAnimPlaying && geoAnimPlayer != null)
+                geoAnimPlayer.Stop("animation.goose.flap_chase");
+            geoAnimPlaying = false;
+        }
+
+                public void TickBehaviourEvents(float dt)
         {
             if (controllers == null || geoAnimPlayer == null) { return; }
             var st = controllers.State;
@@ -1354,7 +1405,13 @@ namespace VoxelCraft.Creatures
             }
 
             stateTimer -= Time.deltaTime;
-            if (stateTimer <= 0f)
+            // ---- Goose territorial chase (M36: user-added species, no vanilla
+            // controller - AI layer drives it directly): player within 6m =>
+            // chase at 1.8x speed with flap_chase; within 1.5m => peck (attack
+            // clip once + small lunge). Cooldown 1.2s between pecks.
+            bool chasing = TickGooseChase(Time.deltaTime);
+            if (!chasing) StopGooseChaseOverlay();
+            if (stateTimer <= 0f && !chasing)
             {
                 walking = !walking && Random.value > 0.35f;
                 if (walking)
@@ -1401,7 +1458,9 @@ namespace VoxelCraft.Creatures
                 var rot = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, targetYaw, 0f), Time.deltaTime * 3f);
                 transform.rotation = rot;
                 Vector3 forward = transform.forward;
-                var next = pos + forward * (walkSpeed * Time.deltaTime);
+                float spd = walkSpeed;
+                if (chasing) spd *= 1.8f;   // goose territory sprint
+                var next = pos + forward * (spd * Time.deltaTime);
 
                 int gx = Mathf.FloorToInt(next.x);
                 int gz = Mathf.FloorToInt(next.z);
@@ -1464,7 +1523,8 @@ namespace VoxelCraft.Creatures
                             : (0.25f + 0.06f * Mathf.Sin(animPhase * 0.7f)) * 57.3f;
                 // B-plan: advance the vanilla controller state machine; it
                 // schedules clips itself (walk weight = query.modified_move_speed).
-                TickBehaviourEvents(Time.deltaTime);
+                if (!chasing)
+                    TickBehaviourEvents(Time.deltaTime); // no ambient hijack mid-chase
                 TickControllers(Time.deltaTime, geoAnimPlayer.moving);
                 return;
             }

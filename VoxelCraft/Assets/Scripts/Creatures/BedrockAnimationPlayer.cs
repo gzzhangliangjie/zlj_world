@@ -341,6 +341,14 @@ namespace VoxelCraft.Creatures
 
         /// <summary>Blend weight the controller currently assigns (1 if the
         /// clip is not controller-driven).</summary>
+        /// <summary>Is this clip currently in the playing list?</summary>
+        public bool IsPlaying(string clipName)
+        {
+            foreach (var p in playing)
+                if (p.clip.name == clipName) return true;
+            return false;
+        }
+
         public float GetClipWeight(string clipName)
         {
             foreach (var p in playing)

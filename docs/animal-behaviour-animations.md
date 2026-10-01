@@ -120,3 +120,18 @@ EntityDefs/*.entity.json → scripts.animate 权重表
 
 排障:窗口里没动物=先点 Reset model;事件按下没反应=该物种事件表无此
 事件(ForceBehaviourEvent 返回 false 会显示在状态栏)。
+
+## 九、鹅追人(领地攻击 AI,自建物种,M36)
+
+> 鹅是**用户自建物种**(非官方 Bedrock),没有官方 AC 状态机可走——追击逻辑直接写在 AI 层(`BlockyAnimal.TickGooseChase`),不经过控制器。
+
+**行为链**(全部数值验证,M36GooseChaseProbe):
+1. 玩家进入 **6m** → 进入追击:`walking=true`、朝向玩家、`flap_chase` 叠加层常驻(翅膀展开+快节奏步频),速度 ×1.8(walkSpeed 1.4→2.52)
+2. 距离 **<1.6m** → 啄击:面向玩家播一次性 `animation.goose.attack`(带 1.2s 冷却),flap_chase 暂停让位
+3. 玩家逃出 6m → 追击解除,flap_chase 停,恢复闲逛动画
+4. 追击期间 `TickBehaviourEvents` 被抑制(防止官方 swim 事件抢动画)——"领地攻击优先于环境行为"
+
+**坑**:
+- `GetClipWeight` 对未播放 clip 返回 1f → `weight<0.5` 守卫恒假,flap_chase 永不启动;改用 `IsPlaying`(本次新增,搜 playing 列表)
+- 探针驱动:Update 不在 batchmode 跑,逻辑抽成 `TickGooseChase(dt)` 公共方法,Update/探针共用
+- 回读门禁对齐:Pillow 去重静止帧(n_frames<源帧数),需按 duration 展开后逐帧比对(diff=0.0000)
