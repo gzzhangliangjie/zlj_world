@@ -142,17 +142,19 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
         def col(fx, fy, fz):
             c = v2.get((fx, fy, fz))
             return c if c else (255, 0, 255)
-        cx, cy, cz = (x0+x1)//2, (y0+y1)//2, (z0+z1)//2
-        faces = {
-            'east':  col(x1, cy, cz) if w>1 or True else None,
-            'west':  col(x0, cy, cz),
-            'up':    col(cx, y1, cz),
-            'down':  col(cx, y0, cz),
-            'north': col(cx, cy, z0),
-            'south': col(cx, cy, z1),
-        }
-        # bedrock per-face uv rects (see BuildNetPerFace):
-        # east/west: [d+w, d, d, h]/[0, d, d, h]... simplified: allocate 6 rects in net layout
+        # Per-TEXEL sampling: a merged box can span livery boundaries
+        # (police1 cabin: white roof band + blue hood/trunk). Sampling one
+        # center colour flattens the whole face to a single colour - the
+        # "scrambled texture" bug. Each net texel now reads the voxel that
+        # maps to it (M34 round-2 fix).
+        def texel(face, px, py):
+            # px,py in 0..face_w-1 / 0..face_h-1 net coords
+            if face == 'up':    return col(x0+px, y1, z0+py)
+            if face == 'down':  return col(x0+px, y0, z0+py)
+            if face == 'north': return col(x0+px, y1-py, z0)
+            if face == 'south': return col(x0+px, y1-py, z1)
+            if face == 'west':  return col(x0, y1-py, z0+px)
+            return               col(x1, y1-py, z0+px)   # east
         uv = {
             'east':  [nu + d + w, nv + d, d, h],
             'west':  [nu, nv + d, d, h],
@@ -162,9 +164,9 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
             'south': [nu + 2*d + w, nv + d, w, h],
         }
         for f, (ux, uy, uw, uh) in [(k, v) for k, v in uv.items()]:
-            c = faces[f]
             for py in range(uh):
                 for px in range(uw):
+                    c = texel(f, px, py)
                     img.putpixel((ux+px, uy+py), (c[0], c[1], c[2], 255))
         # 1.12 per-face UV dict format (what BedrockGeoImporter's
         # BuildNetPerFace actually parses): {"north": {"uv":[u,v],

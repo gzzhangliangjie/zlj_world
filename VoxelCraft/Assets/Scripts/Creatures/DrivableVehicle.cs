@@ -52,6 +52,11 @@ namespace VoxelCraft.Creatures
         // ---- wheels (voxel-space, 4 corners) ----
         public Vector2 wheelbase = new Vector2(1.15f, 0.75f); // hub offsets: z ±17-19px, x ±12px (2x geo)
         public float wheelRadius = 0.3125f;              // tire half-height: 10px/16
+        // mmmm ground truth: veh_car1 is 11 vox tall vs chr_base 10 vox, so a
+        // car top should sit at ~1.1x PLAYER height (1.98u) = 2.18u; police1
+        // 13 vox -> 2.57u. The 2x-scaled geo top is 24/28px = 1.5/1.75u, so
+        // the whole visual model gets one extra uniform factor.
+        public float modelScale = 1.585f;   // car top: 1.5*1.585 = 2.38u (car1), 1.75*1.585 = 2.77u (police1)
         public float suspRest = 0.20f;      // hub travel range (hub sits 0.3125u over ground)
         public float staticSag = 0.50f;     // resting compression (spring sag)
         public float bodyRollDeg = 4.5f;    // visual roll at full comp delta
@@ -70,6 +75,7 @@ namespace VoxelCraft.Creatures
         public float AvgCompression { get; private set; }
         public bool AnyWheelGrounded { get; private set; }
 
+        Vector3 colliderSize = new Vector3(1.9f, 1.4f, 4.0f); // overwritten from geo
         float speed;                        // signed blocks/s
         float steerSmooth;
         readonly float[] compression = new float[4]; // FL FR RL RR
@@ -83,8 +89,11 @@ namespace VoxelCraft.Creatures
         BedrockAnimationPlayer mountPlayer; // gait clock (moving/walkSpeedRef)
         float mountSpeedRef;
 
-        void Awake()
+        void Awake() { EnsureSeat(); }
+
+        void EnsureSeat()
         {
+            if (seat != null) return;
             seat = new GameObject("Seat").transform;
             seat.SetParent(transform, false);
             seat.localPosition = new Vector3(0f, 1.1f, 0f);
@@ -147,19 +156,39 @@ namespace VoxelCraft.Creatures
                     string[] wn = { "wheelFL", "wheelFR", "wheelRL", "wheelRR" };
                     for (int wi = 0; wi < 4; wi++)
                         wheelBones[wi] = FindDeep(modelPivot, wn[wi]);
+                    // geo bbox from the imported bones (world-space extents)
+                    var rends = modelPivot.GetComponentsInChildren<Renderer>();
+                    if (rends.Length > 0)
+                    {
+                        var b = rends[0].bounds; foreach (var r in rends) b.Encapsulate(r.bounds);
+                        colliderSize = new Vector3(b.size.x, b.size.y, b.size.z);
+                    }
+                    modelPivot.localScale = Vector3.one * modelScale;
                     if (wheelBones[0] != null)
                     {
                         // tire bottom sits at geo y=0, so hub height == radius
-                        wheelRadius = wheelBones[0].localPosition.y;
+                        // (geo px -> units, then the modelScale factor)
+                        wheelRadius = wheelBones[0].localPosition.y * modelScale;
                         suspRest = Mathf.Max(0.16f, wheelRadius - 0.03f);
                         staticSag = 0.5f;
+                        var wb2 = wheelBones[1] != null ? wheelBones[1]
+                                : wheelBones[2] != null ? wheelBones[2]
+                                : wheelBones[0];
+                        wheelbase = new Vector2(
+                            Mathf.Abs(wb2.localPosition.z) * modelScale,
+                            Mathf.Abs(wb2.localPosition.x) * modelScale);
                     }
                 }
             }
+            EnsureSeat();
+            if (chassis != ChassisType.Mount)
+                seat.localPosition = new Vector3(0f, colliderSize.y * 0.55f, 0f);
             var col = gameObject.AddComponent<BoxCollider>();
-            // 2x geo px->units: car 30x22x64px => 1.9 x 1.4 x 4.0 u
-            col.size = new Vector3(1.9f, 1.4f, 4.0f);
-            col.center = new Vector3(0f, 0.7f, 0f);
+            // auto: geo bbox px -> units (px/16 * modelScale). car1 30x22x64
+            // -> 2.97 x 2.18 x 6.34 u; police1 30x26x68 -> 2.97 x 2.57 x 6.73 u
+            Vector3 cs = colliderSize;   // set from geo bbox in BuildModel
+            col.size = cs;
+            col.center = new Vector3(0f, cs.y * 0.5f, 0f);
         }
 
         public bool Enter(Transform player)
@@ -261,9 +290,9 @@ namespace VoxelCraft.Creatures
             Vector3 pos = transform.position + transform.forward * (speed * dt);
             int cwx = Mathf.FloorToInt(pos.x), cwz = Mathf.FloorToInt(pos.z);
             int cground = world.sim.SurfaceHeight(cwx, cwz, ignoreTrees: true);
-            // 2x geo: tire bottom at geo y=0, but ride half a tire higher
-            // (0.15u) so the wheels read visually under the arches.
-            float rideY = cground + 1f + 0.15f;
+            // tire bottom at geo y=0; ride = ground + 1 block + fraction of
+            // the (scaled) tire radius so bigger wheels clear the terrain.
+            float rideY = cground + 1f + wheelRadius * 0.48f;
             // refuse to climb >1 block walls (head-on into a cliff)
             if (rideY - transform.position.y > 1.35f && speed > 0f)
             {
