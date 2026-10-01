@@ -62,13 +62,25 @@ namespace VoxelCraft.Editor
             var solidMat = new Material(Shader.Find("Voxel/Blocks")) { mainTexture = atlas.atlas };
             Action<Chunk> attach = (c) =>
             {
-                var go = new GameObject($"C{c.cx}_{c.cz}");
-                go.transform.SetParent(root.transform, false);
-                go.transform.localPosition = new Vector3(c.cx * 16, 0, c.cz * 16);
-                var mf = go.AddComponent<MeshFilter>();
-                var mr = go.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = solidMat;
-                mf.sharedMesh = c.solidMeshData != null ? c.solidMeshData.ToMesh(null) : null;
+                // idempotent: reuse the same GameObject per chunk so remeshes
+                // REPLACE the mesh instead of stacking duplicate overlays (a
+                // stale first-generation mesh with world trees would otherwise
+                // stay in the scene forever and photobomb every later shot).
+                var go = root.transform.Find($"C{c.cx}_{c.cz}");
+                if (go == null)
+                {
+                    var g = new GameObject($"C{c.cx}_{c.cz}");
+                    go = g.transform;
+                    go.SetParent(root.transform, false);
+                    go.localPosition = new Vector3(c.cx * 16, 0, c.cz * 16);
+                    g.AddComponent<MeshFilter>();
+                    var mr = g.AddComponent<MeshRenderer>();
+                    mr.sharedMaterial = solidMat;
+                }
+                var mf2 = go.GetComponent<MeshFilter>();
+                var stale = mf2.sharedMesh;
+                mf2.sharedMesh = c.solidMeshData != null ? c.solidMeshData.ToMesh(null) : null;
+                if (stale != null) UnityEngine.Object.DestroyImmediate(stale); // free the replaced mesh NOW, not at domain reload
             };
             // light the cottage furnace so the glowing firemouth shows in shots
             Items.Furniture.SetFurnaceLit(new Vector3Int(133, 36, -48), true);
@@ -299,13 +311,15 @@ namespace VoxelCraft.Editor
                 // from the prop's known WxHxD via the frustum formula.
                 string[] propsOrder = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter" };
                 int spotX = p8x + 40, spotZ = p8z + 12;
-                int studioY = base8 + 40; // above every tree the generator can grow
+                int studioY = Mathf.Min(base8 + 55, VoxelMath.ChunkHeight - 20); // high but INSIDE the chunk (props top out at +19)
                 var studioAff = new List<Chunk>();
-                for (int x = -6; x < 40; x++)
-                    for (int z = -6; z < 40; z++)
+                for (int x = -40; x < 70; x++)
+                    for (int z = -40; z < 70; z++)
                     {
+                        // wipe the whole column first so world trees can't poke
+                        // through the studio platform, THEN lay floor + air.
+                        for (int y = studioY - 16; y < VoxelMath.ChunkHeight; y++) sim.SetBlock(spotX + x, y, spotZ + z, BlockType.Air, studioAff);
                         sim.SetBlock(spotX + x, studioY, spotZ + z, BlockType.Grass, studioAff);
-                        for (int y = studioY + 1; y <= studioY + 45; y++) sim.SetBlock(spotX + x, y, spotZ + z, BlockType.Air, studioAff);
                     }
                 foreach (var pn in propsOrder)
                 {
@@ -327,7 +341,7 @@ namespace VoxelCraft.Editor
                     float extHn = (Mathf.Sqrt(pv.Width * pv.Width + pv.Depth * pv.Depth) + 6f) / 2f;
                     float dist = Mathf.Max(extV / Mathf.Tan(fovV * 0.5f), extHn / Mathf.Tan(fovH * 0.5f)) * 1.25f;
                     var center = new Vector3(spotX + 6 + pv.Width / 2f, studioY + 1 + pv.Height / 2f, spotZ + 6 + pv.Depth / 2f);
-                    var dir = new Vector3(-0.75f, 0.35f, -0.75f).normalized;
+                    var dir = new Vector3(-0.75f, 0.45f, -0.75f).normalized;
                     cam.transform.position = center + dir * dist;
                     cam.transform.LookAt(center);
                     var remS = new List<Chunk>();
