@@ -81,3 +81,10 @@ dog_*_skin.png 是裸 .png——`GetSkinMaterial` 以 `Resources.Load<TextAsset>
 
 ### 狗合并为变种(2026-10-01,519f3f2)
 mob_dog1/dog2 形状仅差 2 体素(urban 鼻尖多 2 格)→ 合并单物种 dog(brown 默认)+urban 变体,走现有变体系统(生成器 25% 非 urban 不出)。repaint_dog_skin.py 双入口:dog.geo.json+mob_dog2=默认皮,同 geo+mob_dog1=urban 皮。旧 dog_brown/dog_urban 物种与 geo/贴图已删。
+
+### 狗几何三连坑(2026-10-02,f2c8a66,用户"这贴图还是不对啊""这一坨啥玩意")
+
+贪婪盒转换把 vox 解剖全抹平(头身熔成一坨猪形、尾/耳消失)。修法:Tools/rebuild_dog_geo.py 按解剖分区(鼻z0/头z1-2/颈z3/身z4-10/尾z11-12,geo(x,y,z)=vox(x,z,y))重建 geo+UV+双变体逐体素贴图,覆盖率 212/212。
+- **细腿摆动断连**根因:腿柱 1×2 太短,pivot 埋入身体仅 0.5 格,摆 26° 脚尖扫出露背景缝。修法=官方结构:腿盒 y0..2 埋进身体底 1 格,任何摆幅保持单连通域
+- **直驱物种自定义 walk clip 必须带 anim_time_update=modified_distance_moved**:纯 query.anim_time 时间驱动在批量摄影棚不推进(引擎只推 dist 时钟);表达用 cos(anim_time*9.54) rad 风格
+- GIF motion 门禁阈值 0.5 过高会漏判真实腿摆(源帧 diff 0.02-0.2),用 0.1
