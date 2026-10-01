@@ -15,6 +15,12 @@ namespace VoxelCraft.Player
         public KeyCode toggleKey = KeyCode.V;
         public float thirdPersonDistance = 3.4f;
 
+        // Minecraft-style camera cycling: 1st person -> 3rd behind ->
+        // 3rd FRONT (mirrored pitch) -> back to 1st. Extra presses of V
+        // while already in front view keep flipping to the opposite side
+        // (like MC's per-press F5 flip).
+        public bool FrontView { get; private set; }
+
         /// <summary>Right-hand attach point for the held item view.</summary>
         public Transform hand { get; private set; }
 
@@ -113,7 +119,20 @@ namespace VoxelCraft.Player
         {
             if (Input.GetKeyDown(toggleKey))
             {
-                thirdPerson = !thirdPerson;
+                if (!thirdPerson)
+                {
+                    thirdPerson = true;          // 1st -> 3rd behind
+                    FrontView = false;
+                }
+                else if (!FrontView)
+                {
+                    FrontView = true;            // 3rd behind -> 3rd front
+                }
+                else
+                {
+                    thirdPerson = false;         // 3rd front -> 1st
+                    FrontView = false;
+                }
                 if (modelRoot != null)
                 {
                     modelRoot.gameObject.SetActive(thirdPerson);
@@ -122,8 +141,21 @@ namespace VoxelCraft.Player
 
             if (camera != null)
             {
-                Vector3 target = thirdPerson ? new Vector3(0f, 0.38f, -thirdPersonDistance) : Vector3.zero;
+                // Behind view: camera sits back along the head's -Z (which
+                // follows the yaw). Front view: +Z ahead of the player and
+                // yawed 180 degrees so mouse-right still turns the view
+                // naturally around the character.
+                Vector3 target = thirdPerson
+                    ? new Vector3(0f, 0.38f, FrontView ? thirdPersonDistance : -thirdPersonDistance)
+                    : Vector3.zero;
                 camera.transform.localPosition = Vector3.Lerp(camera.transform.localPosition, target, Time.deltaTime * 10f);
+                // yaw flip lives on the head pivot so MouseLook (which owns
+                // head pitch) stays consistent: front view mirrors pitch by
+                // rotating the head 180 and letting MouseLook pitch invert
+                // relative to the camera.
+                float yawOff = FrontView ? 180f : 0f;
+                if (camera.transform.parent != null)
+                    camera.transform.localRotation = Quaternion.Euler(0f, yawOff, 0f);
             }
 
             Vector3 delta = transform.position - lastPos;
