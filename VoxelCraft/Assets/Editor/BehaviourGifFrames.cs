@@ -123,6 +123,14 @@ namespace VoxelCraft.Editor
                 ("villager", null, false, "walk_arms"),
                 ("croc", null, false, "walk_bite"),
                 ("frog", null, false, "walk_croak"),
+                // M36 variant showcases (registry variants; harness sets
+                // ani.variant before BuildModel)
+                ("fox", null, false, "var_arctic"),
+                ("frog", null, false, "var_cold"),
+                ("wolf", null, false, "var_snowy"),
+                ("wolf", null, false, "var_black"),
+                ("rabbit", null, false, "var_white"),
+                ("panda", null, false, "var_brown"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for
@@ -136,6 +144,8 @@ namespace VoxelCraft.Editor
                 var go = new GameObject("Gif_" + sp + "_" + tag);
                 var ani = go.AddComponent<BlockyAnimal>();
                 ani.species = sp;
+                if (tag != null && tag.StartsWith("var_"))
+                    ani.variant = tag.Substring(4);
                 ani.BuildModel();
                 // M36: event jobs fire their engine event mid-shot so the
                 // clip before/after is visible in one GIF

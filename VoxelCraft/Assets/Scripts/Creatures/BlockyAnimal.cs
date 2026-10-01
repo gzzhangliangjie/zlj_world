@@ -19,6 +19,7 @@ namespace VoxelCraft.Creatures
         public WorldRoot world;
         public Transform playerRef;
         public string species = "pig";
+        public string variant = "";        // M36 texture variant ("" = registry default/first); skin file {species}_{variant}_skin
         public float walkSpeed = 1.4f;
         public float health = 3f;
         public bool dead;
@@ -348,7 +349,18 @@ namespace VoxelCraft.Creatures
             GetDims(species, out Vector3 bodySize, out float legH, out Vector3 headBox, out float legThick);
             float totalHeight = legH + bodySize.y + headBox.y * 0.5f;
 
-            var skin = CreatureTextureFactory.GetSkinMaterial(species + "_skin");
+            // M36 variants: variant texture wins when present, else default skin
+            var regVar = CreatureRegistry.Get(species)?.variants;
+            string skinName = species;
+            if (regVar != null && regVar.Count > 0)
+            {
+                string v = string.IsNullOrEmpty(variant) ? regVar[0] : variant;
+                if (!regVar.Contains(v)) v = regVar[0];
+                skinName = species + "_" + v;
+            }
+            var skin = CreatureTextureFactory.GetSkinMaterial(skinName + "_skin");
+            if (skin == null && skinName != species)
+                skin = CreatureTextureFactory.GetSkinMaterial(species + "_skin"); // variant png missing -> fallback
             bodyRoot = new GameObject("Body").transform;
             bodyRoot.SetParent(transform, false);
 

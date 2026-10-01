@@ -12,6 +12,8 @@ namespace VoxelCraft.Editor
     public class AnimPreviewWindow : EditorWindow
     {
         string curSpecies = "camel";
+        string curVariant;
+        bool showHidden;
         BlockyAnimal ani;
         BedrockAnimationPlayer player;
         GameObject stageRoot, previewGo;
@@ -41,6 +43,7 @@ namespace VoxelCraft.Editor
             previewGo.transform.SetParent(stageRoot.transform, false);
             ani = previewGo.AddComponent<BlockyAnimal>();
             ani.species = curSpecies;
+            ani.variant = curVariant;
             ani.BuildModel();
             player = previewGo.GetComponent<BedrockAnimationPlayer>();
             status = $"{curSpecies}: {player.ClipCount} clips";
@@ -55,13 +58,34 @@ namespace VoxelCraft.Editor
             var speciesList = RegistrySpecies().ToList();
             int cur = Mathf.Max(0, speciesList.IndexOf(curSpecies));
             int next = EditorGUILayout.Popup("Species", cur, speciesList.ToArray());
-            if (next != cur) { curSpecies = speciesList[next]; Rebuild(); }
+            if (next != cur) { curSpecies = speciesList[next]; curVariant = ""; Rebuild(); }
+            var vars = CreatureRegistry.Get(curSpecies)?.variants;
+            if (vars != null && vars.Count > 0)
+            {
+                int vi = Mathf.Max(0, vars.IndexOf(curVariant.Length == 0 ? vars[0] : curVariant));
+                int vn = EditorGUILayout.Popup("Variant", vi, vars.ToArray());
+                string want = vars[vn];
+                if (want != (curVariant.Length == 0 ? vars[0] : curVariant))
+                {
+                    curVariant = want;
+                    if (ani != null) { ani.variant = want; Rebuild(); }
+                }
+            }
             filter = EditorGUILayout.TextField("Filter clips", filter);
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             walking = GUILayout.Toggle(walking, "walking");
             autoEvents = GUILayout.Toggle(autoEvents, "auto events");
+            bool sh = GUILayout.Toggle(showHidden, "show hidden bones");
+            if (sh != showHidden)
+            {
+                showHidden = sh;
+                if (previewGo != null)
+                    foreach (var t in previewGo.GetComponentsInChildren<Transform>(true))
+                        t.gameObject.SetActive(true);
+                status = sh ? "hidden bones FORCED visible (inspect mode)" : status;
+            }
             if (GUILayout.Button("Reset model")) Rebuild();
             GUILayout.EndHorizontal();
 

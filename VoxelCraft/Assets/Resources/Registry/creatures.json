@@ -16,7 +16,12 @@
    "archetype": "biped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
   },
   "cow": {
    "walkClip": "animation.quadruped.walk",
@@ -24,7 +29,12 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
   },
   "fox": {
    "walkClip": "animation.quadruped.walk",
@@ -45,7 +55,10 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "arctic"
+   ]
   },
   "goat": {
    "walkClip": "animation.goat.walk",
@@ -61,7 +74,11 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "brown"
+   ]
   },
   "pig": {
    "walkClip": "animation.quadruped.walk",
@@ -69,7 +86,12 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
   },
   "sheep": {
    "walkClip": "animation.quadruped.walk",
@@ -105,7 +127,18 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "ashen",
+    "black",
+    "chestnut",
+    "rusty",
+    "snowy",
+    "spotted",
+    "striped",
+    "woods"
+   ]
   },
   "ocelot": {
    "walkClip": "animation.ocelot.walk",
@@ -120,7 +153,13 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "wild",
+    "black",
+    "red",
+    "siamese"
+   ]
   },
   "creeper": {
    "walkClip": "animation.creeper.legs",
@@ -152,7 +191,16 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "var:jump_rotation",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "brown",
+    "white",
+    "black",
+    "white_splotched",
+    "gold",
+    "salt",
+    "toast"
+   ]
   },
   "panda": {
    "walkClip": "animation.quadruped.walk",
@@ -160,7 +208,16 @@
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "default",
+    "lazy",
+    "worried",
+    "playful",
+    "brown",
+    "weak",
+    "aggressive"
+   ]
   },
   "armadillo": {
    "walkClip": "animation.armadillo.walk",
@@ -294,7 +351,14 @@
     "animation.parrot.base"
    ],
    "groundOffset": "0",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "red_blue",
+    "blue",
+    "green",
+    "yellow_blue",
+    "grey"
+   ]
   },
   "hoglin": {
    "walkClip": "animation.hoglin.walk",
@@ -347,7 +411,14 @@
    "behaviours": [],
    "controllers": true,
    "walkSpeed": "0.35",
-   "groundOffset": "0"
+   "groundOffset": "0",
+   "variants": [
+    "lucy",
+    "wild",
+    "gold",
+    "cyan",
+    "blue"
+   ]
   },
   "dolphin": {
    "walkClip": "animation.dolphin.move",
@@ -388,7 +459,12 @@
    "gait": "dist-cos",
    "behaviours": [],
    "walkSpeed": "0.15",
-   "controllers": true
+   "controllers": true,
+   "variants": [
+    "temperate",
+    "cold",
+    "warm"
+   ]
   },
   "turtle": {
    "walkClip": "animation.turtle.ground_move",

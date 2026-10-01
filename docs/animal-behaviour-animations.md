@@ -159,3 +159,14 @@ EntityDefs/*.entity.json → scripts.animate 权重表
 - 底部统计:体素尺寸/实心方块数/方块类型直方图 top5(量化对账用)
 
 批处理自检(M36VoxPreviewProbe,已删):17 件结构双模式 mesh 全 PASS,quads <= 6*solid 面剔除校验。
+
+
+## 十二、动物变种(M36)
+
+**只换贴图,不换模型**——和官方一致(同 geo/动画/控制器,`textures` 表指向不同 png)。例外(未做,需分层合成):pufferfish 鼓腮独立 geo、horse/llama markings+装饰双文件分层。
+
+- 数据链:`creatures.json` species.variants 数组(首个=默认外观)→ `CreatureRegistry.SpeciesDef.variants` → `BlockyAnimal.variant`(空=默认;贴图名 `{species}_{variant}_skin.png.bytes`,缺失回退默认)
+- 生成器:25% 概率刷非默认变体
+- 预览工具:Species 旁 Variant 下拉,切换即 Rebuild
+- 12 物种 43 张变体贴图全缓存 `_refs/vanilla/textures/variants/`(manifest.json 记录官方路径),落地 Resources/Textures/
+- 验证:M36VariantProbe 52/52(逐变体建模,贴图像素级区别于默认)已删;变体 GIF 六组全过四门禁

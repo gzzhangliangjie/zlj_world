@@ -35,3 +35,23 @@
 ## 2026-10-01 扩充:动物移植候选(geo+tex 已缓存至 _refs/vanilla/)
 - camel / frog(temperate) / turtle(sea_turtle.png) / sniffer / strider / tadpole / allay / glow_squid(.tga!) — geo 均已下至 _refs/vanilla/geo/,tex 在 _refs/vanilla/textures/
 - 其余 89 个未移植 geo 见 api 列表(多为 hostile/variant:blaze/ghast/warden/ender_dragon 等)
+
+## 变体贴图(M36 动物变种,bedrock-samples v1.21.80.3)
+
+下载缓存在 `_refs/vanilla/textures/variants/`(43 张 + manifest.json 记录 species/variant->官方路径)。
+落地 `VoxelCraft/Assets/Resources/Textures/{species}_{variant}_skin.png.bytes`(默认变体=拷贝现有 {species}_skin)。
+
+| 物种 | 变体 |
+|---|---|
+| fox | arctic |
+| frog | temperate/cold/warm |
+| rabbit | brown/white/black/white_splotched/gold/salt/toast |
+| panda | default/lazy/worried/playful/brown/weak/aggressive |
+| axolotl | lucy/wild/gold/cyan/blue |
+| parrot | red_blue/blue/green/yellow_blue/grey |
+| wolf | default/ashen/black/chestnut/rusty/snowy/spotted/striped/woods |
+| mooshroom | default/brown |
+| chicken / cow / pig | default/warm/cold |
+| ocelot | wild/black/red/siamese |
+
+horse/llama 变体是 markings/decor 分层贴图(双文件合成),未纳入本轮。

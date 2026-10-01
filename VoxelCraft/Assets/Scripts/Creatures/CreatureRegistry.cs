@@ -41,6 +41,7 @@ namespace VoxelCraft.Creatures
             // property's `default` (engine role: synced BP state; the
             // game/AI layer may set them later - e.g. armadillo roll_up).
             public Dictionary<string, string> properties;
+            public List<string> variants;         // texture variants (M36); first = default look; null = species has only one skin
         }
 
         static Dictionary<string, SpeciesDef> cache;
@@ -114,6 +115,11 @@ namespace VoxelCraft.Creatures
                         def.extraVariables = new Dictionary<string, float>();
                         foreach (var ekv in evd)
                             def.extraVariables[ekv.Key] = System.Convert.ToSingle(ekv.Value);
+                    }
+                    if (o.TryGetValue("variants", out var vr) && vr is List<object> vrl && vrl.Count > 0)
+                    {
+                        def.variants = new List<string>();
+                        foreach (var c in vrl) if (c is string cs) def.variants.Add(cs);
                     }
                     if (o.TryGetValue("properties", out var pr) && pr is Dictionary<string, object> prd)
                     {

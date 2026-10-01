@@ -71,6 +71,9 @@ namespace VoxelCraft.Creatures
                 animal.world = world;
                 animal.playerRef = player;
                 animal.species = Species[Random.Range(0, Species.Length)];
+                var vs = CreatureRegistry.Get(animal.species)?.variants;
+                if (vs != null && vs.Count > 1 && Random.value < 0.25f)
+                    animal.variant = vs[Random.Range(1, vs.Count)]; // rare non-default variant
                 animal.BuildModel();
                 animals.Add(animal);
             }
