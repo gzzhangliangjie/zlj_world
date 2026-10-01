@@ -293,55 +293,48 @@ namespace VoxelCraft.Editor
                         for (int y = colTop; y <= base8; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Grass, aff8);
                         for (int y = base8 + 1; y <= base8 + 24; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Air, aff8);
                     }
-                int ox = p8x + 2;
-                foreach (var pn in props)
+                // Per-item SOLO shots: one prop alone on the platform, camera
+                // fitted EXACTLY from the prop's known box (W x H x D) via the
+                // frustum formula - no occlusion, no copy-pasted offsets.
+                string[] propsOrder = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter" };
+                int spotX = p8x + 40, spotZ = p8z + 12;
+                foreach (var pn in propsOrder)
                 {
                     var pv = Vox.StructureRegistry.Load(pn);
                     if (pv == null) { Debug.Log($"[M31] shot8 MISSING {pn}"); continue; }
+                    var soloAff = new List<Chunk>();
+                    int placed = 0;
                     for (int y = 0; y < pv.Height; y++)
                         for (int z = 0; z < pv.Depth; z++)
                             for (int x = 0; x < pv.Width; x++)
                             {
                                 var t = pv.blocks[x, y, z];
-                                if (t != BlockType.Air) sim.SetBlock(ox + x, base8 + 1 + y, p8z + 6 + z, t, aff8);
+                                if (t != BlockType.Air) { sim.SetBlock(spotX + x, base8 + 1 + y, spotZ + z, t, soloAff); placed++; }
                             }
-                    ox += pv.Width + 4;
+                    // Camera from the frustum formula on the KNOWN box.
+                    float fovV = cam.fieldOfView * Mathf.Deg2Rad;
+                    float fovH = 2f * Mathf.Atan(Mathf.Tan(fovV * 0.5f) * cam.aspect);
+                    float extV = (pv.Height + 6f) / 2f; // + clearance so feet aren't cropped
+                    float extHn = (Mathf.Sqrt(pv.Width * pv.Width + pv.Depth * pv.Depth) + 6f) / 2f;
+                    float dist = Mathf.Max(extV / Mathf.Tan(fovV * 0.5f), extHn / Mathf.Tan(fovH * 0.5f)) * 1.25f;
+                    var center = new Vector3(spotX + pv.Width / 2f, base8 + 1 + pv.Height / 2f, spotZ + pv.Depth / 2f);
+                    var dir = new Vector3(-0.75f, 0.5f, -0.75f).normalized;
+                    cam.transform.position = center + dir * dist;
+                    cam.transform.LookAt(center);
+                    var remS = new List<Chunk>();
+                    sim.Step(pcx8, pcz8, 100000f, 100000f, remS, null);
+                    foreach (var cs in remS) attach(cs);
+                    Render(cam, $"m31_prop_{pn}.jpg", 1f);
+                    Debug.Log($"[M31] shot8 solo {pn} box={pv.Width}x{pv.Height}x{pv.Depth} blocks={placed} dist={dist:F1}");
+                    // remove this item so the next one renders alone
+                    for (int y = 0; y < pv.Height; y++)
+                        for (int z = 0; z < pv.Depth; z++)
+                            for (int x = 0; x < pv.Width; x++)
+                                if (pv.blocks[x, y, z] != BlockType.Air) sim.SetBlock(spotX + x, base8 + 1 + y, spotZ + z, BlockType.Air, soloAff);
+                    var remS2 = new List<Chunk>();
+                    sim.Step(pcx8, pcz8, 100000f, 100000f, remS2, null);
+                    foreach (var cs2 in remS2) attach(cs2);
                 }
-                // numeric probe: count non-natural blocks actually in the sim
-                var typeCount = new System.Collections.Generic.Dictionary<BlockType, int>();
-                int probeNon = 0;
-                for (int y = base8 + 1; y <= base8 + 22; y++)
-                    for (int z = p8z + 4; z <= p8z + 28; z++)
-                        for (int x = p8x; x <= p8x + 110; x++)
-                        {
-                            var b = sim.GetBlock(x, y, z);
-                            if (b != BlockType.Air && b != BlockType.Grass && b != BlockType.Dirt &&
-                                b != BlockType.Stone && b != BlockType.Sand && b != BlockType.Water &&
-                                b != BlockType.Leaves && b != BlockType.Log)
-                            {
-                                probeNon++;
-                                typeCount[b] = typeCount.TryGetValue(b, out var cc) ? cc + 1 : 1;
-                            }
-                        }
-                Debug.Log($"[M31] shot8 probe nonNatural={probeNon} types={string.Join(",", typeCount.Select(kv => kv.Key + ":" + kv.Value))}");
-                var rem82 = new List<Chunk>();
-                sim.Step(pcx8, pcz8, 100000f, 100000f, rem82, null);
-                foreach (var c82 in rem82) attach(c82);
-                var camP8 = new Vector3(p8x + 34, base8 + 12, p8z - 22);
-                cam.transform.position = camP8;
-                cam.transform.LookAt(new Vector3(p8x + 40, base8 + 3, p8z + 8));
-                Render(cam, "m31_props.jpg", 1f);
-                // top-down debug view of the row area
-                var camT = new Vector3(p8x + 55, base8 + 60, p8z + 10);
-                cam.transform.position = camT;
-                cam.transform.rotation = Quaternion.Euler(90, 0, 0);
-                Render(cam, "m31_props_top.jpg", 1f);
-                // side view dead-on
-                var camS = new Vector3(p8x + 55, base8 + 8, p8z - 20);
-                cam.transform.position = camS;
-                cam.transform.LookAt(new Vector3(p8x + 55, base8 + 6, p8z + 8));
-                Render(cam, "m31_props_side.jpg", 1f);
-                Debug.Log($"[M31] shot8 props row at ({p8x},{p8z}) base={base8} ox_end={ox}");
             }
 
             Debug.Log("M31SNAPSHOT RESULT: PASS");
