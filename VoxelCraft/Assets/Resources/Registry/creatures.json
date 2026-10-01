@@ -476,7 +476,7 @@
    "controllers": true
   },
   "dog": {
-   "walkClip": "animation.quadruped.walk",
+   "walkClip": "animation.dog.walk",
    "archetype": "quadruped",
    "locomotion": "walk",
    "gait": "dist-cos",
