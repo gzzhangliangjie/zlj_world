@@ -103,7 +103,7 @@ class ShelfPacker:
         return r
 
 
-def enhance(c, face, bone, sx, sy, sz, uu, vv):
+def enhance(c, face, bone, sx, sy, sz, uu, vv, belly=True):
     r, g, b = c
     if r < 60 and g < 60 and b < 60:
         return c                      # 眼/鼻/爪深色保留
@@ -114,9 +114,9 @@ def enhance(c, face, bone, sx, sy, sz, uu, vv):
         noise += 10
     elif face == 'down':
         noise -= 22
-    if bone in ('body', 'neck') and face in ('north', 'south', 'east', 'west') and sy <= 3:
+    if belly and bone in ('body', 'neck') and face in ('north', 'south', 'east', 'west') and sy <= 3:
         r, g, b = min(255, r + 26), min(255, g + 24), min(255, b + 18)
-    if bone.startswith('leg') and face in ('north', 'south', 'east', 'west') and sy == 0:
+    if belly and bone.startswith('leg') and face in ('north', 'south', 'east', 'west') and sy == 0:
         noise -= 20
     return (max(0, min(255, r + noise)),
             max(0, min(255, g + noise)),
@@ -150,8 +150,10 @@ SPECIES = {
         leg_geo_y_max=0, front_split=3,
         tail_rule=lambda vx, vy, vz: vy >= 5 and vz <= 1 and 2 <= vx <= 3,
         leg_x=lambda vx: vx <= 1 or vx >= 4,     # 只有两侧才是脚,身体底层不进腿
+        wing_rule=lambda vx, vy, vz: (vx == 0 or vx == 5) and vy <= 2 and vz >= 3,
         leg_lift=1,
-        orange_feet=True,
+        emperor=True,
+        belly_light=False,
     ),
 }
 
@@ -178,8 +180,16 @@ def build_species(sp, cfg):
             if tr(gx, gz, gy):
                 tail_extra[gx, gy, gz] = True
 
-    # 腿规则:geo y(vox z) <= leg_geo_y_max,排除尾;企鹅仅两侧 x 是脚
-    leg_mask = (occ & (np.arange(GY)[None, :, None] <= cfg['leg_geo_y_max'])) & ~tail_extra
+    # 翅膀规则:x 两侧黑鳍列独立成骨(左右拍动)
+    wing_mask = np.zeros_like(occ)
+    wr = cfg.get('wing_rule')
+    if wr:
+        for (gx, gy, gz), c in col.items():
+            if wr(gx, gz, gy):
+                wing_mask[gx, gy, gz] = True
+
+    # 腿规则:geo y(vox z) <= leg_geo_y_max,排除尾和翅;企鹅仅两侧 x 是脚
+    leg_mask = (occ & (np.arange(GY)[None, :, None] <= cfg['leg_geo_y_max'])) & ~tail_extra & ~wing_mask
     lx = cfg.get('leg_x')
     if lx:
         keep = np.zeros_like(leg_mask)
@@ -222,7 +232,7 @@ def build_species(sp, cfg):
                 bones.setdefault(lk, []).append((px0, y0, pz0, pw, h, pd))
 
     for name, (axis, lo, hi) in cfg['regions'].items():
-        m = occ & ~leg_mask & ~tail_extra
+        m = occ & ~leg_mask & ~tail_extra & ~wing_mask
         if axis == 'y':                      # 按 vox y = geo z
             m[:, :, :lo] = False
             m[:, :, hi:] = False
@@ -237,6 +247,10 @@ def build_species(sp, cfg):
     if tail_extra.any():
         for b in greedy_boxes(occ, tail_extra & occ):
             bones.setdefault('tail', []).append(b)
+    if wing_mask.any():
+        for b in greedy_boxes(occ, wing_mask & occ):
+            x0, y0, z0, w, h, d = b
+            bones.setdefault('wing0' if x0 < GX // 2 else 'wing1', []).append(b)
 
     packer = ShelfPacker()
     front_split = cfg['front_split']
@@ -245,9 +259,10 @@ def build_species(sp, cfg):
     leg_y = cfg['leg_geo_y_max']
     pivots = {'head': [xmid, GY - 1, 0.5], 'body': [xmid, GY - 1, zmid],
               'tail': [xmid, GY - 2, GZ - 1.5],
+              'wing0': [1, GY - 3, 1.5], 'wing1': [GX - 1, GY - 3, 1.5],
               'leg0': [0.5, leg_y + 1, front_split - 2], 'leg1': [GX - 0.5, leg_y + 1, front_split - 2],
               'leg2': [0.5, leg_y + 1, front_split + 2], 'leg3': [GX - 0.5, leg_y + 1, front_split + 2]}
-    order = ['body', 'head', 'tail', 'leg0', 'leg1', 'leg2', 'leg3']
+    order = ['body', 'head', 'tail', 'wing0', 'wing1', 'leg0', 'leg1', 'leg2', 'leg3']
     bone_json, cube_all = [], []
     for bn in order:
         cubes = bones.get(bn)
@@ -333,21 +348,37 @@ def build_species(sp, cfg):
                                     break
                                 rx += step
                     if c is not None:
-                        px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv)
+                        px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv, belly=cfg.get('belly_light', True))
                         painted += 1
-    # 企鹅橙蹼:脚盒侧面+底面统一涂橙(webbed feet)
-    if cfg.get('orange_feet'):
-        ORANGE = (232, 120, 40)
+    # 企鹅深色蹼(帝企鹅 dark webbed feet)+ 帝企鹅喙(深灰+下颌粉橙条)
+    if cfg.get('emperor'):
+        FEET = (45, 42, 40)
+        BEAK = (62, 62, 62)
+        STRIPE = (235, 150, 105)
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
-            if not bn.startswith('leg'):
-                continue
-            for face in ('north', 'south', 'east', 'west', 'down'):
-                fd = uv[face]
+            if bn.startswith('leg'):
+                for face in ('down',):          # 蹼只在脚底
+                    fd = uv[face]
+                    u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                    tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                    for vv in range(th):
+                        for uu in range(tw):
+                            px[u + uu, v + vv] = FEET
+            elif bn == 'head' and d == 1 and w <= 2:
+                # 喙盒(前端 2 宽 1 深小盒):面深灰,底面=下颌粉橙条
+                for face in ('north', 'east', 'west', 'up'):
+                    fd = uv[face]
+                    u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                    tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                    for vv in range(th):
+                        for uu in range(tw):
+                            px[u + uu, v + vv] = BEAK
+                fd = uv['down']
                 u, v = int(fd['uv'][0]), int(fd['uv'][1])
                 tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
                 for vv in range(th):
                     for uu in range(tw):
-                        px[u + uu, v + vv] = ORANGE
+                        px[u + uu, v + vv] = STRIPE
     # 企鹅无眼(原作黑头无眼点):头盒 north face 手工补白眼
     if sp == 'penguin':
         WHITE = (255, 255, 255)
