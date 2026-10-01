@@ -70,3 +70,11 @@ dog_brown/dog_urban 源自 mmmm 包 `_refs/mmmm/vox/mob_dog1.vox`/`mob_dog2.vox`
 ### 狗贴图事故(2026-10-01,用户:"这狗的贴图是认真的么")
 
 dog_*_skin.png 是裸 .png——`GetSkinMaterial` 以 `Resources.Load<TextAsset>("Textures/<name>.png")` 加载,**TextAsset 只认 .bytes/.txt 等,.png 在 Resources 里是 Texture2D 资产 → Load 返回 null → skin=null → geo 导入器 false → 回退手织网+程序化 16x16 噪声贴图(鲑鱼色一坨)。**修法:改名 `dog_*_skin.png.bytes`(和其他 84 张皮一致)。铁律:skin 一律 `.png.bytes`,出现"整只动物单色/花斑"先查贴图扩展名。
+
+### 狗贴图二连坑(2026-10-01,用户:"这贴图还是不对啊"/"这一坨啥玩意")
+
+1. **裸 .png 事故**(3617653):dog_*_skin.png 不是 .png.bytes→GetSkinMaterial 加载 null→静默回退程序化噪声(鲑鱼色)
+2. **转换器只画盒子不画面**(b312e46):vox_to_creature 生成的 skin 96% 黑底、零星笔触(棕仅 119 texel)——它从未按逐面颜色画过;鼻尖/耳朵被误分到 tail 骨
+- 修法:Tools/repaint_dog_skin.py——按 vox 逐体素采样重画整个 atlas(geo(x,y,z)=vox(x,z,y) 轴映射,由眼睛/鼻尖位置双重实证)+鼻尖块归 head
+- 数值对账:渲染帧主色=vox 原色逐色吻合(灰168×9373px/棕152,100,0×2639px/眼鼻深色×521px;urban 浅灰184+深灰136);棕 bbox 只在头/前半背
+- **教训:vox 转换的贴图必须逐体素对账,转换器"生成了文件"≠"画了内容"**
