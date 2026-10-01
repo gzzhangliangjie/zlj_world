@@ -78,3 +78,6 @@ dog_*_skin.png 是裸 .png——`GetSkinMaterial` 以 `Resources.Load<TextAsset>
 - 修法:Tools/repaint_dog_skin.py——按 vox 逐体素采样重画整个 atlas(geo(x,y,z)=vox(x,z,y) 轴映射,由眼睛/鼻尖位置双重实证)+鼻尖块归 head
 - 数值对账:渲染帧主色=vox 原色逐色吻合(灰168×9373px/棕152,100,0×2639px/眼鼻深色×521px;urban 浅灰184+深灰136);棕 bbox 只在头/前半背
 - **教训:vox 转换的贴图必须逐体素对账,转换器"生成了文件"≠"画了内容"**
+
+### 狗合并为变种(2026-10-01,519f3f2)
+mob_dog1/dog2 形状仅差 2 体素(urban 鼻尖多 2 格)→ 合并单物种 dog(brown 默认)+urban 变体,走现有变体系统(生成器 25% 非 urban 不出)。repaint_dog_skin.py 双入口:dog.geo.json+mob_dog2=默认皮,同 geo+mob_dog1=urban 皮。旧 dog_brown/dog_urban 物种与 geo/贴图已删。
