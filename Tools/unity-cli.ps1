@@ -15,6 +15,8 @@ Commands:
   build webgl|win       Player build via WebGLBuild.Build / WindowsBuild.Build
   publish [message]     build webgl + commit + push (delegates publish-webgl.ps1)
   snapshot              Batchmode model snapshots into _logs (ModelSnapshot.Run)
+  m34-ctl               M34VehicleControl.Run - 18-check vehicle physics suite
+  m34-gif               M34VehicleGifs.Run - per-vehicle GIF strips into _logs/gif
   log [file]            Summarize a Unity log file (newest in _logs if omitted)
   clean [-Yes]          Delete Library/Temp/obj/Logs (asks unless -Yes)
   ci [-WithWebGL]       Gate: compile-fast (full compile if csproj drifted) + test
@@ -33,7 +35,7 @@ All logs land in _logs\ with timestamps - never in the project root.
 param(
     [Parameter(Position = 0)][string]$Command = "help",
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)][string[]]$Rest,
-    [string]$UnityExe = "D:\Unity\2022.3.57f1c2\Editor\Unity.exe",
+    [string]$UnityExe = "C:\Users\zlj10\Unity\2022.3.57f1\Editor\Unity.exe",
     [int]$TimeoutSec = 1200,
     [switch]$Yes,
     [switch]$WithWebGL
@@ -106,8 +108,8 @@ $ErrPatterns = @(
     "It looks like another Unity instance",
     "scripts have compiler errors"
 )
-$GoodMarkers = @("SELFTEST PASS", "WEBGL BUILD OK", "WINDOWS BUILD OK", "MODEL SNAPSHOT OK")
-$BadMarkers  = @("SELFTEST FAIL", "WEBGL BUILD FAIL", "WINDOWS BUILD FAIL", "SNAPSHOT FAIL")
+$GoodMarkers = @("SELFTEST PASS", "WEBGL BUILD OK", "WINDOWS BUILD OK", "MODEL SNAPSHOT OK", "M34CONTROL RESULT: PASS", "VehGifs] RESULT: PASS")
+$BadMarkers  = @("SELFTEST FAIL", "WEBGL BUILD FAIL", "WINDOWS BUILD FAIL", "SNAPSHOT FAIL", "M34CONTROL RESULT: FAIL", "VehGifs] RESULT: FAIL")
 
 function Get-LogSummary([string]$LogPath) {
     $s = [pscustomobject]@{
@@ -375,6 +377,25 @@ function Cmd-Snapshot {
     return $false
 }
 
+function Cmd-M34([string]$Which) {
+    # M34 vehicle verification: ctl = 18-check physics suite, gif = per-vehicle GIF strips.
+    # These methods write their own RESULT markers into the log.
+    $method = "VoxelCraft.Editor.M34VehicleControl.Run"; $name = "m34ctl"
+    if ($Which -eq "gif") { $method = "VoxelCraft.Editor.M34VehicleGifs.Run"; $name = "m34gif" }
+    $log = StampLog $name
+    $r = Invoke-UnityBatch -Method $method -LogPath $log
+    if ($null -eq $r) { Fail "$name FAIL: could not start Unity batch (see above)"; return $false }
+    Info ("unity exited with code {0} in {1:mm\:ss}" -f $r.ExitCode, $r.Elapsed)
+    Show-Summary $r.Summary
+    if ($r.Summary.Errors.Count -gt 0) { Fail "$name FAIL: compile errors"; return $false }
+    $pass = $r.Summary.Good | Where-Object { $_ -match "RESULT: PASS" }
+    $fail = $r.Summary.Bad  | Where-Object { $_ -match "RESULT: FAIL" }
+    if ($fail) { Fail "$name FAIL - log: $log"; return $false }
+    if (-not $pass) { Fail "$name FAIL: no RESULT: PASS marker - log: $log"; return $false }
+    Ok "$name PASS - log: $log"
+    return $true
+}
+
 function Cmd-Publish {
     $msg = ($Rest -join " ")
     $script = Join-Path $PSScriptRoot "publish-webgl.ps1"
@@ -465,6 +486,8 @@ switch ($Command.ToLower()) {
     "build"        { if ($Rest.Count -lt 1) { Fail "usage: build webgl|win"; exit 2 } ; $ok = Cmd-Build $Rest[0] }
     "publish"      { $ok = Cmd-Publish }
     "snapshot"     { $ok = Cmd-Snapshot }
+    "m34-ctl"      { $ok = Cmd-M34 "ctl" }
+    "m34-gif"      { $ok = Cmd-M34 "gif" }
     "log"          { $ok = Cmd-Log $(if ($Rest.Count -ge 1) { $Rest[0] } else { $null }) }
     "clean"        { $ok = Cmd-Clean }
     "ci"           { $ok = Cmd-Ci }
