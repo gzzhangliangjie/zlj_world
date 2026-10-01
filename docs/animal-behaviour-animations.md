@@ -147,3 +147,15 @@ EntityDefs/*.entity.json → scripts.animate 权重表
 | 其余 36 种 | 官方 bedrock-samples v1.21.80.3 | 25 个引擎事件(§三) | 官方 AC 的转移条件 |
 
 判别法:`BlockyAnimal` collider 注释里写 "Custom xxx (Blockbench MCP)" 的就是自建;或者查 `_refs/vanilla/tree.json` 里没有该物种路径。
+
+
+## 十一、VOX 静态模型查看工具(M36,VoxPreviewWindow)
+
+`Window > VoxelCraft > Vox Preview`(Assets/Editor/VoxPreviewWindow.cs):
+
+- 左栏:Resources/VoxStructures 全部结构列表(当前 17 件)+ `Open external .vox...` 直接打开任意外部文件
+- 右侧:窗口内 3D 预览,拖拽旋转/滚轮缩放/自动旋转
+- **双模式**:`true palette colors` 开=原始调色板色(量化前的原画);关=方块量化模式(和世界生成 stamp 出来的完全一致,同一套 BlockDatabase.FaceTile + 图集 UV)
+- 底部统计:体素尺寸/实心方块数/方块类型直方图 top5(量化对账用)
+
+批处理自检(M36VoxPreviewProbe,已删):17 件结构双模式 mesh 全 PASS,quads <= 6*solid 面剔除校验。
