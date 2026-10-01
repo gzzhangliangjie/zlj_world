@@ -151,7 +151,9 @@ SPECIES = {
         tail_rule=lambda vx, vy, vz: vy >= 5 and vz <= 1 and 2 <= vx <= 3,
         leg_x=lambda vx: vx <= 1 or vx >= 4,     # 只有两侧才是脚,身体底层不进腿
         wing_rule=lambda vx, vy, vz: (vx == 0 or vx == 5) and vy <= 2 and vz >= 3,
-        leg_lift=1,
+        ns_swap=True,                      # 白肚/喙/眼在引擎 +Z(前脸):north/south 互换
+        leg_lift=1,                        # 身体位置不动;腿短 1 格=>腿短身长,总高不变
+        leg_h=2,                           # 短腿
         emperor=True,
         belly_light=False,
     ),
@@ -273,7 +275,7 @@ def build_species(sp, cfg):
         for (x0, y0, z0, w, h, d) in cubes:
             oy0 = y0                            # 采样基准(未抬升)
             if bn.startswith('leg'):
-                y0, h = 0, max(h + y0, 3)     # 埋进身体底层,防摆动断连
+                y0, h = 0, max(h + y0, cfg.get('leg_h', 3))   # 埋体防断连(企鹅 2=短腿)
                 oy0 = 0
             elif lift:
                 y0 += lift                     # 身体抬升,腿撑地(站立感)
@@ -283,6 +285,7 @@ def build_species(sp, cfg):
             for f, (fw, fh) in faces.items():
                 u, v = packer.alloc(fw, fh)
                 uv[f] = {'uv': [u, v], 'uv_size': [fw, fh]}
+
             cjson.append({'origin': [x0, y0, z0], 'size': [w, h, d], 'uv': uv})
             cube_all.append((bn, x0, y0, z0, w, h, d, uv, oy0))
         bone_json.append({'name': bn, 'pivot': pivots[bn], 'cubes': cjson})
@@ -350,14 +353,25 @@ def build_species(sp, cfg):
                     if c is not None:
                         px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv, belly=cfg.get('belly_light', True))
                         painted += 1
+    # ns_swap:引擎 +Z(脸)采 south 矩形,而脚本把脸(z0)画进 north——
+    # 画完后把每盒 north/south 矩形内容互换,脸内容即落到引擎 +Z
+    if cfg.get('ns_swap'):
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            un, vn = int(uv['north']['uv'][0]), int(uv['north']['uv'][1])
+            us, vs = int(uv['south']['uv'][0]), int(uv['south']['uv'][1])
+            tw, th = int(uv['north']['uv_size'][0]), int(uv['north']['uv_size'][1])
+            a = img.crop((un, vn, un+tw, vn+th))
+            b = img.crop((us, vs, us+tw, vs+th))
+            img.paste(b, (un, vn))
+            img.paste(a, (us, vs))
     # 企鹅深色蹼(帝企鹅 dark webbed feet)+ 帝企鹅喙(深灰+下颌粉橙条)
     if cfg.get('emperor'):
-        FEET = (45, 42, 40)
-        BEAK = (62, 62, 62)
-        STRIPE = (235, 150, 105)
+        FEET = (242, 140, 40)          # 卡通企鹅:橙蹼(脚底)
+        BEAK = (242, 140, 40)          # 橙嘴
+        STRIPE = (242, 100, 30)        # 下颌深橙条
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn.startswith('leg'):
-                for face in ('down',):          # 蹼只在脚底
+                for face in ('down', 'north', 'south', 'east', 'west', 'up'):   # 短腿整体橙,露出即蹼
                     fd = uv[face]
                     u, v = int(fd['uv'][0]), int(fd['uv'][1])
                     tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
@@ -365,8 +379,9 @@ def build_species(sp, cfg):
                         for uu in range(tw):
                             px[u + uu, v + vv] = FEET
             elif bn == 'head' and d == 1 and w <= 2:
-                # 喙盒(前端 2 宽 1 深小盒):面深灰,底面=下颌粉橙条
-                for face in ('north', 'east', 'west', 'up'):
+                # 喙盒(前端 2 宽 1 深小盒):面橙,底面=下颌深橙条
+                # (ns_swap 后引擎+Z 脸读 south 键,喙面必须涂 south)
+                for face in ('south', 'east', 'west', 'up'):
                     fd = uv[face]
                     u, v = int(fd['uv'][0]), int(fd['uv'][1])
                     tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
@@ -386,7 +401,8 @@ def build_species(sp, cfg):
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn != 'head' or w < 4:
                 continue
-            u, v = int(uv['north']['uv'][0]), int(uv['north']['uv'][1])
+            FACE = 'south' if cfg.get('ns_swap') else 'north'   # 引擎+Z 脸
+            u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
             px[u+1, v+1] = WHITE; px[u+2, v+1] = SOFT; px[u+1, v+2] = SOFT
             px[u+w-2, v+1] = WHITE; px[u+w-3, v+1] = SOFT; px[u+w-2, v+2] = SOFT
 
