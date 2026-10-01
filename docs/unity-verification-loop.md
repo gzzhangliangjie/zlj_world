@@ -58,6 +58,47 @@ geo 级数值审计(读 .geo.json 的 cube origin/size)是尺寸/对称性问题
 ## 六、GIF 交付规范(用户明确要求)
 
 - **每个载具/生物一个独立 GIF**,不许拼组照
-- 300×300、40 帧、<5MB(Feishu 限制),输出在 `_logs/gif/vehicles/`
+- 300×300、40 帧、<5MB(Feishu 限制),输出在 `_logs/gif/vehicles/`(动物在 `_logs/gif/`)
 - 每帧过 8-连通域门(主体完整、非空镜头)才算 PASS
 - 回发用户前逐个确认文件存在且大小正常;发图路径铁律见 memory(MEDIA:C:/... 大写盘符正斜杠)
+
+### 6.1 GIF 合成规范(M35 花屏事故,2026-10-01)
+
+合成 GIF **必须全帧共用一个全局调色板**,严禁每帧独立 `convert('P', adaptive)`:
+
+- **事故**:每帧独立量化出各自调色板,Pillow 写盘时只保留第一帧的全局调色板 → 后续帧的索引全部错位映射 → 橙色青蛙解码成青色/紫色噪点(用户:"花花绿绿""贴图全部错了")。游戏内贴图本身是对的——坏的只是合成这一步。
+- **正确流程**(2026-10-01 起,模板可直接抄 `_logs` 里的合成脚本):
+  1. 全帧像素池采样 → `quantize(colors=255, MEDIANCUT)` 生成**一份**调色板
+  2. 每帧 `frame.quantize(palette=pal_p, dither=NONE)` 映射到同一调色板
+  3. `save(save_all=True, disposal=2)`
+- **解码回读门禁(发图前硬性步骤)**:用 PIL 重新打开刚生成的 GIF,逐帧 `seek(i)` + `convert('RGB')` 与源 PNG 逐像素比对,`diff > 60` 的像素占比必须全帧为 0.0000。不对就重编,不许发。
+- **帧间运动检查**:合成前先比对相邻源帧(`diff>10` 占比 >0.1%),39/39 帧间必须有运动——全静止 = 动画没播(见 §7 camel 事故),直接交付静态图会被用户骂。
+- 静止帧序列 Pillow 会自动去重成 1 帧——`n_frames==1` 就是动画冻结的信号,不是编码问题。
+
+## 七、动物移植文件清单(M35 camel 漏拷 AC 事故,2026-10-01)
+
+> 事故:首次移植 camel/frog/turtle 只拷了四类文件,漏了 animation_controllers。
+> `controllers:true` 的物种**只靠 AC 状态机调度 clip**,没有 AC → `playing=[]` →
+> walk/sit 全静止 40 帧一模一样。查了 6 层(Molang 解析器/clip 解析/骨名映射/
+> 控制器状态机/时序)才定位到"文件根本不在"。教训:**移植清单先行,拷完对账**。
+
+官方 bedrock-samples 物种移植,**五类文件一个都不能少**(B = raw.githubusercontent
+.com/Mojang/bedrock-samples/<ref>,当前 ref **v1.21.80.3**):
+
+| # | 文件 | 源路径(B=resource_pack 侧) | 落地到 VoxelCraft/Assets/Resources/ | 缺了会怎样 |
+|---|---|---|---|---|
+| 1 | geo 几何 | `models/entity/$s.geo.json` | `Geo/$s.geo.json` | 直接走方块兜底模型 |
+| 2 | 动画 clip | `animations/$s.animation.json` | `Anims/$s.animation.json` | 无动作,腿不动 |
+| 3 | 实体定义 | `behavior_pack/entities/$s.entity.json` | `EntityDefs/$s.entity.json` | 无 clip 映射/pre_animation |
+| 4 | **AC 控制器** | `animation_controllers/$s.animation_controllers.json` | **`AnimControllers/`** | **clip 永不调度,全静止(本次事故)** |
+| 5 | 贴图 | `textures/entity/...`(entity.json 的 textures 字段指路,注意变体如 frog 要 temperate_frog.png) | `Textures/$s_skin.png.bytes` | 白模/花屏 |
+
+外加代码/注册侧(非拷贝,但同样必需):
+- `Registry/creatures.json` 注册(species dict:walkClip/archetype/locomotion/gait/behaviours/walkSpeed/controllers)
+- `BlockyAnimal.GetSpeciesNets` 兜底 net(geo 导入失败时用;UV 坐标**必须抄 geo json 的真实值**,不许目测编)
+- `BlockyAnimal` collider 分支 + `BedrockGeoImporter` 腿骨映射(命名腿如 left_front_leg)
+- SelfTest/AnimVerify/BehaviourGifFrames 三处 species 列表 + GIF jobs
+- 移植后:`unity-cli.ps1 test` → `BehaviourGifFrames.Run`(设 GIF_SPECIES 只跑新物种)→ 帧间运动检查(§6.1)→ 全局调色板合成+解码回读 → commit
+
+**AC 特例(别去下载不存在的文件)**:chicken/cow/pig/horse/donkey 官方**没有**单独 AC——它们的 `scripts.animate` 直接驱动 clip(direct drive);salmon/pufferfish/dolphin 共用 `fish.animation_controllers.json`(内含 controller.animation.fish.general);turtle geo 是老版 1.10 格式(顶层键 `geometry.turtle` 而非 `minecraft:geometry` 数组),importer 已有分支处理。
+
