@@ -31,3 +31,7 @@
 |---|---|---|---|
 | leaves_oak（原木树叶） | _refs/vanilla/blocks/leaves_oak.tga | VoxelCraft leaves.png.bytes | **tga 是灰度图**，引擎无 tint，需 PIL 按 plains 绿 (119,171,47) 乘灰上色；leaves_oak_opaque.tga 404 不存在；carried 变体也是灰度 |
 | terrain_texture.json | _refs/vanilla/blocks/atlas.json | 查方块贴图路径的权威索引 | 命名规律：leaves_oak / leaves_oak_carried（不是 oak_leaves！）|
+
+## 2026-10-01 扩充:动物移植候选(geo+tex 已缓存至 _refs/vanilla/)
+- camel / frog(temperate) / turtle(sea_turtle.png) / sniffer / strider / tadpole / allay / glow_squid(.tga!) — geo 均已下至 _refs/vanilla/geo/,tex 在 _refs/vanilla/textures/
+- 其余 89 个未移植 geo 见 api 列表(多为 hostile/variant:blaze/ghast/warden/ender_dragon 等)
