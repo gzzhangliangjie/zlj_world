@@ -177,6 +177,7 @@ namespace VoxelCraft.Vox
             (BlockType t, Color32 col)[] anchors = new (BlockType, Color32)[]
             {
                 (BlockType.Grass,       new Color32(106, 170, 64, 255)),
+                (BlockType.Leaves,      new Color32(96, 168, 60, 255)),
                 (BlockType.Dirt,        new Color32(121, 85, 58, 255)),
                 (BlockType.Stone,       new Color32(125, 125, 125, 255)),
                 (BlockType.Sand,        new Color32(219, 207, 163, 255)),

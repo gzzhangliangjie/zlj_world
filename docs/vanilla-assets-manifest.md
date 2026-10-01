@@ -23,3 +23,11 @@
 ## 本地缓存
 - D:/zlj_world/_refs/vanilla/{geo,textures,anims}/ — 生物管线缓存
 - scratch/vanilla_blocks/ — 床+熔炉 10 张已嵌入 PNG
+
+
+## 方块贴图（bedrock-samples v1.21.80.3，注意：png 大多 404，实际是 .tga）
+
+| 资源 | 本地缓存 | 用途 | 备注 |
+|---|---|---|---|
+| leaves_oak（原木树叶） | _refs/vanilla/blocks/leaves_oak.tga | VoxelCraft leaves.png.bytes | **tga 是灰度图**，引擎无 tint，需 PIL 按 plains 绿 (119,171,47) 乘灰上色；leaves_oak_opaque.tga 404 不存在；carried 变体也是灰度 |
+| terrain_texture.json | _refs/vanilla/blocks/atlas.json | 查方块贴图路径的权威索引 | 命名规律：leaves_oak / leaves_oak_carried（不是 oak_leaves！）|

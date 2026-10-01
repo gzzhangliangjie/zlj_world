@@ -256,6 +256,7 @@ namespace VoxelCraft.Gen
                                 int lx3 = anchor.x + x - chunk.cx * VoxelMath.ChunkSize;
                                 int lz3 = anchor.y + z - chunk.cz * VoxelMath.ChunkSize;
                                 if (lx3 < 0 || lx3 >= VoxelMath.ChunkSize || lz3 < 0 || lz3 >= VoxelMath.ChunkSize) { continue; }
+                                if (y < 0 || y >= VoxelMath.ChunkHeight) { continue; }
                                 var cur3 = (BlockType)chunk.blocks[VoxelMath.LocalIndex(lx3, y, lz3)];
                                 bool nat3 = cur3 == BlockType.Air || cur3 == BlockType.Stone ||
                                     cur3 == BlockType.Dirt || cur3 == BlockType.Grass ||
@@ -277,6 +278,7 @@ namespace VoxelCraft.Gen
                                 int lx2 = anchor.x + x - chunk.cx * VoxelMath.ChunkSize;
                                 int lz2 = anchor.y + z - chunk.cz * VoxelMath.ChunkSize;
                                 if (lx2 < 0 || lx2 >= VoxelMath.ChunkSize || lz2 < 0 || lz2 >= VoxelMath.ChunkSize) { continue; }
+                                if (y < 0 || y >= VoxelMath.ChunkHeight) { continue; } // guard: never index past chunk top
                                 var cur = (BlockType)chunk.blocks[VoxelMath.LocalIndex(lx2, y, lz2)];
                                 bool natural = cur == BlockType.Stone || cur == BlockType.Dirt ||
                                     cur == BlockType.Grass || cur == BlockType.Sand ||

@@ -293,11 +293,20 @@ namespace VoxelCraft.Editor
                         for (int y = colTop; y <= base8; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Grass, aff8);
                         for (int y = base8 + 1; y <= base8 + 24; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Air, aff8);
                     }
-                // Per-item SOLO shots: one prop alone on the platform, camera
-                // fitted EXACTLY from the prop's known box (W x H x D) via the
-                // frustum formula - no occlusion, no copy-pasted offsets.
+                // Per-item SOLO shots: one prop alone on a SKY STUDIO platform
+                // lifted high above terrain (base8+40) so the backdrop is pure
+                // sky - no world trees photobombing 2-tall props. Camera fitted
+                // from the prop's known WxHxD via the frustum formula.
                 string[] propsOrder = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter" };
                 int spotX = p8x + 40, spotZ = p8z + 12;
+                int studioY = base8 + 40; // above every tree the generator can grow
+                var studioAff = new List<Chunk>();
+                for (int x = -6; x < 40; x++)
+                    for (int z = -6; z < 40; z++)
+                    {
+                        sim.SetBlock(spotX + x, studioY, spotZ + z, BlockType.Grass, studioAff);
+                        for (int y = studioY + 1; y <= studioY + 45; y++) sim.SetBlock(spotX + x, y, spotZ + z, BlockType.Air, studioAff);
+                    }
                 foreach (var pn in propsOrder)
                 {
                     var pv = Vox.StructureRegistry.Load(pn);
@@ -309,7 +318,7 @@ namespace VoxelCraft.Editor
                             for (int x = 0; x < pv.Width; x++)
                             {
                                 var t = pv.blocks[x, y, z];
-                                if (t != BlockType.Air) { sim.SetBlock(spotX + x, base8 + 1 + y, spotZ + z, t, soloAff); placed++; }
+                                if (t != BlockType.Air) { sim.SetBlock(spotX + 6 + x, studioY + 1 + y, spotZ + 6 + z, t, soloAff); placed++; }
                             }
                     // Camera from the frustum formula on the KNOWN box.
                     float fovV = cam.fieldOfView * Mathf.Deg2Rad;
@@ -317,20 +326,30 @@ namespace VoxelCraft.Editor
                     float extV = (pv.Height + 6f) / 2f; // + clearance so feet aren't cropped
                     float extHn = (Mathf.Sqrt(pv.Width * pv.Width + pv.Depth * pv.Depth) + 6f) / 2f;
                     float dist = Mathf.Max(extV / Mathf.Tan(fovV * 0.5f), extHn / Mathf.Tan(fovH * 0.5f)) * 1.25f;
-                    var center = new Vector3(spotX + pv.Width / 2f, base8 + 1 + pv.Height / 2f, spotZ + pv.Depth / 2f);
-                    var dir = new Vector3(-0.75f, 0.5f, -0.75f).normalized;
+                    var center = new Vector3(spotX + 6 + pv.Width / 2f, studioY + 1 + pv.Height / 2f, spotZ + 6 + pv.Depth / 2f);
+                    var dir = new Vector3(-0.75f, 0.35f, -0.75f).normalized;
                     cam.transform.position = center + dir * dist;
                     cam.transform.LookAt(center);
                     var remS = new List<Chunk>();
                     sim.Step(pcx8, pcz8, 100000f, 100000f, remS, null);
                     foreach (var cs in remS) attach(cs);
+                    // census: what block types is THIS prop made of in-world?
+                    var cens = new System.Collections.Generic.Dictionary<BlockType, int>();
+                    for (int y = 0; y < pv.Height; y++)
+                        for (int z = 0; z < pv.Depth; z++)
+                            for (int x = 0; x < pv.Width; x++)
+                            {
+                                var b = sim.GetBlock(spotX + 6 + x, studioY + 1 + y, spotZ + 6 + z);
+                                if (b != BlockType.Air) cens[b] = cens.TryGetValue(b, out var n0) ? n0 + 1 : 1;
+                            }
+                    Debug.Log($"[M31] shot8 census {pn}: {string.Join(",", cens.Select(kv => kv.Key + ":" + kv.Value))}");
                     Render(cam, $"m31_prop_{pn}.jpg", 1f);
                     Debug.Log($"[M31] shot8 solo {pn} box={pv.Width}x{pv.Height}x{pv.Depth} blocks={placed} dist={dist:F1}");
                     // remove this item so the next one renders alone
                     for (int y = 0; y < pv.Height; y++)
                         for (int z = 0; z < pv.Depth; z++)
                             for (int x = 0; x < pv.Width; x++)
-                                if (pv.blocks[x, y, z] != BlockType.Air) sim.SetBlock(spotX + x, base8 + 1 + y, spotZ + z, BlockType.Air, soloAff);
+                                if (pv.blocks[x, y, z] != BlockType.Air) sim.SetBlock(spotX + 6 + x, studioY + 1 + y, spotZ + 6 + z, BlockType.Air, soloAff);
                     var remS2 = new List<Chunk>();
                     sim.Step(pcx8, pcz8, 100000f, 100000f, remS2, null);
                     foreach (var cs2 in remS2) attach(cs2);
