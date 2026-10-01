@@ -66,3 +66,7 @@ horse/llama 变体是 markings/decor 分层贴图(双文件合成),未纳入本�
 dog_brown/dog_urban 源自 mmmm 包 `_refs/mmmm/vox/mob_dog1.vox`/`mob_dog2.vox`(212 体素,vox_to_creature.py 贪婪盒转换)。vox 无骨骼,原始转换只有 body 单骨 → quadruped.walk 找不到 leg0..3,腿冻结。
 **补全**(2026-10-01):按方块几何重分组为 body/head/tail/leg0..3 七骨(腿=细柱+脚片、头=大块+耳柱、尾=末端小块),pig 规范 leg0=-x前/leg1=+x前/leg2=-x后/leg3=+x后(对角步态相位 leg0/leg3 同相)。walkClip 无需改(quadruped.walk 本就驱动 leg0..3)。dog_urban 的头柱(z1..3 细高柱)曾误入 body,已归 head。
 验证:两狗 walk 40 帧全连通+39/39 帧间运动。
+
+### 狗贴图事故(2026-10-01,用户:"这狗的贴图是认真的么")
+
+dog_*_skin.png 是裸 .png——`GetSkinMaterial` 以 `Resources.Load<TextAsset>("Textures/<name>.png")` 加载,**TextAsset 只认 .bytes/.txt 等,.png 在 Resources 里是 Texture2D 资产 → Load 返回 null → skin=null → geo 导入器 false → 回退手织网+程序化 16x16 噪声贴图(鲑鱼色一坨)。**修法:改名 `dog_*_skin.png.bytes`(和其他 84 张皮一致)。铁律:skin 一律 `.png.bytes`,出现"整只动物单色/花斑"先查贴图扩展名。
