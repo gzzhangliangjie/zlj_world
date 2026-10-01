@@ -440,9 +440,12 @@
    "groundOffset": "-0.1625"
   },
   "penguin": {
-   "archetype": "biped",
+   "walkClip": "animation.dog.walk",
+   "archetype": "quadruped",
    "locomotion": "walk",
-   "biped": true
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "1.0"
   },
   "camel": {
    "walkClip": "animation.camel.walk",
@@ -486,6 +489,22 @@
     "urban"
    ],
    "entityScale": "0.9"
+  },
+  "cat": {
+   "walkClip": "animation.dog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "0.8"
+  },
+  "bear": {
+   "walkClip": "animation.dog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "1.6"
   }
  },
  "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",

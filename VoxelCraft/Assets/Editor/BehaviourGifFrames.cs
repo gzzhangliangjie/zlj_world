@@ -135,6 +135,9 @@ namespace VoxelCraft.Editor
                 ("ocelot", null, false, "var_siamese"),
                 ("dog", null, false, "walk"),
                 ("dog", null, false, "var_urban"),
+                ("cat", null, false, "walk"),
+                ("bear", null, false, "walk"),
+                ("penguin", null, false, "walk"),
                 ("wolf", null, false, "tamed"),
             };
 
