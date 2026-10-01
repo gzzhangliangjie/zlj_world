@@ -41,9 +41,9 @@ namespace VoxelCraft.Creatures
             collarGo.name = "Collar";
             Object.Destroy(collarGo.GetComponent<Collider>());
             collarGo.transform.SetParent(head, false);
-            collarGo.transform.localPosition = new Vector3(0f, -0.9f, 0.28f);
+            collarGo.transform.localPosition = new Vector3(0f, -0.14f, 0f);
             collarGo.transform.localRotation = Quaternion.identity;
-            collarGo.transform.localScale = new Vector3(0.56f, 0.28f, 0.56f);
+            collarGo.transform.localScale = new Vector3(0.4f, 0.2f, 0.4f);
             var r = collarGo.GetComponent<Renderer>();
             r.sharedMaterial = CreatureTextureFactory.PlainColorMaterial(new Color32(200, 30, 30, 255));
             collarGo.SetActive(false);

@@ -133,6 +133,9 @@ namespace VoxelCraft.Editor
                 ("panda", null, false, "var_brown"),
                 ("ocelot", null, false, "var_black"),
                 ("ocelot", null, false, "var_siamese"),
+                ("dog_brown", null, false, "walk"),
+                ("dog_urban", null, false, "walk"),
+                ("wolf", null, false, "tamed"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for
@@ -148,6 +151,7 @@ namespace VoxelCraft.Editor
                 ani.species = sp;
                 if (tag != null && tag.StartsWith("var_"))
                     ani.variant = tag.Substring(4);
+                bool tameAt20 = tag == "tamed";
                 ani.BuildModel();
                 // M36: event jobs fire their engine event mid-shot so the
                 // clip before/after is visible in one GIF
@@ -207,6 +211,8 @@ namespace VoxelCraft.Editor
                     }
                     if (player != null) player.Tick(dt);
                     if (ani != null) DriveBlockyTick(ani, dt, ani.walking);
+                    if (ani != null && tameAt20 && i == evFrame)
+                        ani.SetTamed(true); // collar pops on mid-shot
                     if (ani != null && forcedEvent != null && i == evFrame)
                         ani.ForceBehaviourEvent(forcedEvent, 60f / Fps * 12f);
                     if (ani != null && forcedEvent != null)

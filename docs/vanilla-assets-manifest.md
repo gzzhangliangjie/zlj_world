@@ -60,3 +60,9 @@ horse/llama 变体是 markings/decor 分层贴图(双文件合成),未纳入本�
 
 官方 v1.21.80.3 wolf 的 tame 贴图(wolf_tame.png 等 10 张)**在仓库里不存在**(entity def 引用但文件缺失,404 实锤)——官方驯服外观就是 base 贴图 + 项圈几何件显隐。项目实现:`BlockyAnimal.SetTamed(bool)` 建 Collar 小方块(纯色红材质,不碰贴图)挂 head 骨下,SetActive 切换;预览工具 "tamed (collar)" 开关。wolf variants 回归 9 个生态型(移除误加的 *_tame)。
 自建狗资产 dog_brown/dog_urban(用户 Blockbench MCP 作品)已注册为独立物种(geo+skin 128x128,walkClip=quadruped.walk)。
+
+## mmmm VOX 狗的骨骼补全(M36)
+
+dog_brown/dog_urban 源自 mmmm 包 `_refs/mmmm/vox/mob_dog1.vox`/`mob_dog2.vox`(212 体素,vox_to_creature.py 贪婪盒转换)。vox 无骨骼,原始转换只有 body 单骨 → quadruped.walk 找不到 leg0..3,腿冻结。
+**补全**(2026-10-01):按方块几何重分组为 body/head/tail/leg0..3 七骨(腿=细柱+脚片、头=大块+耳柱、尾=末端小块),pig 规范 leg0=-x前/leg1=+x前/leg2=-x后/leg3=+x后(对角步态相位 leg0/leg3 同相)。walkClip 无需改(quadruped.walk 本就驱动 leg0..3)。dog_urban 的头柱(z1..3 细高柱)曾误入 body,已归 head。
+验证:两狗 walk 40 帧全连通+39/39 帧间运动。
