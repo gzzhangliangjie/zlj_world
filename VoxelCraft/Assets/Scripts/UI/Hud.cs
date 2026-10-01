@@ -581,7 +581,7 @@ namespace VoxelCraft.UI
                 "WASD  Move        Shift  Sprint\n" +
                 "Space Jump / fly up   Ctrl  Fly down\n" +
                 "F     Toggle fly mode\n" +
-                "V     First / third person\n" +
+                "V     Cycle camera: 1st -> behind -> front view\n" +
                 "T / E Tool bag: pick tool (1-5), view backpack\n" +
                 "      Sword attacks animals (meat!), Axe=wood, Pick=stone\n" +
                 "      Clock: hold LMB fast-forwards time, R jumps\n" +
