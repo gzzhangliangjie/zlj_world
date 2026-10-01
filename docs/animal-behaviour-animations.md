@@ -135,3 +135,15 @@ EntityDefs/*.entity.json → scripts.animate 权重表
 - `GetClipWeight` 对未播放 clip 返回 1f → `weight<0.5` 守卫恒假,flap_chase 永不启动;改用 `IsPlaying`(本次新增,搜 playing 列表)
 - 探针驱动:Update 不在 batchmode 跑,逻辑抽成 `TickGooseChase(dt)` 公共方法,Update/探针共用
 - 回读门禁对齐:Pillow 去重静止帧(n_frames<源帧数),需按 duration 展开后逐帧比对(diff=0.0000)
+
+## 十、自建物种 vs 官方物种的资产边界(M36)
+
+用户自建物种的**资产**(geo/贴图/动画/AC)由用户制作(多为 Blockbench MCP),但**事件接线仍由 M36 事件层做**——自建资产里只有状态机转移条件,没有引擎信号源。
+
+| 物种 | 资产来源 | 事件层接的信号 | 依据 |
+|---|---|---|---|
+| goose | 自建(Blockbench MCP) | 领地追击 AI(6m 追/1.6m 啄,§九) + swim/attack 事件 | 无官方可抄,AI 直接写 |
+| croc | 自建(Blockbench MCP) | bite(hasTarget→attack 态)+ swim 事件 | AC 里有 attack 状态机但无信号源 |
+| 其余 36 种 | 官方 bedrock-samples v1.21.80.3 | 25 个引擎事件(§三) | 官方 AC 的转移条件 |
+
+判别法:`BlockyAnimal` collider 注释里写 "Custom xxx (Blockbench MCP)" 的就是自建;或者查 `_refs/vanilla/tree.json` 里没有该物种路径。
