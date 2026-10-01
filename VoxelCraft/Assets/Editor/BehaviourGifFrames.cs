@@ -109,6 +109,10 @@ namespace VoxelCraft.Editor
                 ("frog", null, false, "walk"),
                 ("turtle", null, false, "walk"),
                 ("camel", "animation.camel.sit", false, "sit"),
+                // frog jump: vanilla controller.animation.frog.general only
+                // enters "jumping" on query.is_jump_goal_jumping (engine goal,
+                // not wired); showcase the 0.375s jump clip directly.
+                ("frog", "animation.frog.jump", false, "jump"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for
@@ -158,6 +162,12 @@ namespace VoxelCraft.Editor
                         if (i == 0 && player != null)
                         {
                             ani.walking = false;
+                            // Stationary pose jobs (sit etc.): the locomotion
+                            // clock MUST stop, or pre_animation computes
+                            // variable.moving=1 from the player-side moveSpeed
+                            // fallback and the controller schedules the WALK
+                            // clip on top of the pose (camel sit leg-wiggle).
+                            if (player != null) player.moving = false;
                             StartChainedOrSingle(player, clip, absolute);
                         }
                         else if (player != null && clip != null && clip.Contains('|'))
