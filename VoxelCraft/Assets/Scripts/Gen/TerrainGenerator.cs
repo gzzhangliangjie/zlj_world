@@ -172,7 +172,13 @@ namespace VoxelCraft.Gen
         }
 
         /// <summary>Structure names stamped during world gen (Resources/VoxStructures/*.bytes).</summary>
-        public static readonly string[] StructureSet = { "cottage", "house5" };
+        public static readonly string[] StructureSet = {
+            // order matters: earlier structures can be overwritten by later ones,
+            // so small props go first and buildings (which add furniture) last.
+            "tree1", "tree2", "tree3", "tree4",   // trees: near-everywhere
+            "fence2", "stlight", "trashcan", "planter", // street props
+            "cottage", "house5",
+        };
 
         /// <summary>
         /// Stamps .vox structures near chunk borders deterministically: anchors come
@@ -242,7 +248,22 @@ namespace VoxelCraft.Gen
                             }
                             for (int y = colTop; y <= baseY + vox.Height + 1; y++)
                             {
-                                TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Air, overwrite: true);
+                                // Clear only NATURAL terrain so a later structure's
+                                // air pass never erases an earlier structure's blocks
+                                // (cottage glass vs wide fence footprints etc).
+                                int lx2 = anchor.x + x - chunk.cx * VoxelMath.ChunkSize;
+                                int lz2 = anchor.y + z - chunk.cz * VoxelMath.ChunkSize;
+                                if (lx2 < 0 || lx2 >= VoxelMath.ChunkSize || lz2 < 0 || lz2 >= VoxelMath.ChunkSize) { continue; }
+                                var cur = (BlockType)chunk.blocks[VoxelMath.LocalIndex(lx2, y, lz2)];
+                                bool natural = cur == BlockType.Stone || cur == BlockType.Dirt ||
+                                    cur == BlockType.Grass || cur == BlockType.Sand ||
+                                    cur == BlockType.Gravel || cur == BlockType.Water ||
+                                    cur == BlockType.Snow || cur == BlockType.Leaves ||
+                                    cur == BlockType.Log;
+                                if (natural)
+                                {
+                                    TrySet(chunk, anchor.x + x, y, anchor.y + z, BlockType.Air, overwrite: true);
+                                }
                             }
                         }
                     }

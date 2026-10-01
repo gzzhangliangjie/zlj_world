@@ -2,6 +2,7 @@
 // chest/bed/fence, plus a night shot proving torch glow. Batch mode, no play mode.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using VoxelCraft.Core;
 using VoxelCraft.Gen;
@@ -213,6 +214,83 @@ namespace VoxelCraft.Editor
                     Render(cam, $"m31_house5_{names[d]}.jpg", 1f);
                 }
                 Debug.Log($"[M31] shot7 house5 on platform at ({px},{pz}) base={top}");
+            }
+
+            // Shot 8: street props row (tree1-4, fence2, stlight, trashcan,
+            // planter) on the same platform, one render.
+            {
+                string[] props = { "tree1", "tree2", "tree3", "tree4", "fence2", "stlight", "trashcan", "planter" };
+                var remP8 = new List<Chunk>();
+                sim.dataRadius = 6; sim.meshRadius = 6;
+                int p8x = 20, p8z = 40;
+                int pcx8 = VoxelMath.ChunkCoord(p8x + 40), pcz8 = VoxelMath.ChunkCoord(p8z + 40);
+                sim.Step(pcx8, pcz8, 100000f, 100000f, remP8, null);
+                foreach (var c8 in remP8) attach(c8);
+                int mn8 = int.MaxValue, mx8 = int.MinValue;
+                for (int x = 0; x < 100; x += 4)
+                    for (int z = 0; z < 24; z += 4)
+                    {
+                        int g = sim.generator.HeightAt(p8x + x, p8z + z);
+                        mn8 = Mathf.Min(mn8, g); mx8 = Mathf.Max(mx8, g);
+                    }
+                int base8 = mx8;
+                var aff8 = new List<Chunk>();
+                for (int x = -2; x < 102; x++)
+                    for (int z = -2; z < 26; z++)
+                    {
+                        int colTop = sim.SurfaceHeight(p8x + x, p8z + z, true);
+                        for (int y = colTop; y <= base8; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Grass, aff8);
+                        for (int y = base8 + 1; y <= base8 + 24; y++) sim.SetBlock(p8x + x, y, p8z + z, BlockType.Air, aff8);
+                    }
+                int ox = p8x + 2;
+                foreach (var pn in props)
+                {
+                    var pv = Vox.StructureRegistry.Load(pn);
+                    if (pv == null) { Debug.Log($"[M31] shot8 MISSING {pn}"); continue; }
+                    for (int y = 0; y < pv.Height; y++)
+                        for (int z = 0; z < pv.Depth; z++)
+                            for (int x = 0; x < pv.Width; x++)
+                            {
+                                var t = pv.blocks[x, y, z];
+                                if (t != BlockType.Air) sim.SetBlock(ox + x, base8 + 1 + y, p8z + 6 + z, t, aff8);
+                            }
+                    ox += pv.Width + 4;
+                }
+                // numeric probe: count non-natural blocks actually in the sim
+                var typeCount = new System.Collections.Generic.Dictionary<BlockType, int>();
+                int probeNon = 0;
+                for (int y = base8 + 1; y <= base8 + 22; y++)
+                    for (int z = p8z + 4; z <= p8z + 28; z++)
+                        for (int x = p8x; x <= p8x + 110; x++)
+                        {
+                            var b = sim.GetBlock(x, y, z);
+                            if (b != BlockType.Air && b != BlockType.Grass && b != BlockType.Dirt &&
+                                b != BlockType.Stone && b != BlockType.Sand && b != BlockType.Water &&
+                                b != BlockType.Leaves && b != BlockType.Log)
+                            {
+                                probeNon++;
+                                typeCount[b] = typeCount.TryGetValue(b, out var cc) ? cc + 1 : 1;
+                            }
+                        }
+                Debug.Log($"[M31] shot8 probe nonNatural={probeNon} types={string.Join(",", typeCount.Select(kv => kv.Key + ":" + kv.Value))}");
+                var rem82 = new List<Chunk>();
+                sim.Step(pcx8, pcz8, 100000f, 100000f, rem82, null);
+                foreach (var c82 in rem82) attach(c82);
+                var camP8 = new Vector3(p8x + 34, base8 + 12, p8z - 22);
+                cam.transform.position = camP8;
+                cam.transform.LookAt(new Vector3(p8x + 40, base8 + 3, p8z + 8));
+                Render(cam, "m31_props.jpg", 1f);
+                // top-down debug view of the row area
+                var camT = new Vector3(p8x + 55, base8 + 60, p8z + 10);
+                cam.transform.position = camT;
+                cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+                Render(cam, "m31_props_top.jpg", 1f);
+                // side view dead-on
+                var camS = new Vector3(p8x + 55, base8 + 8, p8z - 20);
+                cam.transform.position = camS;
+                cam.transform.LookAt(new Vector3(p8x + 55, base8 + 6, p8z + 8));
+                Render(cam, "m31_props_side.jpg", 1f);
+                Debug.Log($"[M31] shot8 props row at ({p8x},{p8z}) base={base8} ox_end={ox}");
             }
 
             Debug.Log("M31SNAPSHOT RESULT: PASS");
