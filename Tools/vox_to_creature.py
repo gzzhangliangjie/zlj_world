@@ -98,17 +98,27 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
             maxY = max(c[1] for c in cells) if cells else 0
             for z in {c[2] for c in cells}:
                 for x in {c[0] for c in cells}:
-                    run = []          # longest contiguous gray run in this pillar
-                    best = []
+                    # ALL contiguous gray runs in this pillar (creature y =
+                    # height). A car has TWO kinds of gray band: the tire
+                    # (starts at the ground, y<=1) and the window/trim band
+                    # higher up (y>=6). Picking the globally-longest run let
+                    # the window band win on some pillars and the wheel bbox
+                    # blew up to nearly full car height (M34 round-3: police1
+                    # disc Ø11 vox on a 13-vox car). Rule: tire = longest
+                    # GROUND-STARTING run; fall back to longest overall.
+                    runs = []
+                    run = []
                     for y in range(0, maxY + 1):
                         c0 = v2.get((x, y, z))
                         if c0 is None: continue
                         gray = abs(c0[0] - c0[1]) < 24 and abs(c0[1] - c0[2]) < 24
                         if gray: run.append((x, y, z))
                         else:
-                            if len(run) > len(best): best = run
+                            if run: runs.append(run)
                             run = []
-                    if len(run) > len(best): best = run
+                    if run: runs.append(run)
+                    grounded = [r for r in runs if r[0][1] <= 1]
+                    best = max(grounded or runs, key=len) if runs else []
                     keep.update(best)
             wheel_cells |= keep
             wheel_specs.append((f'wheel{fore}{side}', keep))
@@ -185,23 +195,30 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
         'pivot': [W/2 * scale, 0, D/2 * scale],
         'cubes': cubes,
     }]
+    # ---- ONE shared wheel template (M34 round-5) ----
+    # Detection varies pillar to pillar (window bands vs tire runs), which
+    # produced asymmetric/oversized wheels. Now the SIZE comes from the CAR:
+    # D = round(0.45 * body_height) (mmmm ground truth: Ø5-6 on 11-13 vox
+    # cars), the disc bottom sits at y=0 (flush with the ground), and all
+    # four wheels are stamped from the same template. Detection only picks
+    # the AXLE z positions.
+    body_ymax = max(k[1] for k in v2.keys()) + 1   # k = (x, y_up, z_len)
+    DISC_D = max(4, min(7, round(0.45 * body_ymax)))
+    DISC_DEPTH = 2                              # axle-line thickness (x)
+
     for wname, cells in wheel_specs:
         if not cells: continue
         xs = [c[0] for c in cells]; ys = [c[1] for c in cells]; zs = [c[2] for c in cells]
         wx0, wx1 = min(xs), max(xs); wy0, wy1 = min(ys), max(ys); wz0, wz1 = min(zs), max(zs)
-        w, h, d = wx1-wx0+1, wy1-wy0+1, wz1-wz0+1
         is_left = wx0 < (max(p[0] for p in v2) + 1) / 2.0
 
-        # ---- procedural disc wheel (octagon profile) ----
-        # mmmm source wheels are 1-voxel flush slabs: rotation can't read.
-        # Build a proper disc wheel in the y-z plane around the x axle:
-        # centre band (full width) + chamfered top/bottom rows, extruded
-        # past the body side so it protrudes.
-        depth = max(2, min(3, d))              # axle-line thickness (x)
-        R = (wy1 - wy0 + 1) // 2               # ~half height
-        zw = max(1, R)                          # z half-width of centre band
-        ax = (wx0 - 1) if is_left else (wx1 + 1)   # outward slab plane
-        cy = wy0 + (wy1 - wy0) / 2.0            # hub y
+        depth = DISC_DEPTH
+        R = DISC_D // 2
+        zw = max(1, R)
+        # mirrored placement about the car centre: both discs protrude
+        # past the body flanks by the same amount
+        ax = (1 - depth) if is_left else (W - 1)
+        cy = DISC_D / 2.0                       # hub height = D/2 (bottom at 0)
         cz = (wz0 + wz1) // 2
         TIRE = (40, 40, 44); HUB = (170, 170, 175); SPOKE = (228, 228, 235)
 
@@ -223,14 +240,18 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
                         img.putpixel((ux+px, uy+py), (c[0], c[1], c[2], 255))
             return uvw
 
-        # octagon rows: bottom chamfer, centre band, top chamfer
+        # ROTATION-SYMMETRIC octagon inside the D x D bounding box, grounded
+        # at y=0: centre band (D-2 tall, full width) + 1-vox chamfers at
+        # top AND bottom (D-2 wide). A chamfer on one side only made the
+        # disc wobble as it spun (M34 round-5: "rear wheel bigger than
+        # front" at different spin phases).
         rows = []
-        if wy1 - wy0 + 1 >= 3:
-            rows.append((wy0 - 1, 1, cz - zw + 1, 2 * zw - 1))   # bottom (dropped 1)
-            rows.append((wy1 + 1, 1, cz - zw + 1, 2 * zw - 1))   # top (raised 1)
-            rows.append((wy0, wy1 - wy0 + 1, cz - zw, 2 * zw + 1))     # centre
+        if DISC_D >= 4:
+            rows.append((0, 1, cz - zw + 1, 2 * zw - 1))           # bottom chamfer
+            rows.append((1, DISC_D - 2, cz - zw, 2 * zw + 1))      # centre band
+            rows.append((DISC_D - 1, 1, cz - zw + 1, 2 * zw - 1))  # top chamfer
         else:
-            rows.append((wy0, wy1 - wy0 + 1, cz - zw, 2 * zw + 1))
+            rows.append((0, DISC_D, cz - zw, 2 * zw + 1))
 
         wheel_cubes = []
         centre_uv = None
@@ -260,8 +281,8 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
         bones_out.append({
             'name': wname,
             'parent': 'body',
-            'pivot': [((ax + 0.5) if not is_left else (ax + 0.5)) * scale,
-                      (wy0 + (wy1 - wy0 + 1) / 2.0) * scale,
+            'pivot': [(ax + depth / 2.0) * scale,   # disc centre (wobble-free)
+                      (DISC_D / 2.0) * scale,
                       (cz + 0.5) * scale],
             'cubes': wheel_cubes,
         })
