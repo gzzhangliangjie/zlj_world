@@ -96,7 +96,7 @@ namespace VoxelCraft.Editor
         static (float, float) StraightProfile(float p)
             => (p < 0.15f ? 0f : 1f, -0.75f);                     // circle right (visible steering)
         static (float, float) MountProfile(float p)
-            => (p < 0.9f ? 1f : -1f, 0.15f);                      // run then halt
+            => (p < 0.9f ? 1f : -1f, 0.5f);                       // run then halt (steer enough to circle, else wall-stop)
 
         static void RunVehicle(WorldSim sim, WorldRoot stub, Camera cam,
             string name, DrivableVehicle.ChassisType ch, string tag,
@@ -106,7 +106,7 @@ namespace VoxelCraft.Editor
             // start on open ground facing +x along the drive corridor
             int gx = 18, gz = 20;
             int g0 = sim.SurfaceHeight(gx, gz, true);
-            vgo.transform.position = new Vector3(gx + 0.5f, g0 + (ch == DrivableVehicle.ChassisType.Mount ? 1.02f : 2.0f), gz + 0.5f);
+            vgo.transform.position = new Vector3(gx + 0.5f, g0 + (ch == DrivableVehicle.ChassisType.Mount ? 1.14f : 2.0f), gz + 0.5f);
             vgo.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
             var v = vgo.AddComponent<DrivableVehicle>();
             v.world = stub;
@@ -176,8 +176,9 @@ namespace VoxelCraft.Editor
             Vector3 center = b.center;
             float maxDim = Mathf.Max(b.size.x, b.size.y, b.size.z);
             float dist = maxDim * 2.4f + 1.2f;
-            // side-front 3/4 view of the vehicle facing +x
-            Vector3 dir = new Vector3(-0.9f, 0.38f, 1.35f).normalized;
+            // pure side view at wheel height: the flank faces the camera
+            // full-on, both near wheels fully visible (rotation readable)
+            Vector3 dir = new Vector3(0f, 0.12f, 1f).normalized;
             cam.transform.position = center + dir * dist;
             cam.transform.LookAt(center);
             var rt = new RenderTexture(420, 420, 24, RenderTextureFormat.ARGB32);

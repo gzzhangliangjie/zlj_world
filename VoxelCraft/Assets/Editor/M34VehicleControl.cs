@@ -91,7 +91,7 @@ namespace VoxelCraft.Editor
                 var vgo = new GameObject($"VC_{sp}");
                 int gx = 20, gz = 20;
                 int g0 = sim.SurfaceHeight(gx, gz, true);
-                vgo.transform.position = new Vector3(gx + 0.5f, g0 + 1.02f, gz + 0.5f);
+                vgo.transform.position = new Vector3(gx + 0.5f, g0 + 1.14f, gz + 0.5f);
                 var v = vgo.AddComponent<DrivableVehicle>();
                 v.world = stub;
                 v.vehicleName = sp;

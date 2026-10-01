@@ -50,10 +50,10 @@ namespace VoxelCraft.Creatures
         public float turnSpeed = 70f;       // deg/s at full speed
 
         // ---- wheels (voxel-space, 4 corners) ----
-        public Vector2 wheelbase = new Vector2(2.2f, 1.1f); // half len, half width
-        public float wheelRadius = 0.36f;
-        public float suspRest = 0.55f;      // relaxed suspension length
-        public float staticSag = 0.25f;     // resting compression (spring sag)
+        public Vector2 wheelbase = new Vector2(1.15f, 0.75f); // hub offsets: z ±17-19px, x ±12px (2x geo)
+        public float wheelRadius = 0.3125f;              // tire half-height: 10px/16
+        public float suspRest = 0.20f;      // hub travel range (hub sits 0.3125u over ground)
+        public float staticSag = 0.50f;     // resting compression (spring sag)
         public float bodyRollDeg = 4.5f;    // visual roll at full comp delta
         public float bodyPitchDeg = 2.6f;
 
@@ -76,6 +76,9 @@ namespace VoxelCraft.Creatures
         Transform seat;
         Transform bodyRoot;
         Transform modelPivot;               // visual roll/pitch pivot
+        readonly Transform[] wheelBones = new Transform[4]; // FL FR RL RR
+        float wheelSpin;                    // accumulated roll radians
+        string mountWalkClip;               // fallback when no controller asset
         BlockyAnimal mountAnim;
         BedrockAnimationPlayer mountPlayer; // gait clock (moving/walkSpeedRef)
         float mountSpeedRef;
@@ -111,6 +114,23 @@ namespace VoxelCraft.Creatures
                 if (mountPlayer == null)
                     mountPlayer = ani.GetComponentInChildren<BedrockAnimationPlayer>();
                 ani.enabled = false;        // kill the AI Update loop (mounted)
+                // Horse/donkey: registry says controllers:true but the
+                // vanilla horse.animation_controllers asset does not exist
+                // locally, so TickControllers no-ops and NOTHING schedules
+                // the walk clip (legs froze at 0 deg - M34 bug 3). Drive the
+                // clip directly + enable the horseGait synthesizer.
+                var reg = CreatureRegistry.Get(vehicleName);
+                if (reg != null && reg.controllers)
+                {
+                    var acTa = Resources.Load<TextAsset>(
+                        "AnimControllers/" + vehicleName + ".animation_controllers");
+                    if (acTa == null)
+                    {
+                        mountPlayer.horseGait = true;
+                        mountWalkClip = reg.walkClip;
+                        mountPlayer.Play(mountWalkClip);
+                    }
+                }
             }
             else
             {
@@ -123,10 +143,22 @@ namespace VoxelCraft.Creatures
                 {
                     BedrockGeoImporter.Build(modelPivot, geoAsset, null, skin, 0f, null,
                         out _, out _, out _, out _);
+                    // rotatable wheel bones (vox_to_creature vehicle mode)
+                    string[] wn = { "wheelFL", "wheelFR", "wheelRL", "wheelRR" };
+                    for (int wi = 0; wi < 4; wi++)
+                        wheelBones[wi] = FindDeep(modelPivot, wn[wi]);
+                    if (wheelBones[0] != null)
+                    {
+                        // tire bottom sits at geo y=0, so hub height == radius
+                        wheelRadius = wheelBones[0].localPosition.y;
+                        suspRest = Mathf.Max(0.16f, wheelRadius - 0.03f);
+                        staticSag = 0.5f;
+                    }
                 }
             }
             var col = gameObject.AddComponent<BoxCollider>();
-            col.size = new Vector3(1.6f, 1.4f, 2.8f);
+            // 2x geo px->units: car 30x22x64px => 1.9 x 1.4 x 4.0 u
+            col.size = new Vector3(1.9f, 1.4f, 4.0f);
             col.center = new Vector3(0f, 0.7f, 0f);
         }
 
@@ -153,6 +185,7 @@ namespace VoxelCraft.Creatures
             steerIn = Input.GetAxisRaw("Horizontal");
             handbrakeIn = Input.GetKey(KeyCode.Space);
             gallopIn = Input.GetKey(KeyCode.LeftShift);
+            Tick(Time.deltaTime);
         }
 
         /// <summary>
@@ -205,11 +238,12 @@ namespace VoxelCraft.Creatures
                 int ground = world != null && world.sim != null
                     ? world.sim.SurfaceHeight(gx, gz, ignoreTrees: true)
                     : Mathf.FloorToInt(wp.y - suspRest - wheelRadius);
-                // distance from wheel hub to ground surface (top of block)
+                // kinematic suspension: at ride height the hub sits exactly
+                // wheelRadius over the block top => suspLen 0. Positive
+                // suspLen = wheel dangling over a drop (comp 0); negative =
+                // terrain pushes the hub up (comp 1 at suspRest intrusion).
                 float suspLen = wp.y - wheelRadius - (ground + 1f);
-                // compression relative to static sag: 0 at rest, +1 fully
-                // bottomed, -1 dangling. Spring equilibrium = staticSag.
-                float comp = (staticSag - Mathf.Clamp(suspLen / suspRest, 0f, 1f)) / (1f - staticSag);
+                float comp = Mathf.Clamp01(-suspLen / Mathf.Max(suspRest, 0.01f));
                 compression[i] = comp;
                 AvgCompression += comp * 0.25f;
                 if (suspLen < suspRest) grounded = true;
@@ -227,7 +261,9 @@ namespace VoxelCraft.Creatures
             Vector3 pos = transform.position + transform.forward * (speed * dt);
             int cwx = Mathf.FloorToInt(pos.x), cwz = Mathf.FloorToInt(pos.z);
             int cground = world.sim.SurfaceHeight(cwx, cwz, ignoreTrees: true);
-            float rideY = cground + 1f + wheelRadius + suspRest * staticSag - 0.1f;
+            // 2x geo: tire bottom at geo y=0, but ride half a tire higher
+            // (0.15u) so the wheels read visually under the arches.
+            float rideY = cground + 1f + 0.15f;
             // refuse to climb >1 block walls (head-on into a cliff)
             if (rideY - transform.position.y > 1.35f && speed > 0f)
             {
@@ -249,6 +285,13 @@ namespace VoxelCraft.Creatures
                     modelPivot.localPosition = new Vector3(lp.x, Mathf.Clamp(AvgCompression, -1f, 1f) * 0.16f, lp.z);
                     modelPivot.localRotation = Quaternion.Euler(pitchAngle, 0f, -rollAngle);
                 }
+                // wheel roll: radians = distance / radius. Geo frame x is
+                // flipped (x' = -x_world), so forward roll is NEGATIVE around
+                // the bone's local x.
+                wheelSpin += speed * dt / Mathf.Max(wheelRadius, 0.05f);
+                for (int wi = 0; wi < 4; wi++)
+                    if (wheelBones[wi] != null)
+                        wheelBones[wi].localRotation = Quaternion.Euler(-wheelSpin * Mathf.Rad2Deg, 0f, 0f);
             }
         }
 
@@ -274,7 +317,7 @@ namespace VoxelCraft.Creatures
             Vector3 pos = transform.position + transform.forward * (speed * dt);
             int gx = Mathf.FloorToInt(pos.x), gz = Mathf.FloorToInt(pos.z);
             int ground = world.sim.SurfaceHeight(gx, gz, ignoreTrees: true);
-            float rideY = ground + 1.02f;
+            float rideY = ground + 1.14f;   // +0.12 hoof-swing clearance (leg pivots swing hooves below y=0)
             if (rideY - transform.position.y > 1.3f && speed > 0f) speed = 0f;
             else
             {
@@ -290,9 +333,21 @@ namespace VoxelCraft.Creatures
             bool moving = Mathf.Abs(speed) > 0.15f;
             mountPlayer.moving = moving;
             // batch/editor: BlockyAnimal.Update is disabled on mounts, so the
-            // vanilla controller state machine + clip scheduler advance here.
+            // vanilla controller state machine + clip scheduler advance here,
+            // then the player integrates the gait clock and APPLIES POSES.
             if (mountAnim != null)
                 mountAnim.TickControllers(dt, moving);
+            if (!Application.isPlaying)
+                mountPlayer.Tick(dt);   // batch/editor: the player's own
+                                        // Update never runs here; in play
+                                        // mode Update ticks it (no double)
+            if (mountWalkClip != null)
+            {
+                // keep the walk clip's play state in sync with `moving`:
+                // stopped => Stop (rest pose), moving => (re)Play
+                if (moving) mountPlayer.Play(mountWalkClip);
+                else mountPlayer.Stop(mountWalkClip);
+            }
             // gait cadence scales with actual speed: slow trot .. gallop
             mountSpeedRef = Mathf.Lerp(mountSpeedRef,
                 moving ? 0.55f + 1.65f * Mathf.Clamp01(Mathf.Abs(speed) / gallopSpeed) : 0f,
@@ -302,15 +357,28 @@ namespace VoxelCraft.Creatures
                 mountPlayer.gaitWeight, moving ? 0.55f : 0f, dt * 3f);
         }
 
+        static Transform FindDeep(Transform t, string name)
+        {
+            if (t.name == name) return t;
+            foreach (Transform c in t)
+            {
+                var r = FindDeep(c, name);
+                if (r != null) return r;
+            }
+            return null;
+        }
+
         Vector3[] WheelPoints()
         {
             // FL, FR, RL, RR in local space (z+ = forward)
+            // hub height in geo space: wheel pivot y (5 for the 2x cars)
+            float hubY = wheelBones[0] != null ? wheelBones[0].localPosition.y : 0.1f;
             return new[]
             {
-                new Vector3(-wheelbase.y, 0.1f,  wheelbase.x),
-                new Vector3( wheelbase.y, 0.1f,  wheelbase.x),
-                new Vector3(-wheelbase.y, 0.1f, -wheelbase.x),
-                new Vector3( wheelbase.y, 0.1f, -wheelbase.x)
+                new Vector3(-wheelbase.y, hubY,  wheelbase.x),
+                new Vector3( wheelbase.y, hubY,  wheelbase.x),
+                new Vector3(-wheelbase.y, hubY, -wheelbase.x),
+                new Vector3( wheelbase.y, hubY, -wheelbase.x)
             };
         }
     }

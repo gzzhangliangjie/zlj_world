@@ -69,11 +69,51 @@ def greedy_boxes(vox):
                 for z in range(z0,z1+1): remaining.discard((x,y,z))
     return boxes
 
-def convert(name, src, geo_dir, tex_dir, scale=1.0):
+def W_mid(v2):
+    xs = {p[0] for p in v2}
+    return (min(xs) + max(xs)) / 2
+
+def D_mid(v2):
+    zs = {p[2] for p in v2}
+    return (min(zs) + max(zs)) / 2
+
+def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.5):
+    """wheels: optional [(x,z0,z1), ...] wheel column specs (voxel coords);
+    those columns become wheelFL/FR/RL/RR bones (rotatable around X for
+    rolling) instead of static body cubes."""
     size, vox, pal = load(src)
     # mmmm is Z-up: (x, y, z)_vox -> creature frame (x, z, y): new y = old z
     v2 = {(x, z, y): pal[c][:3] for (x,y,z),c in vox.items()}
-    boxes = greedy_boxes(v2)
+    wheel_cells = set()
+    wheel_specs = []   # (name, cells) in creature coords
+    if wheels:
+        for wi, (wx, z0, z1) in enumerate(wheels):
+            side = 'L' if wx < W_mid(v2) else 'R'
+            fore = 'F' if (z0 + z1) / 2 < D_mid(v2) else 'R'
+            cells = {(x, y, z) for (x, y, z) in v2
+                     if x == wx and z0 <= z <= z1}
+            # tire only: contiguous gray run from the bottom (body-coloured
+            # voxels above the tire stay with the body)
+            keep = set()
+            maxY = max(c[1] for c in cells) if cells else 0
+            for z in {c[2] for c in cells}:
+                for x in {c[0] for c in cells}:
+                    run = []          # longest contiguous gray run in this pillar
+                    best = []
+                    for y in range(0, maxY + 1):
+                        c0 = v2.get((x, y, z))
+                        if c0 is None: continue
+                        gray = abs(c0[0] - c0[1]) < 24 and abs(c0[1] - c0[2]) < 24
+                        if gray: run.append((x, y, z))
+                        else:
+                            if len(run) > len(best): best = run
+                            run = []
+                    if len(run) > len(best): best = run
+                    keep.update(best)
+            wheel_cells |= keep
+            wheel_specs.append((f'wheel{fore}{side}', keep))
+    body_v2 = {k: v for k, v in v2.items() if k not in wheel_cells}
+    boxes = greedy_boxes(body_v2)
     W = max(p[0] for p in v2)+1; H = max(p[1] for p in v2)+1; D = max(p[2] for p in v2)+1
 
     # --- skin layout: shelf-pack box nets, 1 px per voxel-face ---
@@ -132,11 +172,99 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0):
         uv12 = {f: {'uv': [ux, uy], 'uv_size': [uw, uh]}
                 for f, (ux, uy, uw, uh) in uv.items()}
         cubes.append({
-            'origin': [x0, y0, z0],
-            'size': [w, h, d],
+            'origin': [x0 * scale, y0 * scale, z0 * scale],
+            'size': [w * scale, h * scale, d * scale],
             'uv': uv12,
         })
-    img.save(f'{tex_dir}/{name}_skin.png')
+    imgSkinHolder = img  # saved after wheel nets are painted below
+
+    bones_out = [{
+        'name': 'body',
+        'pivot': [W/2 * scale, 0, D/2 * scale],
+        'cubes': cubes,
+    }]
+    for wname, cells in wheel_specs:
+        if not cells: continue
+        xs = [c[0] for c in cells]; ys = [c[1] for c in cells]; zs = [c[2] for c in cells]
+        wx0, wx1 = min(xs), max(xs); wy0, wy1 = min(ys), max(ys); wz0, wz1 = min(zs), max(zs)
+        w, h, d = wx1-wx0+1, wy1-wy0+1, wz1-wz0+1
+        is_left = wx0 < (max(p[0] for p in v2) + 1) / 2.0
+
+        # ---- procedural disc wheel (octagon profile) ----
+        # mmmm source wheels are 1-voxel flush slabs: rotation can't read.
+        # Build a proper disc wheel in the y-z plane around the x axle:
+        # centre band (full width) + chamfered top/bottom rows, extruded
+        # past the body side so it protrudes.
+        depth = max(2, min(3, d))              # axle-line thickness (x)
+        R = (wy1 - wy0 + 1) // 2               # ~half height
+        zw = max(1, R)                          # z half-width of centre band
+        ax = (wx0 - 1) if is_left else (wx1 + 1)   # outward slab plane
+        cy = wy0 + (wy1 - wy0) / 2.0            # hub y
+        cz = (wz0 + wz1) // 2
+        TIRE = (40, 40, 44); HUB = (170, 170, 175); SPOKE = (228, 228, 235)
+
+        def paint_slab(sy, sw_y, sz0, sw_z, paint):
+            # allocate a net and paint it; return per-face uv dict
+            nu, nv = alloc(2*(depth + sw_z), depth + sw_y)
+            uvw = {
+                'east':  [nu + depth + sw_z, nv + depth, depth, sw_y],
+                'west':  [nu, nv + depth, depth, sw_y],
+                'up':    [nu + depth, nv, sw_z, depth],
+                'down':  [nu + depth + sw_z, nv, sw_z, depth],
+                'north': [nu + depth, nv + depth, sw_z, sw_y],
+                'south': [nu + 2*depth + sw_z, nv + depth, sw_z, sw_y],
+            }
+            for f, (ux, uy, uw, uh) in [(k, v) for k, v in uvw.items()]:
+                c = paint if f in ('east', 'west') else TIRE
+                for py in range(uh):
+                    for px in range(uw):
+                        img.putpixel((ux+px, uy+py), (c[0], c[1], c[2], 255))
+            return uvw
+
+        # octagon rows: bottom chamfer, centre band, top chamfer
+        rows = []
+        if wy1 - wy0 + 1 >= 3:
+            rows.append((wy0 - 1, 1, cz - zw + 1, 2 * zw - 1))   # bottom (dropped 1)
+            rows.append((wy1 + 1, 1, cz - zw + 1, 2 * zw - 1))   # top (raised 1)
+            rows.append((wy0, wy1 - wy0 + 1, cz - zw, 2 * zw + 1))     # centre
+        else:
+            rows.append((wy0, wy1 - wy0 + 1, cz - zw, 2 * zw + 1))
+
+        wheel_cubes = []
+        centre_uv = None
+        for (sy, swy, sz0, swz) in rows:
+            if swy <= 0 or swz <= 0: continue
+            uvw = paint_slab(sy, swy, sz0, swz, HUB)
+            if swy > 1: centre_uv = uvw                      # centre slab
+            wheel_cubes.append({
+                'origin': [ax * scale, sy * scale, sz0 * scale],
+                'size': [depth * scale, swy * scale, swz * scale],
+                'uv': {f: {'uv': [r[0], r[1]], 'uv_size': [r[2], r[3]]}
+                       for f, r in uvw.items()},
+            })
+        # bold two-tone hub on the OUTWARD face: bright upper-left quadrant
+        # + dark lower-right quadrant => rotation reads clearly at distance
+        if centre_uv is not None:
+            oface = 'west' if is_left else 'east'
+            ux, uy = centre_uv[oface][0], centre_uv[oface][1]
+            uw, uh2 = centre_uv[oface][2], centre_uv[oface][3]
+            hx, hy = ux + uw // 2, uy + uh2 // 2
+            half = max(1, min(uw, uh2) // 4)
+            for py in range(-half, half + 1):
+                for px in range(-half, half + 1):
+                    bright = (px <= 0) != (py > 0)     # diagonal split
+                    col = SPOKE if bright else (90, 90, 96)
+                    img.putpixel((hx + px, hy + py), (col[0], col[1], col[2], 255))
+        bones_out.append({
+            'name': wname,
+            'parent': 'body',
+            'pivot': [((ax + 0.5) if not is_left else (ax + 0.5)) * scale,
+                      (wy0 + (wy1 - wy0 + 1) / 2.0) * scale,
+                      (cz + 0.5) * scale],
+            'cubes': wheel_cubes,
+        })
+
+    imgSkinHolder.save(f'{tex_dir}/{name}_skin.png')
 
     geo = {
         'format_version': '1.12.0',
@@ -144,15 +272,11 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0):
             'description': {
                 'identifier': f'geometry.{name}',
                 'texture_width': 128, 'texture_height': texH,
-                'visible_bounds_width': max(W, D) / 16 + 1,
-                'visible_bounds_height': H / 16 + 0.5,
-                'visible_bounds_offset': [0, H / 32, 0],
+                'visible_bounds_width': (max(W, D) * scale) / 16 + 1,
+                'visible_bounds_height': (H * scale) / 16 + 0.5,
+                'visible_bounds_offset': [0, (H * scale) / 32, 0],
             },
-            'bones': [{
-                'name': 'body',
-                'pivot': [W/2, 0, D/2],
-                'cubes': cubes,
-            }],
+            'bones': bones_out,
         }],
     }
     with open(f'{geo_dir}/{name}.geo.json', 'w') as f:
