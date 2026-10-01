@@ -47,6 +47,19 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
 4. PIL 像素仲裁（vision 超时/可疑时）：非天空像素 >12% 且质心在画面中央带
 5. 视觉复核四项：主体完整、颜色对、落地贴合、无悬空无深埋
 
+## 截图台铁律（M32 排查 5 轮的血泪）
+
+1. **attach 必须幂等 + 销毁旧 mesh**（ccf625b）：`root.transform.Find(C{cx}_{cz})`
+   复用同一 GameObject、替换 mesh 前把旧 mesh `DestroyImmediate` 掉。否则每次
+   remesh 叠一个新 GameObject，**初代网格（带世界树）永远留在场景里**——表现为
+   "怎么 wipe 都有树穿出来、census 干净但画面脏"（活数据干净、渲染画的是旧层）
+2. **天空摄影棚**：平台抬到 base+55（受 `ChunkHeight-20` 封顶），整柱 wipe
+   （studioY-16..79）后再铺 Grass，背景纯天空；相机 dir=(-0.75,0.45,-0.75)
+   下压 45°，地平线/远处地形出画
+3. **PIL 仲裁门槛**：上部 1/3 绿像素 <3%（树道具除外）= 无穿出的叶柱
+4. 道具 census（画面判定前的数据判定）：fence2=Stone:130、stlight=Stone:88、
+   trashcan=Stone:120、planter=Stone:102+Log:24+Leaves:422（含绿植本体）
+
 ## 当前清单（.bytes 尺寸 × 换轴 × 配色）
 
 | 名字 | 尺寸 | 轴 | 主要方块 |
