@@ -131,6 +131,8 @@ namespace VoxelCraft.Editor
                 ("wolf", null, false, "var_black"),
                 ("rabbit", null, false, "var_white"),
                 ("panda", null, false, "var_brown"),
+                ("ocelot", null, false, "var_black"),
+                ("ocelot", null, false, "var_siamese"),
             };
 
             // GIF_SPECIES: render a single species (quick turnaround for
