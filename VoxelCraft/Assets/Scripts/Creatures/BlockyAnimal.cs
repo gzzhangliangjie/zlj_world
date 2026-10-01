@@ -19,7 +19,47 @@ namespace VoxelCraft.Creatures
         public WorldRoot world;
         public Transform playerRef;
         public string species = "pig";
-        public string variant = "";        // M36 texture variant ("" = registry default/first); skin file {species}_{variant}_skin
+        public string variant = "";
+        public bool tamed;               // M36: tamed look (dog). Shows the collar part on wolves.
+        private GameObject collarPart;
+
+        /// <summary>M36 tamed collar: small red box under the head/neck,
+        /// shown when tamed. Pure part visibility - no texture variant.</summary>
+        public void SetTamed(bool on)
+        {
+            tamed = on;
+            if (collarPart == null && on) BuildCollar();
+            if (collarPart != null) collarPart.SetActive(on);
+        }
+
+        void BuildCollar()
+        {
+            // neck sits just below the head bone pivot
+            var head = FindBoneRecursive(transform, "head") ?? FindBoneRecursive(transform, "Head");
+            if (head == null) return;
+            var collarGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            collarGo.name = "Collar";
+            Object.Destroy(collarGo.GetComponent<Collider>());
+            collarGo.transform.SetParent(head, false);
+            collarGo.transform.localPosition = new Vector3(0f, -0.9f, 0.28f);
+            collarGo.transform.localRotation = Quaternion.identity;
+            collarGo.transform.localScale = new Vector3(0.56f, 0.28f, 0.56f);
+            var r = collarGo.GetComponent<Renderer>();
+            r.sharedMaterial = CreatureTextureFactory.PlainColorMaterial(new Color32(200, 30, 30, 255));
+            collarGo.SetActive(false);
+            collarPart = collarGo;
+        }
+
+        static Transform FindBoneRecursive(Transform t, string name)
+        {
+            if (t.name == name) return t;
+            for (int i = 0; i < t.childCount; i++)
+            {
+                var f = FindBoneRecursive(t.GetChild(i), name);
+                if (f != null) return f;
+            }
+            return null;
+        }        // M36 texture variant ("" = registry default/first); skin file {species}_{variant}_skin
         public float walkSpeed = 1.4f;
         public float health = 3f;
         public bool dead;

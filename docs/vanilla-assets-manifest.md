@@ -55,3 +55,8 @@
 | ocelot | wild/black/red/siamese |
 
 horse/llama 变体是 markings/decor 分层贴图(双文件合成),未纳入本轮。
+
+## 狗/驯服项圈机制(M36)
+
+官方 v1.21.80.3 wolf 的 tame 贴图(wolf_tame.png 等 10 张)**在仓库里不存在**(entity def 引用但文件缺失,404 实锤)——官方驯服外观就是 base 贴图 + 项圈几何件显隐。项目实现:`BlockyAnimal.SetTamed(bool)` 建 Collar 小方块(纯色红材质,不碰贴图)挂 head 骨下,SetActive 切换;预览工具 "tamed (collar)" 开关。wolf variants 回归 9 个生态型(移除误加的 *_tame)。
+自建狗资产 dog_brown/dog_urban(用户 Blockbench MCP 作品)已注册为独立物种(geo+skin 128x128,walkClip=quadruped.walk)。

@@ -77,6 +77,8 @@ namespace VoxelCraft.Editor
             GUILayout.BeginHorizontal();
             walking = GUILayout.Toggle(walking, "walking");
             autoEvents = GUILayout.Toggle(autoEvents, "auto events");
+            bool tm = GUILayout.Toggle(ani != null && ani.tamed, "tamed (collar)");
+            if (ani != null && tm != ani.tamed) ani.SetTamed(tm);
             bool sh = GUILayout.Toggle(showHidden, "show hidden bones");
             if (sh != showHidden)
             {

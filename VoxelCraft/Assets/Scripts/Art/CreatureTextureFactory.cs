@@ -18,6 +18,23 @@ namespace VoxelCraft.Art
         /// Resources/Textures/&lt;name&gt;.png.bytes and returns an unlit material.
         /// Returns null when the file is absent (callers fall back to procedural).
         /// </summary>
+        static Material plainColorCache;
+
+        /// <summary>M36: plain unlit colour material (tamed collar etc).</summary>
+        public static Material PlainColorMaterial(Color32 c)
+        {
+            if (plainColorCache == null)
+            {
+                var shader = Resources.Load<Shader>("Shaders/UnlitTextureShader");
+                plainColorCache = new Material(shader);
+                var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                plainColorCache.mainTexture = tex;
+            }
+            var t2 = (Texture2D)plainColorCache.mainTexture;
+            t2.SetPixel(0, 0, c); t2.Apply(false, false);
+            return plainColorCache;
+        }
+
         public static Material GetSkinMaterial(string skinName)
         {
             if (skinCache.TryGetValue(skinName, out var cached))
