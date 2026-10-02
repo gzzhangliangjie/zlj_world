@@ -110,6 +110,13 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
   - 零散件：armgate1/candle/crosswalk/fire1-5/mailbox/policetape/splatter1-3；fire4/5 烟雾→Cobble+CoalOre（lint BLOCK 表补 (70,70,70):CoalOre）
   - FLAT_OK 再扩：candle/fire1-5（H<2 微型件 W 下限放宽）、policetape/splatter1-3（1 高贴地贴花）
   - lint 239/239 exit=0；SelfTest 78 楼 PASS（31 本体+46 变体）；M40PropsSnapshot 146 件 census 无 ZERO；`comm` 复核 _refs obj_ 全集 vs done = **0 件剩余**
+- **批6/6b（2026-10-02，交通全量：火车 7 + 公路车 30 + 立交桥/隧道手建 2）**：
+  - veh_ 源接入：remap_props.cands 放宽支持 veh_ 前缀，但**必须精确名优先**（`bus` 前缀碰撞匹配到 obj_busstop、`fire` 碰到 obj_fire1，census 全错才暴露）→ exact-first 修复
+  - chr_bridget 数值拆穿=人物模型（肤色 138+棕衣 100），不是桥；scene_depot1-3 竖直分层证明无架空层/下穿 → **mmmm 无立交/隧道源**
+  - overpass1/tunnel1 手建（官方方块程序化，不仿制贴图）：32×10×16 双墩+双侧引道+铁艺栏杆；32×12×16 山体穿洞+砖砌门脸。数值验收：隧道 6 中轴全贯通、桥跨中 y<6 净空=0
+  - lint BLOCK 补 (136,126,126)Gravel/(216,175,147)IronOre/(120,120,120)StoneBrick/(121,85,58)Dirt
+  - lint 278/278 exit=0；SelfTest PASS（80 件大名单）；M40PropsSnapshot 185 件 census 无 ZERO
+
 
 
 ## BlockForColor 锚色表（VoxStructure.cs，转换脚本必须同步）

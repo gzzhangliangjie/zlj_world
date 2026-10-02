@@ -1067,7 +1067,8 @@ namespace VoxelCraft.Editor
                     "obj_story03a", "obj_story03b", "obj_story03c", "obj_story03d",
                     "obj_story04a", "obj_story04b", "obj_story04c", "obj_story04d",
                     "obj_story05a",
-                    "obj_story06a", "obj_story06b", "obj_story06c", "obj_story06d" };
+                    "obj_story06a", "obj_story06b", "obj_story06c", "obj_story06d",
+                    "overpass1", "tunnel1" };
                 int[] m40MinSolid = { 3000, 3000, 2500, 2000, 3000, 3000, 3000, 3000, 2000, 2000,
                     5000, 2500, 2500, 2500, 2500, 2500, 5000, 5000, 2500, 5000, 5000, 5000,
                     5000, 5000, 2000, 2500, 2000, 1500, 2000, 2000,
@@ -1078,7 +1079,7 @@ namespace VoxelCraft.Editor
                     2356, 2356, 2378, 5762, 5762, 5762,
                     10416, 11174, 11174, 9992, 4688, 4721,
                     4668, 4668, 4668, 4668, 3311, 3311, 3311, 3311,
-                    4704, 4752, 4752, 4752, 4752 };
+                    4704, 4752, 4752, 4752, 4752, 1200, 5000 };
                 bool m40All = true;
                 var m40Detail = new List<string>();
                 for (int bIdx40 = 0; bIdx40 < m40Names.Length; bIdx40++)
