@@ -64,6 +64,11 @@ namespace VoxelCraft.Core
         ChestFrontV = 56,
         ChestSideV = 57,
         ChestTopV = 58,
+        RailNormal = 59,
+        RailTurned = 60,
+        RailGolden = 61,
+        RailDetector = 62,
+        RailActivator = 63,
     }
 
     /// <summary>Static definition of every block: rendering, physics and interaction rules.</summary>
@@ -101,7 +106,7 @@ namespace VoxelCraft.Core
 
         static BlockDatabase()
         {
-            defs = new BlockDef[43]; // BlockType 0..42 (Furnace)
+            defs = new BlockDef[45]; // BlockType 0..44 (Rail, RailX)
 
             defs[(int)BlockType.Air] = new BlockDef
             {
@@ -365,6 +370,20 @@ namespace VoxelCraft.Core
                 name = "Furnace", opaque = false, solid = true, liquid = false,
                 placeable = true, unbreakable = false, fullCube = false,
                 top = TileId.FurnaceSide, side = TileId.FurnaceSide, bottom = TileId.FurnaceSide,
+                soundGroup = "stone",
+            };
+            defs[(int)BlockType.Rail] = new BlockDef
+            {
+                name = "Rail", opaque = false, solid = false, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.RailNormal, side = TileId.RailNormal, bottom = TileId.RailNormal,
+                soundGroup = "stone",
+            };
+            defs[(int)BlockType.RailX] = new BlockDef
+            {
+                name = "Rail (X)", opaque = false, solid = false, liquid = false,
+                placeable = true, unbreakable = false, fullCube = false,
+                top = TileId.RailTurned, side = TileId.RailTurned, bottom = TileId.RailTurned,
                 soundGroup = "stone",
             };
         }

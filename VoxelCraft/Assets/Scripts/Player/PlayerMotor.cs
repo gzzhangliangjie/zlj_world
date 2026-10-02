@@ -30,9 +30,9 @@ namespace VoxelCraft.Player
 
         public bool IsFlying => flying;
 
-        /// <summary>Non-null while riding a DrivableVehicle: player input is
-        /// forwarded to the vehicle, the character controller is disabled.</summary>
-        public Creatures.DrivableVehicle riding;
+        /// <summary>Non-null while riding an IRideable (car / train): player
+        /// input is forwarded to it, the character controller is disabled.</summary>
+        public Creatures.IRideable riding;
 
         private void Awake()
         {
@@ -40,7 +40,7 @@ namespace VoxelCraft.Player
         }
 
         /// <summary>Mount/dismount helper. Exiting places the player beside the vehicle.</summary>
-        public void Ride(Creatures.DrivableVehicle vehicle)
+        public void Ride(Creatures.IRideable vehicle)
         {
             if (vehicle == null || riding != null) return;
             riding = vehicle;
@@ -57,9 +57,10 @@ namespace VoxelCraft.Player
             v.Exit();
             controller.enabled = true;
             // step out sideways, on top of ground
-            Vector3 outPos = v.transform.position + v.transform.right * v.seatExitOffset;
+            float exitOff = v is Creatures.DrivableVehicle dv ? dv.seatExitOffset : 2.5f;
+            Vector3 outPos = v.Transform.position + v.Transform.right * exitOff;
             int wx = Mathf.FloorToInt(outPos.x), wz = Mathf.FloorToInt(outPos.z);
-            int g = world != null && world.sim != null ? world.sim.SurfaceHeight(wx, wz, true) : Mathf.FloorToInt(v.transform.position.y);
+            int g = world != null && world.sim != null ? world.sim.SurfaceHeight(wx, wz, true) : Mathf.FloorToInt(v.Transform.position.y);
             transform.position = new Vector3(outPos.x, g + 1.05f, outPos.z);
             verticalVelocity = 0f;
         }
@@ -77,7 +78,7 @@ namespace VoxelCraft.Player
             {
                 if (Input.GetKeyDown(KeyCode.F)) Dismount();
                 transform.position = riding.Seat.position;
-                transform.rotation = Quaternion.Euler(0f, riding.transform.eulerAngles.y, 0f);
+                transform.rotation = Quaternion.Euler(0f, riding.Transform.eulerAngles.y, 0f);
                 return;
             }
             if (Cursor.lockState != CursorLockMode.Locked)

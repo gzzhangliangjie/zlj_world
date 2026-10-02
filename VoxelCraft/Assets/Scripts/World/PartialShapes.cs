@@ -27,6 +27,8 @@ namespace VoxelCraft.World
                 case BlockType.BedFoot:
                 case BlockType.BedHead: Bed(block, x, y, z, wx, wz, sim, tileRects, target); return true;
                 case BlockType.Fence: Fence(x, y, z, wx, wz, sim, tileRects, target); return true;
+                case BlockType.Rail: RailShape(x, y, z, tileRects[(int)TileId.RailNormal], target); return true;
+                case BlockType.RailX: RailShape(x, y, z, tileRects[(int)TileId.RailTurned], target); return true;
                 default: return false;
             }
         }
@@ -284,6 +286,19 @@ namespace VoxelCraft.World
         private static bool IsFenceOrSolid(BlockType t)
         {
             return t == BlockType.Fence || BlockDatabase.IsOpaque(t);
+        }
+
+        // ---- rail: flat 1/16 plate on the block top, official 16x16 rail tile ----
+        // The vanilla texture is a straight track (two rails + sleepers) drawn
+        // diagonally-symmetric on the tile; rail_normal renders Z-running track
+        // and rail_normal_turned the 90-deg-rotated variant for X-running track.
+        private static void RailShape(int x, int y, int z, Rect tile, MeshData target)
+        {
+            float top = y + 1f / 16f;
+            Quad(target,
+                new Vector3(x, top, z + 1f), new Vector3(x + 1f, top, z + 1f),
+                new Vector3(x + 1f, top, z), new Vector3(x, top, z),
+                tile, 1f);
         }
     }
 }

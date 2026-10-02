@@ -28,13 +28,13 @@ namespace VoxelCraft.Editor
             TextureFactory.AtlasResult atlas = SafeBuildAtlas();
             if (atlas != null)
             {
-                Eval("m1.external_textures", atlas.externalTiles.Count == 24,
+                Eval("m1.external_textures", atlas.externalTiles.Count == 29,
                     $"external tiles {atlas.externalTiles.Count}/24, procedural fallback {atlas.proceduralTiles.Count}");
                 Eval("m1.atlas_size",
                     atlas.atlas.width == TextureFactory.AtlasCols * TextureFactory.TileSize &&
                     atlas.atlas.height == TextureFactory.AtlasRows * TextureFactory.TileSize,
                     $"{atlas.atlas.width}x{atlas.atlas.height}");
-                Eval("m1.icons", atlas.icons.Count == 38, $"icon count {atlas.icons.Count}/30");
+                Eval("m1.icons", atlas.icons.Count == 40, $"icon count {atlas.icons.Count}/30");
 
                 // Every non-air block must have a name (validates the def table size).
                 bool defsOk = true;
@@ -379,7 +379,7 @@ namespace VoxelCraft.Editor
 
             var biGo = new GameObject("BiTest");
             var bi = biGo.AddComponent<BlockInteraction>();
-            bool pagesOk = bi.hotbarPages.Length == 4 && bi.hotbar.Length == 9;
+            bool pagesOk = bi.hotbarPages.Length == 5 && bi.hotbar.Length == 9;
             for (int p = 0; p < bi.hotbarPages.Length && pagesOk; p++)
             {
                 for (int s = 0; s < bi.hotbarPages[p].Length; s++)

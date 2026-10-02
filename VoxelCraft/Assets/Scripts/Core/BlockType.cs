@@ -46,5 +46,9 @@ namespace VoxelCraft.Core
         BedHead = 40,
         Fence = 41,
         Furnace = 42,
+        /// <summary>Rail: spans Z when the neighbouring solid is on ±X (placed on the block grid, flat).</summary>
+        Rail = 43,
+        /// <summary>Rail oriented along X.</summary>
+        RailX = 44,
     }
 }

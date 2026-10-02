@@ -39,8 +39,58 @@ def load(path):
     return size, vox, pal
 
 def greedy_boxes(vox):
+    # Fast path: identical semantics to the set-based version below, but the
+    # "is this box full?" test is a numpy boolean-slice AND-reduce instead of a
+    # per-voxel set probe. Large models (tank1 ~50k vox) went from hours to
+    # seconds. Falls back to the original loop when numpy is unavailable.
+    try:
+        import numpy as np
+    except ImportError:
+        np = None
     remaining = set(vox)
     boxes = []
+    if np is not None:
+        if not remaining:
+            return boxes
+        xs = [p[0] for p in remaining]; ys = [p[1] for p in remaining]; zs = [p[2] for p in remaining]
+        X0, X1, Y0, Y1, Z0, Z1 = min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)
+        grid = np.zeros((X1 - X0 + 1, Y1 - Y0 + 1, Z1 - Z0 + 1), dtype=bool)
+        for (x, y, z) in remaining:
+            grid[x - X0, y - Y0, z - Z0] = True
+        order = sorted(remaining, key=lambda p: (p[1], p[2], p[0]))  # same seed order
+        ptr = 0
+        while True:
+            while ptr < len(order) and not grid[order[ptr][0] - X0, order[ptr][1] - Y0, order[ptr][2] - Z0]:
+                ptr += 1
+            if ptr >= len(order):
+                break
+            s = order[ptr]
+            bx0, by0, bz0 = s[0] - X0, s[1] - Y0, s[2] - Z0
+            bx1, by1, bz1 = bx0, by0, bz0
+            improved = True
+            while improved:
+                improved = False
+                for dx, dy, dz in ((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, -1)):
+                    nx1 = bx1 + 1 if dx else bx1
+                    ny1 = by1 + 1 if dy else by1
+                    nz0 = bz0 - 1 if dz == -1 else bz0   # single-step growth
+                    nz1 = bz1 + 1 if dz == 1 else bz1
+                    if bx0 < 0 or by0 < 0 or nz0 < 0:
+                        continue
+                    if nx1 >= grid.shape[0] or ny1 >= grid.shape[1] or nz1 >= grid.shape[2]:
+                        continue
+                    if grid[bx0:nx1 + 1, by0:ny1 + 1, nz0:nz1 + 1].all():
+                        bx1, by1, bz1 = nx1, ny1, nz1
+                        if dz == -1:
+                            bz0 = nz0
+                        improved = True
+            boxes.append((bx0 + X0, by0 + Y0, bz0 + Z0, bx1 + X0, by1 + Y0, bz1 + Z0))
+            grid[bx0:bx1 + 1, by0:by1 + 1, bz0:bz1 + 1] = False
+            for x in range(bx0, bx1 + 1):
+                for y in range(by0, by1 + 1):
+                    for z in range(bz0, bz1 + 1):
+                        remaining.discard((x + X0, y + Y0, z + Z0))
+        return boxes
     def full(x0,y0,z0,x1,y1,z1):
         for x in range(x0,x1+1):
             for y in range(y0,y1+1):
@@ -128,22 +178,49 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
 
     # --- skin layout: shelf-pack box nets, 1 px per voxel-face ---
     regions = []  # (x,y,w,h) allocated
+    shelves = []  # (y, h, x_cursor) shelf packer state
     def alloc(w, h):
+        # Shelf packer: first shelf tall enough with remaining width, else a
+        # new shelf on top. Same first-fit spirit as the old row scan but
+        # O(shelves) instead of O(tex_height * regions) — tank1 (261 boxes)
+        # went from minutes/hours to milliseconds.
         Wt = 128
-        y = 0
-        while True:
-            row = [r for r in regions if r[1] <= y < r[1]+r[3] and r[1]+r[3] > y]
-            # simple first-fit scan
-            for x in range(0, Wt - w + 1, 1):
-                ok = all(not (x < r[0]+r[2] and x+w > r[0] and y < r[1]+r[3] and y+h > r[1]) for r in regions)
-                if ok:
-                    regions.append((x,y,w,h)); return x, y
-            y += 1
-    texH = 128
-    img = Image.new('RGBA', (128, texH), (0,0,0,255))
+        if w > Wt:
+            w = Wt  # clamp pathological nets; UVs stay self-consistent
+            raise RuntimeError(f'net wider than canvas: w={w} — rotate/limit the box')
+        for si, (sy, sh, sx) in enumerate(shelves):
+            if sh >= h and sx + w <= Wt:
+                shelves[si] = (sy, sh, sx + w)
+                regions.append((sx, sy, w, h))
+                return sx, sy
+        top = max((s[0] + s[1] for s in shelves), default=0)
+        shelves.append((top, h, w))
+        regions.append((0, top, w, h))
+        if top + h > texH[0]: texH[0] = top + h
+        return 0, top
+    texH = [128]   # grown on demand inside alloc (closure)
+    # tall scratch canvas: the shelf packer may exceed 1024 on huge models
+    # (tank1 261 boxes); cropped to pow2 at save time
+    img = Image.new('RGBA', (128, 16384), (0,0,0,255))
 
     cubes = []
     face_cols = []  # per cube: dict face->color for painting
+    # split over-wide boxes along Z so every net fits the 128-wide canvas
+    # (tank1 hull: w20+d63 -> net 166). Split parts are stacked end-to-end
+    # so the union keeps the exact same volume and colours.
+    expanded = []
+    for (x0, y0, z0, x1, y1, z1) in boxes:
+        w_, h_, d_ = x1-x0+1, y1-y0+1, z1-z0+1
+        max_d = (128 // 2) - w_
+        if d_ <= max_d:
+            expanded.append((x0, y0, z0, x1, y1, z1))
+            continue
+        z = z0
+        while z <= z1:
+            zd = min(max_d, z1 - z + 1)
+            expanded.append((x0, y0, z, x1, y1, z + zd - 1))
+            z += zd
+    boxes = expanded
     for (x0,y0,z0,x1,y1,z1) in boxes:
         w, h, d = x1-x0+1, y1-y0+1, z1-z0+1
         # net dims: total width 2*(w+d), height d+h
@@ -287,14 +364,15 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
             'cubes': wheel_cubes,
         })
 
-    imgSkinHolder.save(f'{tex_dir}/{name}_skin.png')
+    finalH = max(16, 1 << (texH[0] - 1).bit_length())   # pow2 for the importer
+    imgSkinHolder.crop((0, 0, 128, finalH)).save(f'{tex_dir}/{name}_skin.png')
 
     geo = {
         'format_version': '1.12.0',
         'minecraft:geometry': [{
             'description': {
                 'identifier': f'geometry.{name}',
-                'texture_width': 128, 'texture_height': texH,
+                'texture_width': 128, 'texture_height': texH[0],
                 'visible_bounds_width': (max(W, D) * scale) / 16 + 1,
                 'visible_bounds_height': (H * scale) / 16 + 0.5,
                 'visible_bounds_offset': [0, (H * scale) / 32, 0],

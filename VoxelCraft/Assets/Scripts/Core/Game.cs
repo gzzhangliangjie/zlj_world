@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using VoxelCraft.Art;
 using VoxelCraft.Core;
@@ -205,6 +206,24 @@ namespace VoxelCraft.Core
                 if (isMount) { veh.maxSpeed = 11f; veh.turnSpeed = 110f; }
                 veh.BuildModel();
             }
+
+            // Demo track: a straight rail line beside spawn (official rail
+            // textures) + a five-car consist parked on it. Right-click the
+            // locomotive to drive; W/S throttle, F exits.
+            var trackGo = new GameObject("DemoTrack");
+            var track = trackGo.AddComponent<Creatures.TrackTrain>();
+            track.world = worldRoot;
+            track.locomotiveName = "train";
+            track.carNames = new[] { "wagon1", "wagon2", "wagon3", "wagon4" };
+            int trackZ = 24;
+            int trackY = worldRoot.sim.SurfaceHeight(6, trackZ, true) + 1;
+            for (int rx = 6; rx < 60; rx++)
+            {
+                int ry = worldRoot.sim.SurfaceHeight(rx, trackZ, true) + 1;
+                var remeshed2 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx, ry, trackZ, Core.BlockType.RailX, remeshed2);
+            }
+            track.BuildConsist(new Vector2Int(20, trackZ));
 
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");

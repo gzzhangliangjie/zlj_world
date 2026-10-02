@@ -240,17 +240,9 @@ namespace VoxelCraft.Gen
             "armgate1", "candle", "crosswalk", "mailbox",
             "fire1", "fire2", "fire3", "fire4", "fire5",
             "policetape", "splatter1", "splatter2", "splatter3",
-            // batch 6: trains + road structures
-            "train", "train2", "train3",
-            "wagon1", "wagon2", "wagon3", "wagon4",
+            // batch 6 infrastructure: all 37 vehicles moved to the geo
+            // pipeline (M34 scale, drivable) — no static vehicle giants left
             "overpass1", "tunnel1",
-            // batch 6b: road vehicles
-            "ambulance", "bus", "cab1",
-            "car1", "car2", "car3", "car4", "car5",
-            "fire", "lunch1", "lunch2", "lunch3", "lunch4",
-            "mini1", "mini2", "mini3", "mini4", "mini5",
-            "police1", "suv1", "suv2", "suv3", "tank1",
-            "truck1", "truck2", "truck3", "truck4", "truck5", "truck6", "truck7",
         };
 
         /// <summary>

@@ -32,6 +32,7 @@ namespace VoxelCraft.Art
             "furnace_side", "furnace_front", "furnace_lit",
             "bed_feet_end", "bed_head_end", "bed_head_side", "bed_feet_side", "furnace_top",
             "door_wood_lower", "door_wood_upper", "chest_front_v", "chest_side_v", "chest_top_v",
+            "rail_normal", "rail_normal_turned", "rail_golden", "rail_detector", "rail_activator",
         };
 
         public sealed class AtlasResult
@@ -90,7 +91,7 @@ namespace VoxelCraft.Art
             result.white = MakeWhite();
 
             // Skip Wheat0..3 (no icons needed) but include all placeable blocks.
-            for (int t = 1; t < 43; t++)
+            for (int t = 1; t < 45; t++)
             {
                 if (t >= (int)BlockType.Wheat0 && t <= (int)BlockType.Wheat3)
                 {

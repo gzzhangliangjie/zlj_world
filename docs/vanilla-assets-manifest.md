@@ -25,6 +25,12 @@
 - scratch/vanilla_blocks/ — 床+熔炉 10 张已嵌入 PNG
 
 
+## 2026-10-03 铁轨/矿车（火车系统）
+- rail_normal / rail_normal_turned / rail_golden / rail_detector / rail_activator .png（16×16，透明底）✅已用，缓存 _refs/vanilla/blocks/，已拷入 VoxelCraft Textures 作为 rail tile
+- atlas.terrain 权威索引键：rail_normal / rail_normal_turned / rail_golden(+powered) / rail_detector(+powered) / rail_activator(+powered)
+- 矿车 entity 资产已缓存：_refs/vanilla/geo/minecart.geo.json + textures/minecart.png（bedrock-samples v1.21.80.3）
+- chest_minecart.png 变体同样在 textures/entity/ 下（未缓存，需要时同路径取）
+
 ## 方块贴图（bedrock-samples v1.21.80.3，注意：png 大多 404，实际是 .tga）
 
 | 资源 | 本地缓存 | 用途 | 备注 |

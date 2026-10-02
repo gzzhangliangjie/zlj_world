@@ -40,6 +40,11 @@ namespace VoxelCraft.Player
                 BlockType.Torch, BlockType.DoorClosed, BlockType.Chest, BlockType.BedFoot, BlockType.Fence,
                 BlockType.Furnace, BlockType.Glass, BlockType.Plank, BlockType.Path,
             },
+            new[]
+            {
+                BlockType.Rail, BlockType.RailX, BlockType.Stone, BlockType.Cobble, BlockType.Plank,
+                BlockType.Gravel, BlockType.Path, BlockType.Torch, BlockType.Fence,
+            },
         };
         public int activePage;
         public int selectedIndex;
@@ -123,10 +128,10 @@ namespace VoxelCraft.Player
             {
                 var vhHits = Physics.RaycastAll(ray, 4.5f);
                 float nearestV = float.PositiveInfinity;
-                Creatures.DrivableVehicle veh = null;
+                Creatures.IRideable veh = null;
                 foreach (var h in vhHits)
                 {
-                    var v = h.collider != null ? h.collider.GetComponentInParent<Creatures.DrivableVehicle>() : null;
+                    var v = h.collider != null ? h.collider.GetComponentInParent<Creatures.IRideable>() : null;
                     if (v != null && h.distance < nearestV) { nearestV = h.distance; veh = v; }
                 }
                 var motor = GetComponent<PlayerMotor>();
@@ -275,7 +280,18 @@ namespace VoxelCraft.Player
                         {
                             Items.Furniture.RegisterChest(place);
                         }
-                        world.SetBlockAndApply(place, SelectedBlock);
+                        // Rail auto-orients: neighbouring rail on ±X => runs X
+                        // (RailX), else runs Z (Rail). Player never micro-manages.
+                        if (SelectedBlock == BlockType.Rail)
+                        {
+                            bool xNbr = IsRailAt(place.x - 1, place.y, place.z) || IsRailAt(place.x + 1, place.y, place.z)
+                                     || IsRailAtX(place.x - 1, place.y, place.z) || IsRailAtX(place.x + 1, place.y, place.z);
+                            world.SetBlockAndApply(place, xNbr ? BlockType.RailX : BlockType.Rail);
+                        }
+                        else
+                        {
+                            world.SetBlockAndApply(place, SelectedBlock);
+                        }
                         OnPlace?.Invoke(SelectedBlock);
                     }
                     else
@@ -598,6 +614,16 @@ namespace VoxelCraft.Player
                 }
             }
             return head;
+        }
+
+        private bool IsRailAt(int x, int y, int z)
+        {
+            return world.sim.GetBlock(x, y, z) == BlockType.Rail;
+        }
+
+        private bool IsRailAtX(int x, int y, int z)
+        {
+            return world.sim.GetBlock(x, y, z) == BlockType.RailX;
         }
     }
 }

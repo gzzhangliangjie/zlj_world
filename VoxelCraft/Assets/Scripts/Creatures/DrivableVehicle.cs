@@ -26,7 +26,7 @@ namespace VoxelCraft.Creatures
     /// input, so the editor harness can step the physics deterministically
     /// (unity-batch-verification rule 1: batch mode never runs Update).
     /// </summary>
-    public class DrivableVehicle : MonoBehaviour
+    public class DrivableVehicle : MonoBehaviour, IRideable
     {
         public enum ChassisType { Wheels, Mount }
 
@@ -72,6 +72,7 @@ namespace VoxelCraft.Creatures
         public float Speed => speed;
         public bool Occupied { get; private set; }
         public Transform Seat => seat;
+        public Transform Transform => transform;
         public float AvgCompression { get; private set; }
         public bool AnyWheelGrounded { get; private set; }
 
