@@ -1044,6 +1044,55 @@ namespace VoxelCraft.Editor
                 Eval("m31.cottage_furnished", doorInCottage && torchInCottage && chestInCottage && bedInCottage && fenceInCottage,
                     $"cottage contains door={doorInCottage} torch={torchInCottage} chest={chestInCottage} bed={bedInCottage} fence={fenceInCottage}");
 
+                // ---- M40: mmmm obj_ buildings through the structure pipeline ----
+                // parse + role census + in-world stamping for the 4 new buildings.
+                string[] m40Names = { "obj_store01", "obj_house1", "obj_house2", "obj_house6" };
+                int[] m40MinSolid = { 3000, 3000, 2500, 2000 };
+                bool m40All = true;
+                var m40Detail = new List<string>();
+                for (int bIdx40 = 0; bIdx40 < m40Names.Length; bIdx40++)
+                {
+                    var bvox = Vox.StructureRegistry.Load(m40Names[bIdx40]);
+                    int bsolid = 0;
+                    var btypes = new HashSet<BlockType>();
+                    if (bvox != null)
+                    {
+                        foreach (var t in bvox.blocks)
+                        {
+                            if (t != BlockType.Air) { bsolid++; btypes.Add(t); }
+                        }
+                    }
+                    bool okB = bvox != null && bsolid >= m40MinSolid[bIdx40] && btypes.Count >= 3 &&
+                               bvox.Width <= 24 && bvox.Height <= 14;
+                    m40All &= okB;
+                    m40Detail.Add($"{m40Names[bIdx40]}:{bvox?.Width}x{bvox?.Height}x{bvox?.Depth} solid={bsolid} types={btypes.Count}{(okB ? "" : " FAIL")}");
+                }
+                Eval("m40.buildings_parse", m40All, string.Join("; ", m40Detail));
+
+                // stamping: buildings are 24 wide (span 2-3 chunks), so count
+                // signature blocks aggregated over the whole 33x33 chunk window.
+                var tg40 = new Gen.TerrainGenerator(1337);
+                int glass40 = 0, black40 = 0, yellow40 = 0, blue40 = 0, log40 = 0;
+                for (int cz = -16; cz <= 16; cz++)
+                {
+                    for (int cx = -16; cx <= 16; cx++)
+                    {
+                        var c40 = new Chunk(cx, cz);
+                        tg40.Generate(c40);
+                        for (int i = 0; i < c40.blocks.Length; i++)
+                        {
+                            var t = (BlockType)c40.blocks[i];
+                            if (t == BlockType.Glass) glass40++;
+                            else if (t == BlockType.WoolBlack) black40++;
+                            else if (t == BlockType.WoolYellow) yellow40++;
+                            else if (t == BlockType.WoolBlue) blue40++;
+                            else if (t == BlockType.Log) log40++;
+                        }
+                    }
+                }
+                Eval("m40.buildings_stamped", glass40 > 200 && black40 > 150,
+                    $"window totals glass={glass40} black={black40} yellow={yellow40} blue={blue40} log={log40}");
+
             }
             catch (System.Exception ex)
             {

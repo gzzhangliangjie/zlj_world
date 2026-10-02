@@ -180,6 +180,7 @@ namespace VoxelCraft.Gen
             "bench3", "bench4", "hydrant", "pumpkin",   // batch 2 street props
             "trlight2", "newsbox1", "cone1",
             "cottage", "house5",
+            "obj_store01", "obj_house1", "obj_house2", "obj_house6",
         };
 
         /// <summary>
