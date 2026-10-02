@@ -478,7 +478,7 @@ def build_species(sp, cfg):
 
     if sp == 'cat':                       # 猫脸:只画主头盒,一对眼+宽粉鼻
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
-            if bn != 'head' or w < 4 or h < 5:      # 吻部盒(h=4)不画,只画主头盒
+            if bn != 'head' or h != 4:             # 只画吻部盒(h=4,z 小端朝引擎+Z)
                 continue
             for FACE in ('south', 'east', 'west'):
                 fd = uv[FACE]
