@@ -280,6 +280,8 @@ def build_species(sp, cfg):
             bones.setdefault('wing0' if x0 < GX // 2 else 'wing1', []).append(b)
 
 
+    if sp == 'cat':                           # 猫鼻:吻前 2x1x1 凸出红鼻头
+        bones.setdefault('head', []).append((4, 4, 0, 2, 1, 1))
     packer = ShelfPacker()
     front_split = cfg['front_split']
     zmid = GZ / 2
@@ -480,17 +482,21 @@ def build_species(sp, cfg):
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn != 'head' or h != 4:             # 只画吻部盒(h=4,z 小端朝引擎+Z)
                 continue
-            for FACE in ('south', 'east', 'west'):
+            for FACE in ('south',):
                 fd = uv[FACE]
                 u, v = int(fd['uv'][0]), int(fd['uv'][1])
                 fw_, fh_ = int(fd['uv_size'][0]), int(fd['uv_size'][1])
-                K = (18, 18, 18); PINK = (232, 130, 150)
-                if FACE == 'south':
-                    px[u, v+1] = K; px[u+fw_-1, v+1] = K          # 一对黑眼(1x1)
-                    for cc in range(fw_):                          # 整行宽粉鼻(对称)
-                        px[u+cc, v+fh_-1] = PINK
-                else:
-                    px[u, v+1] = K                                 # 侧眼前缘 1 眼
+                K = (18, 18, 18)
+                px[u, v+1] = K; px[u+fw_-1, v+1] = K              # 只画一对正眼
+    for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:   # 猫红鼻头凸盒
+        if sp == 'cat' and bn == 'head' and w == 2 and h == 1 and d == 1:
+            RED = (226, 96, 122)
+            for face, fd in uv.items():
+                u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                for vv in range(th):
+                    for uu in range(tw):
+                        px[u+uu, v+vv] = RED
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
     for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
