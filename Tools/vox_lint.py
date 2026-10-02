@@ -43,16 +43,16 @@ EXPECT = {
     'newsbox1': (3, {'Stone', 'WoolBlack', 'WoolBlue'}),
     'cone1':    (2, {'WoolYellow', 'WoolWhite'}),
     # M40 buildings (street blocks): window glass + per-building wall role gates
-    'obj_store01': (4, {'Glass', 'Stone', 'WoolBlack', 'WoolYellow'}),
+    'obj_store01': (4, {'Glass', 'Brick', 'WoolBlack', 'WoolYellow'}),
     'obj_house1':  (3, {'Glass', 'Stone'}),
     'obj_house2':  (3, {'Glass', 'WoolWhite'}),
     'obj_house6':  (3, {'Glass', 'Sand', 'Plank'}),
-    'obj_store02': (3, {'Glass', 'Stone', 'WoolGreen'}),
-    'obj_store03': (4, {'Glass', 'Stone', 'WoolRed', 'WoolBlue'}),
+    'obj_store02': (3, {'Glass', 'Plank', 'WoolGreen'}),
+    'obj_store03': (4, {'Glass', 'Sand', 'WoolRed', 'WoolBlue'}),
     'obj_store04': (3, {'Glass', 'Stone'}),
-    'obj_store05': (3, {'Glass', 'Stone', 'WoolBlack'}),
+    'obj_store05': (3, {'Glass', 'Brick', 'WoolBlack'}),
     'obj_story01': (2, {'Glass', 'Stone'}),
-    'obj_story02': (3, {'Glass', 'Stone', 'WoolYellow'}),
+    'obj_story02': (3, {'Glass', 'Brick', 'WoolYellow'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19}
 

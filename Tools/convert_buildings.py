@@ -59,78 +59,86 @@ def load(path):
 # Stone (all-grey monotony) and wall whites/off-blues falling to Glass/white
 # wool (transparent-hole / dead-panel "windows").
 ROLE = {
+    # per-building semantic palettes. Greyscale walls (136,136,136) get a
+    # DISTINCT wall block per building — the sources are all-grey rowhouse
+    # modules and bare nearest-neighbour rendered 4 grey boxes ("monotone").
     'obj_store01': {
-        (32, 32, 32):   'WoolBlack',    # storefront band + dark trim
-        (204, 252, 252):'Glass',        # display windows / glass door
-        (204, 152, 48): 'WoolYellow',   # awning orange
-        (116, 0, 0):    'WoolRed',      # red sign strip
-        (136, 136, 136):'Stone',        # main wall
-        (168, 168, 168):'Stone',        # light trim
-        (84, 84, 84):   'Cobble',       # dark base
-        (116, 116, 116):'Cobble',
-        (220, 220, 220):'WoolWhite',    # door frame
-    },
-    'obj_house1': {
-        (48, 152, 204): 'Glass', (152, 204, 252): 'Glass', (48, 100, 152): 'Glass',  # window family
-        (100, 48, 0):   'Plank',       # wooden door
-        (136, 136, 136):'Stone',
-        (168, 168, 168):'Stone',
-        (236, 236, 236):'WoolWhite',
-        (184, 184, 184):'Cobble',
-    },
-    'obj_house2': {
-        (152, 204, 252):'Glass',        # windows
-        (236, 236, 236):'WoolWhite',    # main white wall
-        (168, 168, 168):'Cobble',       # base band
-    },
-    'obj_house6': {
-        (48, 152, 252): 'Glass',        # bright windows (z16-22, 164 vox)
-        (100, 48, 0):   'Plank', (152, 100, 0): 'Plank',  # wood door/trim
-        (168, 168, 168):'Sand',         # main light-grey wall -> warm sand render
-        (220, 220, 220):'WoolWhite',    # white base slab + trim (NOT glass)
-        (136, 136, 136):'Stone', (184, 184, 184):'Cobble', (116, 116, 116):'Cobble',
-        (236, 236, 236):'WoolWhite',
+        (136, 136, 136):'Brick',         # MAIN WALL: red-brick storefront
+        (168, 168, 168):'WoolWhite',     # trim lines
+        (32, 32, 32):   'WoolBlack',     # sign band + dark trim
+        (204, 252, 252):'Glass',         # display windows / glass door
+        (204, 152, 48): 'WoolYellow',    # awning orange
+        (116, 0, 0):    'WoolRed',       # red sign strip
+        (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
+        (220, 220, 220):'WoolWhite',
     },
     'obj_store02': {
-        (0, 152, 100):  'WoolGreen',    # green awning/sign band
-        (204, 252, 252):'Glass',        # display windows
-        (32, 32, 32):   'WoolBlack',    # storefront band
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (136, 136, 136):'Plank',         # MAIN WALL: timber shop
+        (168, 168, 168):'Stone',         # trim
+        (0, 152, 100):  'WoolGreen',     # green awning/sign
+        (204, 252, 252):'Glass',
+        (32, 32, 32):   'WoolBlack',
         (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
         (220, 220, 220):'WoolWhite',
     },
     'obj_store03': {
-        (252, 204, 204):'WoolRed',      # pink top sign band (z17-22)
-        (152, 100, 204):'WoolBlue',     # purple storefront panels (z5-12)
+        (136, 136, 136):'Sand',          # MAIN WALL: warm sand render
+        (168, 168, 168):'WoolWhite',     # trim
+        (252, 204, 204):'WoolRed',       # pink top sign band (z17-22)
+        (152, 100, 204):'WoolBlue',      # purple storefront panels
         (204, 252, 252):'Glass',
         (32, 32, 32):   'WoolBlack',
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
         (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
     },
     'obj_store04': {
-        (48, 152, 204): 'Glass',        # tall blue window band (z5-22)
+        (136, 136, 136):'WoolWhite',     # MAIN WALL: white modern store
+        (168, 168, 168):'Stone',
+        (48, 152, 204): 'Glass',         # tall blue window band (z5-22)
         (204, 252, 252):'Glass',
         (32, 32, 32):   'WoolBlack',
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
         (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
     },
     'obj_store05': {
+        (136, 136, 136):'Brick',         # MAIN WALL: brick
+        (168, 168, 168):'WoolWhite',     # trim
         (204, 252, 252):'Glass',
         (32, 32, 32):   'WoolBlack',
-        (220, 220, 220):'WoolWhite',    # white trim
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (220, 220, 220):'WoolWhite',
         (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
     },
+    'obj_house1': {
+        (136, 136, 136):'Stone',         # keep ONE grey stone building
+        (168, 168, 168):'WoolWhite',
+        (48, 152, 204): 'Glass', (152, 204, 252): 'Glass', (48, 100, 152): 'Glass',
+        (100, 48, 0):   'Plank',
+        (236, 236, 236):'WoolWhite',
+        (184, 184, 184):'Cobble',
+    },
+    'obj_house2': {
+        (236, 236, 236):'WoolWhite',     # main white wall
+        (152, 204, 252):'Glass',
+        (168, 168, 168):'Cobble',
+    },
+    'obj_house6': {
+        (48, 152, 252): 'Glass',
+        (100, 48, 0):   'Plank', (152, 100, 0): 'Plank',
+        (168, 168, 168):'Sand',          # main light-grey wall -> sand
+        (220, 220, 220):'WoolWhite',
+        (136, 136, 136):'Stone', (184, 184, 184):'Cobble', (116, 116, 116):'Cobble',
+        (236, 236, 236):'WoolWhite',
+    },
     'obj_story01': {
-        (252, 100, 0):  'WoolYellow',   # orange awning strip
+        (136, 136, 136):'Plank',         # MAIN WALL: timber rowhouse
+        (168, 168, 168):'Stone',
+        (252, 100, 0):  'WoolYellow',    # orange awning strip
         (204, 252, 252):'Glass', (152, 204, 252):'Glass',
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
         (116, 116, 116):'Cobble', (68, 68, 68):'WoolBlack',
     },
     'obj_story02': {
-        (252, 100, 0):  'WoolYellow',   # orange awnings
+        (136, 136, 136):'Brick',         # MAIN WALL: brick rowhouse
+        (168, 168, 168):'Plank',
+        (252, 100, 0):  'WoolYellow',
         (152, 204, 252):'Glass',
-        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
     },
 }
 
