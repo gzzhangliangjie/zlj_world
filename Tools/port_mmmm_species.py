@@ -157,6 +157,7 @@ SPECIES = {
         emperor=True,
         belly_light=False,
         no_head_bump=True,
+        web_extend=2,
     ),
 }
 
@@ -250,6 +251,12 @@ def build_species(sp, cfg):
     if tail_extra.any():
         for b in greedy_boxes(occ, tail_extra & occ):
             bones.setdefault('tail', []).append(b)
+    if cfg.get('web_extend'):                 # 蹼前伸:脚掌盒向 +z(引擎前方)加长
+        ext = cfg['web_extend']
+        for i, bn in enumerate(('leg0', 'leg1', 'leg2', 'leg3')):
+            boxes = bones.get(bn, [])
+            for j, (x0, y0, z0, w, h, d) in enumerate(boxes):
+                boxes[j] = (x0, y0, z0, w, h, d + ext)   # 深度加长,越出身体前沿
     if cfg.get('no_head_bump'):               # 去掉头后凸块(喙层 z4 的小薄片)
         bones['head'] = [b for b in bones.get('head', [])
                          if not (b[2] >= 4 and b[5] == 1 and b[0] >= 1)]
