@@ -451,8 +451,8 @@ def build_species(sp, cfg):
                     for cc in range(1, fw_-1):
                         px[u+cc, v] = (32, 32, 32)   # 顶行中间黑帽,眼正上方留白
                 elif FACE in ('east', 'west') and fw_ >= 3 and fh_ >= 3:
-                    # 侧脸前缘一小片白(眼旁的侧脸白斑)
-                    px[u, v] = WHITE; px[u, v+1] = WHITE
+                    # 侧脸靠眼端白斑(u 方向哪端朝脸由 swap 定,两端都试:先远后近)
+                    px[u + fw_-1, v] = WHITE; px[u + fw_-1, v+1] = WHITE
 
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
