@@ -361,7 +361,10 @@ def build_species(sp, cfg):
         BLACK = (32, 32, 32)
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn in ('body', 'head', 'tail'):
-                for face in ('east', 'west', 'up'):
+                faces_bk = ('east', 'west', 'up')
+                if bn == 'head':
+                    faces_bk = ('east', 'west', 'up', 'south')   # 黑脸白瞳
+                for face in faces_bk:
                     fd = uv[face]
                     u, v = int(fd['uv'][0]), int(fd['uv'][1])
                     tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
@@ -424,10 +427,7 @@ def build_species(sp, cfg):
                 u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
                 fw_, fh_ = int(uv[FACE]['uv_size'][0]), int(uv[FACE]['uv_size'][1])
                 # 顶行两端放眼(喙盒挡住脸中列,眼必须避开喙投影)
-                if FACE == 'south':             # 白脸→黑瞳(白眼无对比)
-                    EYE, EYERIM = (25, 25, 25), (60, 60, 60)
-                else:                           # 黑侧脸→白眼
-                    EYE, EYERIM = WHITE, SOFT
+                EYE, EYERIM = WHITE, SOFT      # 黑脸→白瞳(全脸黑,白眼高对比)
                 px[u, v] = EYE; px[u, v+1] = EYERIM
                 px[u+fw_-1, v] = EYE; px[u+fw_-1, v+1] = EYERim if False else EYERIM
 
