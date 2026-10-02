@@ -137,6 +137,61 @@
      ]
     }
    }
+  },
+  "animation.cat.walk": {
+   "animation_length": 1.0,
+   "loop": true,
+   "bones": {
+    "body": {
+     "rotation": [
+      0.0,
+      "math.cos(query.anim_time * 38.17 + 180.0) * 2.0",
+      0.0
+     ]
+    },
+    "head": {
+     "rotation": [
+      0.0,
+      "math.cos(query.anim_time * 38.17 + 90.0) * 3.0",
+      0.0
+     ]
+    },
+    "tail": {
+     "rotation": [
+      "math.cos(query.anim_time * 38.17) * 8.0",
+      "math.cos(query.anim_time * 38.17 + 90.0) * 12.0",
+      0.0
+     ]
+    },
+    "leg0": {
+     "rotation": [
+      "math.cos(query.anim_time * 38.17 + 90.0) * 18.0",
+      0.0,
+      0.0
+     ]
+    },
+    "leg1": {
+     "rotation": [
+      "math.cos(query.anim_time * 38.17 + 270.0) * 18.0",
+      0.0,
+      0.0
+     ]
+    },
+    "leg2": {
+     "rotation": [
+      "math.cos(query.anim_time * 38.17 + 270.0) * 18.0",
+      0.0,
+      0.0
+     ]
+    },
+    "leg3": {
+     "rotation": [
+      "math.cos(query.anim_time * 38.17 + 90.0) * 18.0",
+      0.0,
+      0.0
+     ]
+    }
+   }
   }
  }
 }

@@ -136,6 +136,7 @@ SPECIES = {
         tail_rule=lambda vx, vy, vz: vy >= 13 or (vy == 12 and vz >= 8),
         leg_y_range=(0, 3, 11, 14),      # 腿只在前后肢段(vox y),身体底层不吃
         leg_lift=2,
+        slim_legs=True,
     ),
     'bear': dict(
         voxfile='mob_bear.vox',
@@ -251,6 +252,19 @@ def build_species(sp, cfg):
     if tail_extra.any():
         for b in greedy_boxes(occ, tail_extra & occ):
             bones.setdefault('tail', []).append(b)
+    if cfg.get('slim_legs'):                 # 猫腿修形:细直腿,埋身 1 格防分离
+        # 前腿:深度 3→1(细),x 不变与身体对齐
+        nb = []
+        for (x0, y0, z0, w, h, d) in bones.get('leg0', []):
+            nb.append((x0, y0, z0 + 2, w, h, 1))
+        bones['leg0'] = nb
+        nb = []
+        for (x0, y0, z0, w, h, d) in bones.get('leg1', []):
+            nb.append((x0, y0, z0 + 2, w, h, 1))
+        bones['leg1'] = nb
+        # 后腿:大板拆窄,每只一条 2 宽,贴身体侧(左 x1-2,右 x3-4)
+        bones['leg2'] = [(1, 0, 11, 2, 3, 1), (2, 0, 12, 2, 3, 1)]
+        bones['leg3'] = [(3, 0, 11, 2, 3, 1), (3, 0, 12, 2, 3, 1)]
     if cfg.get('web_extend'):                 # 蹼前伸:脚掌盒向 +z(引擎前方)加长
         ext = cfg['web_extend']
         for i, bn in enumerate(('leg0', 'leg1', 'leg2', 'leg3')):

@@ -1,604 +1,604 @@
 {
-  "//": "Data-driven creature registry. Drop Geo/<sp>.geo + Textures/<sp>_skin.png + Anims/<sp>.animation.json + an entry here = new species, no code changes.",
-  "species": {
-    "croc": {
-      "walkClip": "animation.croc.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:tcos",
-      "controllers": true
+ "//": "Data-driven creature registry. Drop Geo/<sp>.geo + Textures/<sp>_skin.png + Anims/<sp>.animation.json + an entry here = new species, no code changes.",
+ "species": {
+  "croc": {
+   "walkClip": "animation.croc.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:tcos",
+   "controllers": true
+  },
+  "chicken": {
+   "walkClip": "animation.chicken.move",
+   "biped": true,
+   "behaviours": [],
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
+  },
+  "cow": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
+  },
+  "fox": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [
+    {
+     "clip": "animation.fox.sit",
+     "absolute": false,
+     "minT": 6,
+     "maxT": 12
     },
-    "chicken": {
-      "walkClip": "animation.chicken.move",
-      "biped": true,
-      "behaviours": [],
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "warm",
-        "cold"
-      ]
-    },
-    "cow": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "warm",
-        "cold"
-      ]
-    },
-    "fox": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [
-        {
-          "clip": "animation.fox.sit",
-          "absolute": false,
-          "minT": 6,
-          "maxT": 12
-        },
-        {
-          "clip": "animation.fox.sleep",
-          "absolute": false,
-          "minT": 8,
-          "maxT": 16
-        }
-      ],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "arctic"
-      ]
-    },
-    "goat": {
-      "walkClip": "animation.goat.walk",
-      "gait": "var:tcos",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "controllers": true
-    },
-    "mooshroom": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "brown"
-      ]
-    },
-    "pig": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "warm",
-        "cold"
-      ]
-    },
-    "sheep": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [
-        {
-          "clip": "animation.sheep.grazing.v2",
-          "absolute": false,
-          "minT": 4,
-          "maxT": 9
-        }
-      ],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true
-    },
-    "wolf": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [
-        {
-          "clip": "animation.wolf.sitting",
-          "absolute": false,
-          "minT": 6,
-          "maxT": 14
-        },
-        {
-          "clip": "animation.wolf.shaking",
-          "absolute": false,
-          "minT": 2.5,
-          "maxT": 4
-        }
-      ],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "ashen",
-        "black",
-        "chestnut",
-        "rusty",
-        "snowy",
-        "spotted",
-        "striped",
-        "woods"
-      ]
-    },
-    "ocelot": {
-      "walkClip": "animation.ocelot.walk",
-      "behaviours": [
-        {
-          "clip": "animation.ocelot.sit",
-          "absolute": false,
-          "minT": 6,
-          "maxT": 14
-        }
-      ],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "wild",
-        "black",
-        "red",
-        "siamese"
-      ]
-    },
-    "creeper": {
-      "walkClip": "animation.creeper.legs",
-      "behaviours": [],
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "var:leg_rot",
-      "controllers": true
-    },
-    "horse": {
-      "walkClip": "animation.horse.v3.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:leg_x_rot_anim",
-      "controllers": true
-    },
-    "donkey": {
-      "walkClip": "animation.horse.v3.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:leg_x_rot_anim",
-      "controllers": true
-    },
-    "rabbit": {
-      "walkClip": "animation.rabbit.move",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:jump_rotation",
-      "controllers": true,
-      "variants": [
-        "brown",
-        "white",
-        "black",
-        "white_splotched",
-        "gold",
-        "salt",
-        "toast"
-      ]
-    },
-    "panda": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "variants": [
-        "default",
-        "lazy",
-        "worried",
-        "playful",
-        "brown",
-        "weak",
-        "aggressive"
-      ]
-    },
-    "armadillo": {
-      "walkClip": "animation.armadillo.walk",
-      "behaviours": [
-        {
-          "clip": "animation.armadillo.roll_up",
-          "absolute": false
-        },
-        {
-          "clip": "animation.armadillo.rolled_up",
-          "absolute": false
-        },
-        {
-          "clip": "animation.armadillo.unroll",
-          "absolute": false
-        }
-      ],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true,
-      "properties": {
-        "minecraft:armadillo_state": "unrolled"
-      }
-    },
-    "llama": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true
-    },
-    "steve": {
-      "walkClip": "animation.player.move.arms",
-      "biped": true,
-      "extraClips": [
-        "animation.player.move.legs",
-        "animation.humanoid.base_pose"
-      ],
-      "behaviours": [],
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "var:tcos0",
-      "controllers": true
-    },
-    "zombie": {
-      "walkClip": "animation.humanoid.move",
-      "biped": true,
-      "extraClips": [
-        "animation.humanoid.base_pose",
-        "animation.zombie.attack_bare_hand"
-      ],
-      "behaviours": [],
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "var:tcos0",
-      "controllers": true
-    },
-    "skeleton": {
-      "walkClip": "animation.humanoid.move",
-      "biped": true,
-      "extraClips": [
-        "animation.humanoid.base_pose"
-      ],
-      "behaviours": [],
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "var:tcos0",
-      "controllers": true
-    },
-    "villager": {
-      "walkClip": "animation.villager.move",
-      "biped": true,
-      "archetype": "biped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": true
-    },
-    "bee": {
-      "walkClip": "animation.bee.flying",
-      "archetype": "insect",
-      "locomotion": "fly",
-      "gait": "none",
-      "biped": false,
-      "extraClips": [
-        "animation.bee.fly.bobbing"
-      ],
-      "behaviours": [],
-      "controllers": true
-    },
-    "bat": {
-      "walkClip": "animation.bat.flying",
-      "archetype": "flyer-membrane",
-      "locomotion": "fly",
-      "gait": "none",
-      "biped": false,
-      "behaviours": [],
-      "controllers": true
-    },
-    "spider": {
-      "walkClip": "animation.spider.walk",
-      "extraClips": [],
-      "archetype": "arachnid",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [],
-      "gaitWeight": "1.0",
-      "groundOffset": "0.1446",
-      "walkSpeed": "0.3",
-      "controllers": true
-    },
-    "parrot": {
-      "walkClip": "animation.parrot.moving",
-      "extraClips": [
-        "animation.parrot.standing"
-      ],
-      "extraVariables": {
-        "wing_flap": 0
-      },
-      "archetype": "hopper",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [
-        {
-          "clip": "animation.parrot.sitting",
-          "absolute": false
-        }
-      ],
-      "bakedSetupClips": [
-        "animation.parrot.base"
-      ],
-      "groundOffset": "0",
-      "controllers": true,
-      "variants": [
-        "red_blue",
-        "blue",
-        "green",
-        "yellow_blue",
-        "grey"
-      ]
-    },
-    "hoglin": {
-      "walkClip": "animation.hoglin.walk",
-      "controllers": true,
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:tcos"
-    },
-    "polar_bear": {
-      "walkClip": "animation.quadruped.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "entityScale": "1.2",
-      "controllers": true,
-      "bakedSetupClips": [
-        "animation.polarbear.move"
-      ],
-      "bakedSetupPos": [
-        "animation.polarbear.move"
-      ]
-    },
-    "salmon": {
-      "walkClip": "animation.salmon.swim",
-      "archetype": "fish",
-      "locomotion": "swim",
-      "gait": "var:animationamountblend",
-      "behaviours": [],
-      "controllers": true,
-      "walkSpeed": "0.3",
-      "groundOffset": "0"
-    },
-    "pufferfish": {
-      "walkClip": "animation.pufferfish.swim",
-      "archetype": "fish",
-      "locomotion": "swim",
-      "gait": "var:animationamountblend",
-      "behaviours": [],
-      "controllers": true,
-      "walkSpeed": "0.15",
-      "groundOffset": "0"
-    },
-    "axolotl": {
-      "walkClip": "animation.axolotl.walk_floor",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [],
-      "controllers": true,
-      "walkSpeed": "0.35",
-      "groundOffset": "0",
-      "variants": [
-        "lucy",
-        "wild",
-        "gold",
-        "cyan",
-        "blue"
-      ]
-    },
-    "dolphin": {
-      "walkClip": "animation.dolphin.move",
-      "archetype": "fish",
-      "locomotion": "swim",
-      "gait": "none",
-      "behaviours": [],
-      "controllers": true,
-      "walkSpeed": "0.4",
-      "groundOffset": "0"
-    },
-    "goose": {
-      "walkClip": "animation.goose.walk",
-      "behaviours": [],
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "var:tcos",
-      "controllers": true,
-      "groundOffset": "-0.1625"
-    },
-    "penguin": {
-      "walkClip": "animation.penguin.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": false,
-      "entityScale": "1.0"
-    },
-    "camel": {
-      "walkClip": "animation.camel.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [],
-      "controllers": true
-    },
-    "frog": {
-      "walkClip": "animation.frog.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [],
-      "walkSpeed": "0.15",
-      "controllers": true,
-      "variants": [
-        "temperate",
-        "cold",
-        "warm"
-      ]
-    },
-    "turtle": {
-      "walkClip": "animation.turtle.ground_move",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "behaviours": [],
-      "walkSpeed": "0.2",
-      "controllers": true
-    },
-    "dog": {
-      "walkClip": "animation.dog.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": false,
-      "variants": [
-        "default",
-        "urban"
-      ],
-      "entityScale": "0.9"
-    },
-    "cat": {
-      "walkClip": "animation.dog.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": false,
-      "entityScale": "0.8"
-    },
-    "bear": {
-      "walkClip": "animation.dog.walk",
-      "archetype": "quadruped",
-      "locomotion": "walk",
-      "gait": "dist-cos",
-      "controllers": false,
-      "entityScale": "1.6"
+    {
+     "clip": "animation.fox.sleep",
+     "absolute": false,
+     "minT": 8,
+     "maxT": 16
     }
+   ],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "arctic"
+   ]
   },
-  "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
-  "faceOverrides": {
-    "donkey": [
-      0,
-      39,
-      20,
-      5
-    ],
-    "chicken": [
-      0,
-      23,
-      8,
-      6
-    ],
-    "goat": [
-      36,
-      2,
-      21,
-      6
-    ],
-    "llama": [
-      6,
-      36,
-      8,
-      8
-    ],
-    "steve": [
-      8,
-      48,
-      8,
-      8
-    ],
-    "bat": [
-      6,
-      52,
-      6,
-      6
-    ],
-    "bee": [
-      10,
-      47,
-      7,
-      7
-    ],
-    "zombie": [
-      8,
-      16,
-      8,
-      8
-    ],
-    "skeleton": [
-      8,
-      16,
-      8,
-      8
-    ],
-    "villager": [
-      8,
-      46,
-      8,
-      10
-    ],
-    "armadillo": [
-      43,
-      42,
-      7,
-      5
-    ],
-    "parrot": [
-      2,
-      25,
-      8,
-      3
-    ],
-    "salmon": [
-      22,
-      25,
-      8,
-      4
-    ],
-    "croc": [
-      110,
-      6,
-      12,
-      4
-    ],
-    "goose": [
-      35,
-      97,
-      7,
-      2
-    ]
+  "goat": {
+   "walkClip": "animation.goat.walk",
+   "gait": "var:tcos",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "controllers": true
   },
-  "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."
+  "mooshroom": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "brown"
+   ]
+  },
+  "pig": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "warm",
+    "cold"
+   ]
+  },
+  "sheep": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [
+    {
+     "clip": "animation.sheep.grazing.v2",
+     "absolute": false,
+     "minT": 4,
+     "maxT": 9
+    }
+   ],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true
+  },
+  "wolf": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [
+    {
+     "clip": "animation.wolf.sitting",
+     "absolute": false,
+     "minT": 6,
+     "maxT": 14
+    },
+    {
+     "clip": "animation.wolf.shaking",
+     "absolute": false,
+     "minT": 2.5,
+     "maxT": 4
+    }
+   ],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "ashen",
+    "black",
+    "chestnut",
+    "rusty",
+    "snowy",
+    "spotted",
+    "striped",
+    "woods"
+   ]
+  },
+  "ocelot": {
+   "walkClip": "animation.ocelot.walk",
+   "behaviours": [
+    {
+     "clip": "animation.ocelot.sit",
+     "absolute": false,
+     "minT": 6,
+     "maxT": 14
+    }
+   ],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "wild",
+    "black",
+    "red",
+    "siamese"
+   ]
+  },
+  "creeper": {
+   "walkClip": "animation.creeper.legs",
+   "behaviours": [],
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "var:leg_rot",
+   "controllers": true
+  },
+  "horse": {
+   "walkClip": "animation.horse.v3.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:leg_x_rot_anim",
+   "controllers": true
+  },
+  "donkey": {
+   "walkClip": "animation.horse.v3.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:leg_x_rot_anim",
+   "controllers": true
+  },
+  "rabbit": {
+   "walkClip": "animation.rabbit.move",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:jump_rotation",
+   "controllers": true,
+   "variants": [
+    "brown",
+    "white",
+    "black",
+    "white_splotched",
+    "gold",
+    "salt",
+    "toast"
+   ]
+  },
+  "panda": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "variants": [
+    "default",
+    "lazy",
+    "worried",
+    "playful",
+    "brown",
+    "weak",
+    "aggressive"
+   ]
+  },
+  "armadillo": {
+   "walkClip": "animation.armadillo.walk",
+   "behaviours": [
+    {
+     "clip": "animation.armadillo.roll_up",
+     "absolute": false
+    },
+    {
+     "clip": "animation.armadillo.rolled_up",
+     "absolute": false
+    },
+    {
+     "clip": "animation.armadillo.unroll",
+     "absolute": false
+    }
+   ],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true,
+   "properties": {
+    "minecraft:armadillo_state": "unrolled"
+   }
+  },
+  "llama": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true
+  },
+  "steve": {
+   "walkClip": "animation.player.move.arms",
+   "biped": true,
+   "extraClips": [
+    "animation.player.move.legs",
+    "animation.humanoid.base_pose"
+   ],
+   "behaviours": [],
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "var:tcos0",
+   "controllers": true
+  },
+  "zombie": {
+   "walkClip": "animation.humanoid.move",
+   "biped": true,
+   "extraClips": [
+    "animation.humanoid.base_pose",
+    "animation.zombie.attack_bare_hand"
+   ],
+   "behaviours": [],
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "var:tcos0",
+   "controllers": true
+  },
+  "skeleton": {
+   "walkClip": "animation.humanoid.move",
+   "biped": true,
+   "extraClips": [
+    "animation.humanoid.base_pose"
+   ],
+   "behaviours": [],
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "var:tcos0",
+   "controllers": true
+  },
+  "villager": {
+   "walkClip": "animation.villager.move",
+   "biped": true,
+   "archetype": "biped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": true
+  },
+  "bee": {
+   "walkClip": "animation.bee.flying",
+   "archetype": "insect",
+   "locomotion": "fly",
+   "gait": "none",
+   "biped": false,
+   "extraClips": [
+    "animation.bee.fly.bobbing"
+   ],
+   "behaviours": [],
+   "controllers": true
+  },
+  "bat": {
+   "walkClip": "animation.bat.flying",
+   "archetype": "flyer-membrane",
+   "locomotion": "fly",
+   "gait": "none",
+   "biped": false,
+   "behaviours": [],
+   "controllers": true
+  },
+  "spider": {
+   "walkClip": "animation.spider.walk",
+   "extraClips": [],
+   "archetype": "arachnid",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "gaitWeight": "1.0",
+   "groundOffset": "0.1446",
+   "walkSpeed": "0.3",
+   "controllers": true
+  },
+  "parrot": {
+   "walkClip": "animation.parrot.moving",
+   "extraClips": [
+    "animation.parrot.standing"
+   ],
+   "extraVariables": {
+    "wing_flap": 0
+   },
+   "archetype": "hopper",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [
+    {
+     "clip": "animation.parrot.sitting",
+     "absolute": false
+    }
+   ],
+   "bakedSetupClips": [
+    "animation.parrot.base"
+   ],
+   "groundOffset": "0",
+   "controllers": true,
+   "variants": [
+    "red_blue",
+    "blue",
+    "green",
+    "yellow_blue",
+    "grey"
+   ]
+  },
+  "hoglin": {
+   "walkClip": "animation.hoglin.walk",
+   "controllers": true,
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:tcos"
+  },
+  "polar_bear": {
+   "walkClip": "animation.quadruped.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "entityScale": "1.2",
+   "controllers": true,
+   "bakedSetupClips": [
+    "animation.polarbear.move"
+   ],
+   "bakedSetupPos": [
+    "animation.polarbear.move"
+   ]
+  },
+  "salmon": {
+   "walkClip": "animation.salmon.swim",
+   "archetype": "fish",
+   "locomotion": "swim",
+   "gait": "var:animationamountblend",
+   "behaviours": [],
+   "controllers": true,
+   "walkSpeed": "0.3",
+   "groundOffset": "0"
+  },
+  "pufferfish": {
+   "walkClip": "animation.pufferfish.swim",
+   "archetype": "fish",
+   "locomotion": "swim",
+   "gait": "var:animationamountblend",
+   "behaviours": [],
+   "controllers": true,
+   "walkSpeed": "0.15",
+   "groundOffset": "0"
+  },
+  "axolotl": {
+   "walkClip": "animation.axolotl.walk_floor",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "controllers": true,
+   "walkSpeed": "0.35",
+   "groundOffset": "0",
+   "variants": [
+    "lucy",
+    "wild",
+    "gold",
+    "cyan",
+    "blue"
+   ]
+  },
+  "dolphin": {
+   "walkClip": "animation.dolphin.move",
+   "archetype": "fish",
+   "locomotion": "swim",
+   "gait": "none",
+   "behaviours": [],
+   "controllers": true,
+   "walkSpeed": "0.4",
+   "groundOffset": "0"
+  },
+  "goose": {
+   "walkClip": "animation.goose.walk",
+   "behaviours": [],
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "var:tcos",
+   "controllers": true,
+   "groundOffset": "-0.1625"
+  },
+  "penguin": {
+   "walkClip": "animation.penguin.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "1.0"
+  },
+  "camel": {
+   "walkClip": "animation.camel.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "controllers": true
+  },
+  "frog": {
+   "walkClip": "animation.frog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "walkSpeed": "0.15",
+   "controllers": true,
+   "variants": [
+    "temperate",
+    "cold",
+    "warm"
+   ]
+  },
+  "turtle": {
+   "walkClip": "animation.turtle.ground_move",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "behaviours": [],
+   "walkSpeed": "0.2",
+   "controllers": true
+  },
+  "dog": {
+   "walkClip": "animation.dog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "variants": [
+    "default",
+    "urban"
+   ],
+   "entityScale": "0.9"
+  },
+  "cat": {
+   "walkClip": "animation.cat.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "0.8"
+  },
+  "bear": {
+   "walkClip": "animation.dog.walk",
+   "archetype": "quadruped",
+   "locomotion": "walk",
+   "gait": "dist-cos",
+   "controllers": false,
+   "entityScale": "1.6"
+  }
+ },
+ "//faceOverrides": "png-coord rects (u,v,w,h) where the geo UV declaration mismatches the actual skin (pixel-verified). Empty = compute from geo.",
+ "faceOverrides": {
+  "donkey": [
+   0,
+   39,
+   20,
+   5
+  ],
+  "chicken": [
+   0,
+   23,
+   8,
+   6
+  ],
+  "goat": [
+   36,
+   2,
+   21,
+   6
+  ],
+  "llama": [
+   6,
+   36,
+   8,
+   8
+  ],
+  "steve": [
+   8,
+   48,
+   8,
+   8
+  ],
+  "bat": [
+   6,
+   52,
+   6,
+   6
+  ],
+  "bee": [
+   10,
+   47,
+   7,
+   7
+  ],
+  "zombie": [
+   8,
+   16,
+   8,
+   8
+  ],
+  "skeleton": [
+   8,
+   16,
+   8,
+   8
+  ],
+  "villager": [
+   8,
+   46,
+   8,
+   10
+  ],
+  "armadillo": [
+   43,
+   42,
+   7,
+   5
+  ],
+  "parrot": [
+   2,
+   25,
+   8,
+   3
+  ],
+  "salmon": [
+   22,
+   25,
+   8,
+   4
+  ],
+  "croc": [
+   110,
+   6,
+   12,
+   4
+  ],
+  "goose": [
+   35,
+   97,
+   7,
+   2
+  ]
+ },
+ "//archetypes": "archetype = body shape family -> importer bone-name mapping + checker rules. quadruped: leg0..3/hip/named legs; biped: leftLeg/rightLeg (steve) or 2 legs (chicken/creeper leg0/leg1); insect: leg_front/mid/back planes + wing bones; flyer-membrane: leftWing/rightWing+tip, no legs. locomotion: walk=leg cadence checks; fly=wing clip loops, gait checks skip leg-hz. gait: dist-cos=distance-driven cos (default); var:<name>=entity pre_animation variable injection."
 }
