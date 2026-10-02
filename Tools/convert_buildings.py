@@ -282,16 +282,25 @@ def convert(name):
             out[(x-x0, z-z0, y-y0)] = c   # emit y-up: (X, height, depth)
     # 3) palette remap to anchors
     # build the output palette: index 1..N distinct remapped colors
-    remap = {}
     roles = ROLE.get(name, {})
-    for (x,h,dpt),c in out.items():
+    # height-aware black: large roof-band blacks read as harsh voids in
+    # daylight; soften ONLY the top sixth of the building (roof cornice)
+    # to dark-grey Cobble, keep wall/window blacks (sign bands, frames).
+    # NOTE: decided per-VOXEL, not per palette index — one source colour
+    # maps to different blocks at different heights.
+    maxH_out = max(p[1] for p in out) if out else 0
+    roofH = maxH_out * 5 // 6
+    anchor_of = {}
+    def block_for(c, h):
         rgb = tuple(pal[c][:3])
         blk = roles.get(rgb)
-        remap[c] = ANCHOR[blk] if blk else nearest_block(rgb)
+        if blk == 'WoolBlack' and h >= roofH:
+            return ANCHOR['Cobble']
+        return ANCHOR[blk] if blk else ANCHOR[nearest_block(rgb)]
     # (re)assign: palette = sorted distinct anchor colors
-    anchors = sorted(set(remap.values()))
+    anchors = sorted(set(block_for(c, h) for (x,h,dpt),c in out.items()))
     aidx = {a:i+1 for i,a in enumerate(anchors)}
-    voxels = [(x,h,dpt,aidx[remap[c]]) for (x,h,dpt),c in out.items()]
+    voxels = [(x,h,dpt,aidx[block_for(c, h)]) for (x,h,dpt),c in out.items()]
     X = max(v[0] for v in voxels)+1; Hh = max(v[1] for v in voxels)+1; Dd = max(v[2] for v in voxels)+1
     # 4) write minimal .vox
     def chunk(cid, body):

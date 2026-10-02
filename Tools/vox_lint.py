@@ -78,7 +78,7 @@ EXPECT = {
     # batch 3 props
     'sign1':     (2, {'Stone', 'WoolWhite'}),
     'sign5':     (2, {'Stone', 'WoolRed'}),
-    'chair1':    (1, {'WoolBlack'}),
+    'chair1':    (2, {'Plank', 'Log'}),          # timber chair
     'table1':    (1, {'Stone'}),
     'cart1':     (2, {'Stone', 'WoolRed'}),
     'cart2':     (2, {'WoolRed', 'WoolWhite'}),
@@ -101,7 +101,7 @@ EXPECT = {
     'playgrnd1': (2, {'Plank', 'WoolGreen'}),   # timber frame + green
     'grill':     (1, {'WoolBlack'}),
     'campfire':  (3, {'Log', 'Stone'}),
-    'dogstand':  (2, {'Glass', 'WoolYellow'}),
+    'dogstand':  (3, {'Glass', 'WoolYellow', 'WoolWhite'}),
     'rubbish1':  (1, {'Log'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19, 'sign1': 19, 'sign5': 19}   # tall thin poles, y-guard in stamper
