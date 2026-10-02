@@ -137,6 +137,7 @@ SPECIES = {
         leg_y_range=(0, 3, 11, 14),      # 腿只在前后肢段(vox y),身体底层不吃
         leg_lift=2,
         slim_legs=True,
+        leg_pivots={'leg0': (3.5, 2.5), 'leg1': (6.5, 2.5), 'leg2': (2.0, 12.0), 'leg3': (4.0, 12.0)},
     ),
     'bear': dict(
         voxfile='mob_bear.vox',
@@ -292,6 +293,9 @@ def build_species(sp, cfg):
               'wing0': [1, GY - 3, 1.5], 'wing1': [GX - 1, GY - 3, 1.5],
               'leg0': [0.5, leg_y + 1, front_split - 2], 'leg1': [GX - 0.5, leg_y + 1, front_split - 2],
               'leg2': [0.5, leg_y + 1, front_split + 2], 'leg3': [GX - 0.5, leg_y + 1, front_split + 2]}
+    if cfg.get('leg_pivots'):                # 腿 pivot 放髋部(腿顶),非脚踝
+        for bn, (px_, pz) in cfg['leg_pivots'].items():
+            pivots[bn] = [px_, leg_y + cfg.get('leg_h', 3), pz]
     order = ['body', 'head', 'tail', 'wing0', 'wing1', 'leg0', 'leg1', 'leg2', 'leg3']
     bone_json, cube_all = [], []
     for bn in order:
