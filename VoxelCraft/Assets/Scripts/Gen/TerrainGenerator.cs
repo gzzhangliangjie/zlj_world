@@ -222,6 +222,24 @@ namespace VoxelCraft.Gen
             "obj_store14", "obj_store15", "obj_store16", "obj_store17",
             "obj_house3", "obj_house4", "obj_house7", "obj_house8",
             "obj_story03", "obj_story04", "obj_story05", "obj_story06",
+            // batch 5 (final): building variants + misc props
+            "obj_house1a", "obj_house1b", "obj_house1c",
+            "obj_house2a", "obj_house2b", "obj_house2c", "obj_house2d",
+            "obj_house3a", "obj_house3b", "obj_house3c",
+            "obj_house4a", "obj_house4b", "obj_house4c", "obj_house4d",
+            "obj_house5a", "obj_house5b", "obj_house5c",
+            "obj_house6a", "obj_house6b", "obj_house6c", "obj_house6d",
+            "obj_house7a", "obj_house7b", "obj_house7c",
+            "obj_house8a", "obj_house8b", "obj_house8c",
+            "obj_store03a", "obj_store16a", "obj_store16b", "obj_store17a",
+            "obj_story01a", "obj_story01b",
+            "obj_story03a", "obj_story03b", "obj_story03c", "obj_story03d",
+            "obj_story04a", "obj_story04b", "obj_story04c", "obj_story04d",
+            "obj_story05a",
+            "obj_story06a", "obj_story06b", "obj_story06c", "obj_story06d",
+            "armgate1", "candle", "crosswalk", "mailbox",
+            "fire1", "fire2", "fire3", "fire4", "fire5",
+            "policetape", "splatter1", "splatter2", "splatter3",
         };
 
         /// <summary>

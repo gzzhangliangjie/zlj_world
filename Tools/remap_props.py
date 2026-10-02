@@ -687,6 +687,49 @@ ITEM_ROLE = {
     'driveway3': {(136, 136, 136, 255): (125, 125, 125, 255)},
     'armgate2':  {(168, 168, 168, 255): (125, 125, 125, 255),
                   (100, 48, 0, 255):    (103, 82, 49, 255)},
+    # ---- batch5 misc props (2026-10-02) ----
+    'armgate1': {
+        (252, 204, 0, 255): (234, 195, 55, 255),   # yellow gate -> WoolYellow
+        (184, 0, 0, 255):   (176, 46, 38, 255),    # red stop -> WoolRed
+    },
+    'candle': {
+        (152, 100, 0, 255): (103, 82, 49, 255),    # body -> Log
+        (252, 100, 0, 255): (252, 224, 130, 255),  # flame -> Glowstone
+    },
+    'fire1': {
+        (252, 100, 0, 255): (252, 224, 130, 255),  # fire body -> Glowstone
+        (252, 48, 0, 255):  (176, 46, 38, 255),    # fire core -> WoolRed
+    },
+    'fire2': {
+        (252, 100, 0, 255): (252, 224, 130, 255),
+        (252, 48, 0, 255):  (176, 46, 38, 255),
+    },
+    'fire3': {
+        (252, 204, 48, 255): (252, 224, 130, 255),
+        (252, 100, 0, 255):  (252, 224, 130, 255),
+        (220, 0, 0, 255):    (176, 46, 38, 255),
+    },
+    'fire4': {
+        (136, 136, 136, 255): (110, 110, 110, 255),  # smoke grey -> Cobble
+        (68, 68, 68, 255):    (70, 70, 70, 255),     # dark smoke -> CoalOre
+    },
+    'fire5': {
+        (136, 136, 136, 255): (110, 110, 110, 255),
+        (68, 68, 68, 255):    (70, 70, 70, 255),
+    },
+    'policetape': {
+        (204, 204, 48, 255): (234, 195, 55, 255),
+    },
+    'splatter1': {
+        (252, 152, 100, 255): (219, 207, 163, 255),  # stain -> Sand
+    },
+    'splatter2': {
+        (168, 0, 0, 255): (176, 46, 38, 255),        # blood -> WoolRed
+    },
+    'splatter3': {
+        (204, 48, 152, 255): (176, 46, 38, 255),     # paint -> WoolRed
+    },
+
 }
 
 # Rare-but-critical colors that MUST survive sub=2 majority voting
@@ -848,6 +891,21 @@ CFG = {
     'driveway2': dict(swap=False, sub=1),  # 16x46x1
     'driveway3': dict(swap=False, sub=1),  # 18x32x1
     'armgate2':  dict(swap=False, sub=1),  # 12x6x8 barrier arm block
+    # ---- batch5 misc props CFG ----
+    'armgate1':  dict(swap=False, sub=1),  # 4x15x4 tall gate arm, Y-up
+    'candle':    dict(swap=False, sub=1),  # 1x1x3
+    'crosswalk': dict(swap=True,  sub=1),  # 16x1x46 -> 16x46x1 ground strip
+    'fire1':     dict(swap=False, sub=1),  # 4x1x2
+    'fire2':     dict(swap=False, sub=1),
+    'fire3':     dict(swap=False, sub=1),
+    'fire4':     dict(swap=False, sub=1),  # 4x1x6 smoke column
+    'fire5':     dict(swap=False, sub=1),
+    'mailbox':   dict(swap=True,  sub=2),  # 20x21x20 -> 10x10x10
+    'policetape': dict(swap=True, sub=1),  # 18x1x1 -> 18x1x1 flat tape
+    'splatter1': dict(swap=True,  sub=1),  # 6x1x7 ground decal
+    'splatter2': dict(swap=True,  sub=1),
+    'splatter3': dict(swap=True,  sub=1),
+
 }
 SRC = 'D:/zlj_world/_refs/mmmm/vox'
 DST = 'D:/zlj_world/VoxelCraft/Assets/Resources/VoxStructures'

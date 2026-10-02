@@ -47,11 +47,17 @@ def load(path):
     for k in range(n):
         x,y,z,c = d[j+16+k*4:j+20+k*4]
         vs[(x,y,z)] = c
-    pal = [None]
     a = d.find(b'RGBA')
-    for k in range(255):
-        r,g,b,al = d[a+12+4*k:a+16+4*k]
-        pal.append((r,g,b,al))
+    has_rgba = a != -1 and d[a+8:a+12] != b'\x00\x00\x00\x00' or (a != -1 and struct.unpack('<I', d[a+8:a+12])[0] > 0)
+    if a != -1 and struct.unpack('<I', d[a+8:a+12])[0] > 0:
+        pal = [None]
+        for k in range(255):
+            r,g,b,al = d[a+12+4*k:a+16+4*k]
+            pal.append((r,g,b,al))
+    else:
+        # mmmm variant sources omit RGBA -> MagicaVoxel default palette
+        import remap_props
+        pal = [None] + [tuple(c) for c in remap_props.DEFAULT_PALETTE]
     return (X,Y,Z), vs, pal
 
 # semantic role overrides (file -> {source RGB -> block}), applied BEFORE
@@ -228,6 +234,194 @@ ROLE = {
     'obj_story06': {
         (136, 136, 136):'Plank', (168, 168, 168):'Stone',
         (204, 252, 252):'Glass', (252, 252, 204):'WoolYellow', (116, 116, 116):'Cobble',
+    },
+    # ---- batch5 building variants (2026-10-02): parent pattern, distinct walls ----
+    'obj_house1a': {
+        (136,136,136):'Brick', (168,168,168):'WoolWhite',
+        (152,152,100):'Plank', (204,204,152):'Sand',
+        (152,204,252):'Glass',
+    },
+    'obj_house1b': {
+        (184,184,184):'Stone', (168,168,168):'WoolWhite',
+        (252,152,0):'WoolYellow', (220,220,220):'WoolWhite',
+        (152,204,252):'Glass',
+    },
+    'obj_house1c': {
+        (184,184,184):'Plank', (168,168,168):'WoolWhite',
+        (168,0,0):'WoolRed', (236,236,236):'WoolWhite', (220,0,0):'WoolRed',
+        (152,204,252):'Glass',
+    },
+    'obj_house2a': {
+        (236,236,236):'WoolWhite', (204,0,0):'WoolRed',
+        (168,168,168):'Cobble', (152,204,252):'Glass', (32,32,32):'WoolBlack',
+    },
+    'obj_house2b': {
+        (236,236,236):'WoolWhite', (204,100,0):'Plank',
+        (168,168,168):'Cobble', (152,204,252):'Glass', (32,32,32):'WoolBlack',
+    },
+    'obj_house2c': {
+        (236,236,236):'WoolWhite', (252,204,0):'WoolYellow',
+        (168,168,168):'Cobble', (152,204,252):'Glass', (32,32,32):'WoolBlack',
+    },
+    'obj_house2d': {
+        (236,236,236):'WoolWhite', (48,152,252):'WoolBlue',
+        (168,168,168):'Cobble', (152,204,252):'Glass', (32,32,32):'WoolBlack',
+    },
+    'obj_house3a': {
+        (220,220,220):'WoolWhite', (68,68,68):'WoolBlack',
+        (116,116,116):'Cobble', (168,168,168):'Stone', (32,32,32):'WoolBlack',
+    },
+    'obj_house3b': {
+        (220,220,220):'WoolWhite', (48,100,48):'WoolGreen',
+        (116,116,116):'Cobble', (168,168,168):'Stone', (32,32,32):'WoolBlack',
+    },
+    'obj_house3c': {
+        (220,220,220):'WoolWhite', (0,48,48):'WoolBlue',
+        (116,116,116):'Cobble', (168,168,168):'Stone', (32,32,32):'WoolBlack',
+    },
+    'obj_house4a': {
+        (252,252,204):'WoolWhite', (68,68,68):'WoolBlack',
+        (168,168,168):'Stone', (236,236,236):'WoolWhite', (152,204,252):'Glass',
+    },
+    'obj_house4b': {
+        (252,252,204):'WoolWhite', (68,68,68):'WoolBlack',
+        (0,152,100):'WoolGreen', (168,168,168):'Stone', (236,236,236):'WoolWhite',
+    },
+    'obj_house4c': {
+        (252,252,204):'WoolWhite', (152,152,204):'WoolBlue',
+        (204,252,252):'Glass', (168,168,168):'Stone', (68,68,68):'WoolBlack',
+    },
+    'obj_house4d': {
+        (252,252,204):'WoolWhite', (16,16,16):'WoolBlack',
+        (136,136,136):'Brick', (168,168,168):'Stone', (236,236,236):'WoolWhite',
+    },
+    'obj_house5a': {
+        (204,152,100):'Sand', (204,100,48):'Plank',
+        (168,168,168):'Stone', (100,48,0):'Log', (152,204,252):'Glass',
+    },
+    'obj_house5b': {
+        (152,100,48):'Plank', (204,100,48):'Log',
+        (168,168,168):'Stone', (100,48,0):'Log', (152,204,252):'Glass',
+    },
+    'obj_house5c': {
+        (204,100,48):'Brick', (168,168,168):'Stone',
+        (100,48,0):'Log', (152,204,252):'Glass', (68,68,68):'WoolBlack',
+    },
+    'obj_house6a': {
+        (168,168,168):'Stone', (220,220,220):'WoolWhite',
+        (152,152,48):'WoolYellow', (184,184,184):'Cobble', (116,116,116):'Cobble',
+    },
+    'obj_house6b': {
+        (168,168,168):'Stone', (220,220,220):'WoolWhite',
+        (252,100,48):'WoolRed', (204,0,0):'WoolRed', (184,184,184):'Cobble',
+    },
+    'obj_house6c': {
+        (168,168,168):'Stone', (220,220,220):'WoolWhite',
+        (152,204,252):'Glass', (184,184,184):'Cobble', (48,152,204):'Glass',
+    },
+    'obj_house6d': {
+        (168,168,168):'Stone', (220,220,220):'WoolWhite',
+        (0,152,100):'WoolGreen', (152,100,0):'Plank', (184,184,184):'Cobble',
+    },
+    'obj_house7a': {
+        (0,100,252):'WoolBlue', (48,152,252):'Glass',
+        (116,116,116):'Cobble', (236,236,236):'WoolWhite', (136,136,136):'Stone',
+    },
+    'obj_house7b': {
+        (252,152,0):'WoolYellow', (252,204,0):'WoolYellow',
+        (116,116,116):'Cobble', (236,236,236):'WoolWhite', (136,136,136):'Stone',
+    },
+    'obj_house7c': {
+        (252,152,0):'WoolRed', (252,204,0):'WoolYellow',
+        (116,116,116):'Cobble', (236,236,236):'WoolWhite', (136,136,136):'Stone',
+    },
+    'obj_house8a': {
+        (152,152,152):'WoolWhite', (252,252,204):'WoolYellow',
+        (168,168,168):'Stone', (84,84,84):'Cobble', (100,48,0):'Log',
+    },
+    'obj_house8b': {
+        (152,152,152):'WoolWhite', (252,204,252):'WoolRed',
+        (168,168,168):'Stone', (84,84,84):'Cobble', (252,152,204):'WoolRed',
+    },
+    'obj_house8c': {
+        (152,152,152):'WoolWhite', (152,152,204):'WoolBlue',
+        (168,168,168):'Stone', (84,84,84):'Cobble', (100,48,0):'Log',
+    },
+    'obj_store03a': {
+        (136,136,136):'Brick', (168,168,168):'WoolWhite',
+        (32,32,32):'WoolBlack', (84,84,84):'Cobble', (252,204,204):'WoolRed',
+    },
+    'obj_store16a': {
+        (136,136,136):'Brick', (168,168,168):'WoolWhite',
+        (32,32,32):'WoolBlack', (0,0,48):'WoolBlue', (204,252,252):'Glass',
+    },
+    'obj_store16b': {
+        (136,136,136):'Sand', (32,32,32):'WoolBlack',
+        (168,168,168):'WoolWhite', (236,236,236):'WoolWhite', (204,252,252):'Glass',
+    },
+    'obj_store17a': {
+        (136,136,136):'Brick', (100,152,204):'Glass',
+        (168,168,168):'Stone', (32,32,32):'WoolBlack', (100,252,252):'Glass',
+    },
+    'obj_story01a': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (152,204,252):'Glass', (116,116,116):'Cobble',
+    },
+    'obj_story01b': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (152,204,252):'Glass', (116,116,116):'Cobble',
+    },
+    'obj_story03a': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (252,204,152):'Plank', (152,204,252):'Glass',
+    },
+    'obj_story03b': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (116,0,0):'WoolRed', (152,204,252):'Glass',
+    },
+    'obj_story03c': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (48,152,100):'WoolGreen', (152,204,252):'Glass',
+    },
+    'obj_story03d': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (152,152,100):'WoolYellow', (152,204,252):'Glass',
+    },
+    'obj_story04a': {
+        (136,136,136):'Sand', (168,168,168):'Plank',
+        (252,204,152):'Sand', (116,116,116):'Cobble', (184,184,184):'Cobble',
+    },
+    'obj_story04b': {
+        (136,136,136):'Sand', (168,168,168):'Plank',
+        (116,0,0):'WoolRed', (116,116,116):'Cobble', (184,184,184):'Cobble',
+    },
+    'obj_story04c': {
+        (136,136,136):'Sand', (168,168,168):'Plank',
+        (48,152,100):'WoolGreen', (116,116,116):'Cobble', (184,184,184):'Cobble',
+    },
+    'obj_story04d': {
+        (136,136,136):'Sand', (168,168,168):'Plank',
+        (152,152,100):'WoolYellow', (116,116,116):'Cobble', (184,184,184):'Cobble',
+    },
+    'obj_story05a': {
+        (136,136,136):'Brick', (168,168,168):'Stone',
+        (204,252,252):'Glass', (116,116,116):'Cobble', (152,204,252):'Glass',
+    },
+    'obj_story06a': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (252,204,152):'Plank', (116,116,116):'Cobble',
+    },
+    'obj_story06b': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (116,0,0):'WoolRed', (116,116,116):'Cobble',
+    },
+    'obj_story06c': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (48,152,100):'WoolGreen', (116,116,116):'Cobble',
+    },
+    'obj_story06d': {
+        (136,136,136):'Plank', (168,168,168):'Stone',
+        (204,252,252):'Glass', (152,152,100):'WoolYellow', (116,116,116):'Cobble',
     },
 }
 

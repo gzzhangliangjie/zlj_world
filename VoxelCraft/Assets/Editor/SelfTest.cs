@@ -1053,10 +1053,32 @@ namespace VoxelCraft.Editor
                     "obj_store10", "obj_store11", "obj_store12", "obj_store13",
                     "obj_store14", "obj_store15", "obj_store16", "obj_store17",
                     "obj_house3", "obj_house4", "obj_house7", "obj_house8",
-                    "obj_story03", "obj_story04", "obj_story05", "obj_story06" };
+                    "obj_story03", "obj_story04", "obj_story05", "obj_story06",
+                    "obj_house1a", "obj_house1b", "obj_house1c",
+                    "obj_house2a", "obj_house2b", "obj_house2c", "obj_house2d",
+                    "obj_house3a", "obj_house3b", "obj_house3c",
+                    "obj_house4a", "obj_house4b", "obj_house4c", "obj_house4d",
+                    "obj_house5a", "obj_house5b", "obj_house5c",
+                    "obj_house6a", "obj_house6b", "obj_house6c", "obj_house6d",
+                    "obj_house7a", "obj_house7b", "obj_house7c",
+                    "obj_house8a", "obj_house8b", "obj_house8c",
+                    "obj_store03a", "obj_store16a", "obj_store16b", "obj_store17a",
+                    "obj_story01a", "obj_story01b",
+                    "obj_story03a", "obj_story03b", "obj_story03c", "obj_story03d",
+                    "obj_story04a", "obj_story04b", "obj_story04c", "obj_story04d",
+                    "obj_story05a",
+                    "obj_story06a", "obj_story06b", "obj_story06c", "obj_story06d" };
                 int[] m40MinSolid = { 3000, 3000, 2500, 2000, 3000, 3000, 3000, 3000, 2000, 2000,
                     5000, 2500, 2500, 2500, 2500, 2500, 5000, 5000, 2500, 5000, 5000, 5000,
-                    5000, 5000, 2000, 2500, 2000, 1500, 2000, 2000 };
+                    5000, 5000, 2000, 2500, 2000, 1500, 2000, 2000,
+                    // batch5 variants (vox counts from lint)
+                    9795, 9795, 9795, 7866, 7866, 7866, 7866,
+                    10074, 10074, 10074, 11598, 11598, 11598, 11598,
+                    9364, 9364, 9380, 5934, 5937, 5944, 5799,
+                    2356, 2356, 2378, 5762, 5762, 5762,
+                    10416, 11174, 11174, 9992, 4688, 4721,
+                    4668, 4668, 4668, 4668, 3311, 3311, 3311, 3311,
+                    4704, 4752, 4752, 4752, 4752 };
                 bool m40All = true;
                 var m40Detail = new List<string>();
                 for (int bIdx40 = 0; bIdx40 < m40Names.Length; bIdx40++)

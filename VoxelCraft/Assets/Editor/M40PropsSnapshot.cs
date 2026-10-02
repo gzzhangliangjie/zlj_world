@@ -87,6 +87,10 @@ namespace VoxelCraft.Editor
                 "trashcan1", "trashcan3", "trashcan4",
                 "tree1a", "tree1b", "tree1c", "tree2a", "tree2b", "tree2c",
                 "wall", "driveway1", "driveway2", "driveway3", "armgate2",
+                // batch 5 misc props
+                "armgate1", "candle", "crosswalk", "mailbox",
+                "fire1", "fire2", "fire3", "fire4", "fire5",
+                "policetape", "splatter1", "splatter2", "splatter3",
             }).ToArray();
             var vxs = names.Select(n => Vox.StructureRegistry.Load(n)).ToArray();
 

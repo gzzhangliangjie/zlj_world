@@ -22,6 +22,7 @@ BLOCK = {
     (232, 236, 238): 'WoolWhite', (234, 195, 55): 'WoolYellow',
     (53, 87, 178): 'WoolBlue', (86, 128, 40): 'WoolGreen',
     (110, 110, 110): 'Cobble', (160, 210, 255): 'Ice', (93, 236, 245): 'DiamondOre',
+    (70, 70, 70): 'CoalOre',
 }
 # per-prop expectations: (min distinct colors, required roles)
 EXPECT = {
@@ -209,6 +210,66 @@ EXPECT = {
     'driveway3': (1, {'Stone'}),
     'armgate2':  (1, {'Stone'}),
     'obj_store16': (3, {'Sand', 'Stone', 'Glass'}),
+    # ---- batch 5 (2026-10-02 final: 46 variants + 13 misc) ----
+    'armgate1': (2, {'WoolYellow', 'WoolRed'}),
+    'candle': (2, {'Log', 'Glowstone'}),
+    'crosswalk': (1, {'WoolYellow'}),
+    'fire1': (2, {'Glowstone', 'WoolRed'}),
+    'fire2': (2, {'Glowstone', 'WoolRed'}),
+    'fire3': (2, {'Glowstone', 'WoolRed'}),
+    'fire4': (2, {'Cobble', 'CoalOre'}),
+    'fire5': (2, {'Cobble', 'CoalOre'}),
+    'mailbox': (2, {'WoolBlue', 'WoolWhite'}),
+    'obj_house1a': (3, {'Brick', 'Sand', 'WoolWhite'}),
+    'obj_house1b': (3, {'Stone', 'WoolWhite', 'WoolYellow'}),
+    'obj_house1c': (3, {'Plank', 'WoolWhite', 'WoolRed'}),
+    'obj_house2a': (3, {'WoolWhite', 'Cobble', 'Glass'}),
+    'obj_house2b': (3, {'WoolWhite', 'Cobble', 'Glass'}),
+    'obj_house2c': (3, {'WoolWhite', 'Cobble', 'Glass'}),
+    'obj_house2d': (3, {'WoolWhite', 'Cobble', 'Glass'}),
+    'obj_house3a': (3, {'WoolWhite', 'WoolBlack', 'Cobble'}),
+    'obj_house3b': (3, {'WoolWhite', 'WoolGreen', 'Cobble'}),
+    'obj_house3c': (3, {'WoolWhite', 'WoolBlue', 'Cobble'}),
+    'obj_house4a': (3, {'WoolWhite', 'Glass', 'WoolYellow'}),
+    'obj_house4b': (3, {'WoolWhite', 'WoolGreen', 'WoolBlack'}),
+    'obj_house4c': (3, {'WoolWhite', 'Glass', 'WoolBlue'}),
+    'obj_house4d': (3, {'WoolWhite', 'Brick', 'WoolBlack'}),
+    'obj_house5a': (3, {'Sand', 'Stone', 'Log'}),
+    'obj_house5b': (3, {'Plank', 'Log', 'Stone'}),
+    'obj_house5c': (3, {'Brick', 'Stone', 'Log'}),
+    'obj_house6a': (3, {'Stone', 'WoolWhite', 'WoolYellow'}),
+    'obj_house6b': (3, {'Stone', 'WoolWhite', 'WoolRed'}),
+    'obj_house6c': (3, {'Stone', 'WoolWhite', 'Glass'}),
+    'obj_house6d': (3, {'Stone', 'WoolWhite', 'WoolGreen'}),
+    'obj_house7a': (3, {'WoolBlue', 'Glass', 'Cobble'}),
+    'obj_house7b': (3, {'WoolYellow', 'Cobble', 'WoolWhite'}),
+    'obj_house7c': (3, {'WoolRed', 'WoolYellow', 'Cobble'}),
+    'obj_house8a': (3, {'WoolWhite', 'WoolYellow', 'Cobble'}),
+    'obj_house8b': (3, {'WoolWhite', 'WoolRed', 'Cobble'}),
+    'obj_house8c': (3, {'WoolWhite', 'WoolBlue', 'Cobble'}),
+    'obj_store03a': (3, {'Brick', 'Cobble', 'WoolBlack'}),
+    'obj_store16a': (3, {'Brick', 'Cobble', 'WoolBlue'}),
+    'obj_store16b': (3, {'Sand', 'WoolWhite', 'Cobble'}),
+    'obj_store17a': (3, {'Brick', 'Glass', 'Stone'}),
+    'obj_story01a': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story01b': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story03a': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story03b': (3, {'Plank', 'Stone', 'WoolRed'}),
+    'obj_story03c': (3, {'Plank', 'Stone', 'WoolGreen'}),
+    'obj_story03d': (3, {'Plank', 'Stone', 'WoolYellow'}),
+    'obj_story04a': (3, {'Sand', 'Plank', 'Cobble'}),
+    'obj_story04b': (3, {'Sand', 'Plank', 'WoolRed'}),
+    'obj_story04c': (3, {'Sand', 'Plank', 'WoolGreen'}),
+    'obj_story04d': (3, {'Sand', 'Plank', 'WoolYellow'}),
+    'obj_story05a': (3, {'Brick', 'Stone', 'Glass'}),
+    'obj_story06a': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story06b': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story06c': (3, {'Plank', 'Stone', 'Glass'}),
+    'obj_story06d': (3, {'Plank', 'Stone', 'Glass'}),
+    'policetape': (1, {'WoolYellow'}),
+    'splatter1': (1, {'Sand'}),
+    'splatter2': (1, {'WoolRed'}),
+    'splatter3': (1, {'WoolRed'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19, 'sign1': 19, 'sign5': 19, 'dogstand': 20, 'fence1': 18,
                   'celltower': 19, 'cross': 20, 'sign4': 19, 'sign9': 22, 'fence5': 19, 'stlight3': 32,
@@ -218,7 +279,9 @@ FLAT_OK = {'sidewalk2', 'sign1', 'sign5', 'curb2',             # flat pavement t
            'curb3', 'curb5', 'curb8', 'park_block', 'path1',      # thin ground strips
            'street1', 'street2', 'crosswalk',                     # flat road paint
            'tracks1', 'tracks2', 'fence3', 'fence4',              # rails / thin pickets
-           'driveway1', 'driveway2', 'driveway3', 'wall'}         # driveway paint / thin wall copings
+           'driveway1', 'driveway2', 'driveway3', 'wall',         # driveway paint / thin wall copings
+           'candle', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5',  # batch5: tiny flames/smoke H<2
+           'policetape', 'splatter1', 'splatter2', 'splatter3'}    # batch5: 1-tall tape/decals
 
 def load(path):
     d = open(path, 'rb').read()
@@ -252,7 +315,7 @@ def main():
         # 1. size sanity
         flat_ok = name in FLAT_OK  # thin/flat pieces: 1-deep signs, 1-tall pavement
         hmax = 64 if flat_ok else HEIGHT_WHITELIST.get(name, 16)  # flat strips may be long (road paint)
-        if W < 2 or D < (1 if flat_ok else 2) or H < (1 if flat_ok else 2) or H > hmax:
+        if W < (1 if flat_ok else 2) or D < (1 if flat_ok else 2) or H < (1 if flat_ok else 2) or H > hmax:
             fails.append(f'{name}: bad size {W}x{H}x{D}')
         if len(vox) == 0:
             fails.append(f'{name}: EMPTY')
