@@ -443,12 +443,15 @@ def build_species(sp, cfg):
                 # 超大眼(竖 2 格满白)+粉腮红(参考图)
                 BLUSH = (250, 165, 165)
                 if FACE == 'south' and fw_ >= 4 and fh_ >= 3:
-                    # 眼位=喙旁两端(锁死勿动);顶行黑帽,其余全白=眼周留白
+                    # 眼位=喙旁两端(锁死勿动);其余全白,仅眼上方顶行留白
                     for cc in range(fw_):
-                        px[u+cc, v] = (32, 32, 32)
-                        for rr in range(1, fh_):
+                        for rr in range(fh_):
                             px[u+cc, v+rr] = WHITE
                     px[u, v+1] = (15, 15, 15); px[u+fw_-1, v+1] = (15, 15, 15)
+                    px[u, v] = (32, 32, 32); px[u+fw_-1, v] = (32, 32, 32)  # 眼上顶角黑帽
+                elif FACE in ('east', 'west') and fw_ >= 3 and fh_ >= 3:
+                    # 侧脸前缘一小片白(眼旁的侧脸白斑)
+                    px[u, v] = WHITE; px[u, v+1] = WHITE
 
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
