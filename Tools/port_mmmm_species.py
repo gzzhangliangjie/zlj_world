@@ -256,7 +256,7 @@ def build_species(sp, cfg):
         for i, bn in enumerate(('leg0', 'leg1', 'leg2', 'leg3')):
             boxes = bones.get(bn, [])
             for j, (x0, y0, z0, w, h, d) in enumerate(boxes):
-                boxes[j] = (x0, y0, z0, w, h, d + ext)   # 深度加长,越出身体前沿
+                boxes[j] = (x0, y0, max(0, z0 - ext), w, h, d + ext)  # 朝 z0(引擎+Z 前方)前伸
     if cfg.get('no_head_bump'):               # 去掉头后凸块(喙层 z4 的小薄片)
         bones['head'] = [b for b in bones.get('head', [])
                          if not (b[2] >= 4 and b[5] == 1 and b[0] >= 1)]
