@@ -375,7 +375,7 @@ def build_species(sp, cfg):
             if bn in ('body', 'head', 'tail'):
                 faces_bk = ('east', 'west', 'up')
                 if bn == 'head':
-                    faces_bk = ('east', 'west', 'up', 'south')   # 黑脸白瞳
+                    faces_bk = ('east', 'west', 'up', 'north')   # 黑帽兜:顶+侧+后脑,south=白脸
                 for face in faces_bk:
                     fd = uv[face]
                     u, v = int(fd['uv'][0]), int(fd['uv'][1])
@@ -440,14 +440,13 @@ def build_species(sp, cfg):
                 fw_, fh_ = int(uv[FACE]['uv_size'][0]), int(uv[FACE]['uv_size'][1])
                 # 超大眼(竖 2 格满白)+粉腮红(参考图)
                 BLUSH = (250, 165, 165)
-                if FACE == 'south' and fw_ >= 4 and fh_ >= 3:
-                    for rr in range(fh_):             # 正脸:两道竖条眼,黑缝分隔
-                        px[u, v+rr] = WHITE; px[u+fw_-1, v+rr] = WHITE
-                    px[u+1, v+2] = BLUSH; px[u+2, v+2] = BLUSH
-                elif fw_ >= 3 and fh_ >= 3:           # 侧脸:前缘竖条眼+腮红
-                    for rr in range(fh_):
-                        px[u, v+rr] = WHITE
-                    px[u+1, v+2] = BLUSH
+                if FACE == 'south' and fw_ >= 3 and fh_ >= 3:
+                    for cc in range(fw_):
+                        px[u+cc, v] = (32, 32, 32)        # 顶行=黑帽兜边
+                        for rr in range(1, fh_):
+                            px[u+cc, v+rr] = WHITE        # 白脸
+                    DOT = (15, 15, 15)                    # 黑点眼(喙上方白区)
+                    px[u, v+1] = DOT; px[u+fw_-1, v+1] = DOT
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
