@@ -97,6 +97,14 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
 | obj_story01 | 16×10×30 | z-up | Plank 墙+Glass+WoolBlack |
 | obj_story02 | 16×10×31 | z-up | Brick 墙+Glass+WoolYellow 橙雨棚 |
 
+## 批4清单（2026-10-02，104 件道具 + store16 楼，d56668c）
+
+- **store16**： 32×12×32，Sand 墙+Glass+Stone 勾边（convert_buildings 管线；顺带修 ANCHOR[nearest_block(rgb)] 元组键错 → BLOCK 补 Dirt/Cobble/Snow 锚色）
+- **变体件 ROLE 铁律**： 字母后缀变体的颜色映射**必须回源 dump 真实调色板**再写 RGB 键——猜色值=静默 no-op（arcade2-5/container3-4/tree1b-c/tree2b-c/table3a/table3b/mailbox2b/mushroom3/curb7a 全中招）。dump_pal.py 一把出全部变体色
+- **贴地平面件豁免**： driveway/fence3/path1/tracks2/wall/curb/sidewalk/street 类 D==1 或 H 大的地面漆件，flat_ok 时 H 上限放宽到 64（长条路面躺着是对的）；竖立件仍走 HEIGHT_WHITELIST
+- 104 件明细： arcade1-5 / bench1,2,5 / boxingring / cart1b,cart2a,cart2b / celltower / chair2 / christmas1 / column2-3 / container2-4 / cross / curb1,3-8,7a / door1-4 / fence3-7 / grave1-4 / guitarcase / halo / mailbox2a,2b / mushroom2,3 / newsbox3-4 / park_block / path1 / pentagram / planter2,3a,3b / playgrnd2-5 / potty1-3 / rubbish2-4 / sidewalk1,3-5 / sign2-9 / statue2-3 / stlight2-3 / street1-2 / stretcher / table2,3,3a,3b / tracks1-2 / trashcan1,3,4 / tree1a-c,2a-c / wall / driveway1-3 / armgate2
+- lint 180/180 exit=0；SelfTest 31 楼 PASS；M40PropsSnapshot 133 件 census 无 ZERO；vision 疑点 15 处全数值排除（空格候选=贴地平面件、倒伏候选=低矮/散落设计）
+
 ## BlockForColor 锚色表（VoxStructure.cs，转换脚本必须同步）
 
 Grass(106,170,64) / **Leaves(96,168,60)** / Dirt(121,85,58) / Stone(125,125,125) / Sand(219,207,163) / Log(103,82,49) / Plank(156,127,78) / Cobble(110,110,110) / Glass(200,220,228) / Snow(240,246,246) / Brick(150,97,83) / CoalOre(70,70,70) / IronOre(216,175,147) / GoldOre(250,238,77) / DiamondOre(93,236,245) / Gravel(136,126,126) / Ice(160,210,255) / Obsidian(20,18,30) / MossyCobble(110,130,100) / StoneBrick(120,120,120) / Glowstone(252,224,130) / Path(152,121,85) / WoolWhite(232,236,238) / WoolRed(176,46,38) / WoolYellow(234,195,55) / WoolBlue(53,87,178) / WoolGreen(86,128,40) / WoolBlack(32,32,38)
