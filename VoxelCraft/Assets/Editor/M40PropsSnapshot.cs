@@ -60,6 +60,34 @@ namespace VoxelCraft.Editor
                 "planter1", "trellis", "stage", "playgrnd1", "grill",
                 "campfire", "dogstand", "rubbish1", "curb2",
             };
+            names = names.Concat(new string[] {
+                // batch 4
+                "arcade1", "arcade2", "arcade3", "arcade4", "arcade5",
+                "bench1", "bench2", "bench5", "boxingring",
+                "cart1b", "cart2a", "cart2b", "celltower", "chair2",
+                "christmas1", "column2", "column3",
+                "container2", "container3", "container4",
+                "cross", "curb1", "curb3", "curb4", "curb5", "curb6",
+                "curb7", "curb7a", "curb8",
+                "door1", "door2", "door3", "door4",
+                "fence3", "fence4", "fence5", "fence6", "fence7",
+                "grave1", "grave2", "grave3", "grave4", "guitarcase", "halo",
+                "mailbox2a", "mailbox2b", "mushroom2", "mushroom3",
+                "newsbox3", "newsbox4", "park_block", "path1", "pentagram",
+                "planter2", "planter3a", "planter3b",
+                "playgrnd2", "playgrnd3", "playgrnd4", "playgrnd5",
+                "potty1", "potty2", "potty3",
+                "rubbish2", "rubbish3", "rubbish4",
+                "sidewalk1", "sidewalk3", "sidewalk4", "sidewalk5",
+                "sign2", "sign3", "sign4", "sign6", "sign7", "sign8", "sign9",
+                "statue2", "statue3", "stlight2", "stlight3",
+                "street1", "street2", "stretcher",
+                "table2", "table3", "table3a", "table3b",
+                "tracks1", "tracks2",
+                "trashcan1", "trashcan3", "trashcan4",
+                "tree1a", "tree1b", "tree1c", "tree2a", "tree2b", "tree2c",
+                "wall", "driveway1", "driveway2", "driveway3", "armgate2",
+            }).ToArray();
             var vxs = names.Select(n => Vox.StructureRegistry.Load(n)).ToArray();
 
             int px = 60, pz = -80;

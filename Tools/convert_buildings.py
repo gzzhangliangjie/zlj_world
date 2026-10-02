@@ -36,6 +36,7 @@ BLOCK = {
     (219,207,163):'Sand',(150,97,83):'Brick',(156,127,78):'Plank',
     (200,220,228):'Glass',(106,170,64):'Grass',(232,236,238):'WoolWhite',
     (234,195,55):'WoolYellow',(53,87,178):'WoolBlue',(86,128,40):'WoolGreen',
+    (121,85,58):'Dirt',(110,110,110):'Cobble',(240,246,246):'Snow',
 }
 
 def load(path):
@@ -296,7 +297,7 @@ def convert(name):
         blk = roles.get(rgb)
         if blk == 'WoolBlack' and h >= roofH:
             return ANCHOR['Cobble']
-        return ANCHOR[blk] if blk else ANCHOR[nearest_block(rgb)]
+        return ANCHOR[blk] if blk else ANCHOR[BLOCK[nearest_block(rgb)]]
     # (re)assign: palette = sorted distinct anchor colors
     anchors = sorted(set(block_for(c, h) for (x,h,dpt),c in out.items()))
     aidx = {a:i+1 for i,a in enumerate(anchors)}

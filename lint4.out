@@ -1,0 +1,182 @@
+ok  arcade1: 10x13x7 vox=731 base=70 | WoolWhite:299, @(240, 246, 246):207, WoolRed:103, WoolBlack:73, Stone:40
+ok  arcade2: 10x13x7 vox=731 base=70 | WoolWhite:299, @(240, 246, 246):152, Glass:111, Cobble:48, WoolRed:36
+ok  arcade3: 10x13x7 vox=731 base=70 | Cobble:361, WoolWhite:299, Stone:40, WoolRed:28, @(204, 204, 252):2
+ok  arcade4: 10x13x7 vox=731 base=70 | WoolWhite:299, WoolYellow:221, Cobble:192, @(116, 116, 116):16, @(252, 152, 0):2
+ok  arcade5: 10x13x7 vox=731 base=70 | WoolWhite:299, Leaves:140, Cobble:136, @(240, 246, 246):65, WoolRed:50
+ok  armgate2: 12x6x8 vox=180 base=10 | Stone:112, @(184, 184, 184):68
+ok  bench1: 10x10x10 vox=60 base=4 | Glass:33, WoolWhite:27
+ok  bench2: 10x10x10 vox=120 base=4 | WoolWhite:48, Glass:33, WoolBlack:17, Plank:11, Log:9
+ok  bench3: 15x6x7 vox=147 base=21 | WoolWhite:147
+ok  bench4: 15x6x7 vox=147 base=21 | Stone:123, WoolBlack:24
+ok  bench5: 15x6x7 vox=147 base=21 | Plank:147
+ok  boxingring: 24x6x24 vox=1996 base=576 | Glass:1144, Cobble:566, WoolBlue:92, WoolWhite:84, WoolRed:84
+ok  busstop: 20x10x20 vox=260 base=4 | Glass:88, @(236, 236, 236):70, Stone:40, WoolWhite:34, @(184, 184, 184):28
+ok  campfire: 8x8x7 vox=75 base=5 | Log:31, Stone:23, @(168, 0, 0):6, @(252, 204, 48):6, @(252, 152, 0):6
+ok  cart1: 9x12x8 vox=238 base=28 | Stone:225, @(184, 184, 184):8, WoolRed:5
+ok  cart1a: 9x12x8 vox=238 base=28 | WoolBlue:173, @(184, 184, 184):46, Stone:14, WoolRed:5
+ok  cart1b: 9x12x10 vox=418 base=28 | Stone:225, Plank:124, WoolYellow:56, @(184, 184, 184):8, WoolRed:5
+ok  cart2: 9x12x8 vox=232 base=29 | WoolRed:173, @(184, 184, 184):50, WoolWhite:5, Stone:4
+ok  cart2a: 9x12x8 vox=232 base=29 | WoolYellow:173, WoolWhite:50, @(236, 236, 236):5, Stone:4
+ok  cart2b: 9x12x10 vox=444 base=29 | WoolRed:209, WoolYellow:116, WoolWhite:50, @(152, 152, 152):36, Log:24
+ok  celltower: 12x19x17 vox=276 base=9 | Cobble:231, Stone:45
+ok  chair1: 4x5x5 vox=38 base=10 | Plank:32, Log:6
+ok  chair2: 4x4x8 vox=28 base=2 | Plank:18, Log:10
+ok  christmas1: 10x15x9 vox=592 base=91 | WoolGreen:553, WoolRed:20, @(240, 246, 246):19
+ok  column1: 10x10x10 vox=26 base=4 | Stone:26
+ok  column2: 10x10x10 vox=20 base=4 | WoolWhite:20
+ok  column3: 10x10x10 vox=12 base=4 | WoolWhite:12
+ok  cone1: 3x7x3 vox=15 base=9 | WoolYellow:13, WoolWhite:2
+ok  container1: 30x7x7 vox=1792 base=240 | WoolRed:1769, Stone:23
+ok  container2: 30x7x7 vox=1792 base=240 | WoolGreen:1769, Cobble:12, Stone:11
+ok  container3: 30x7x7 vox=1792 base=240 | Stone:1640, Cobble:152
+ok  container4: 30x7x7 vox=1792 base=240 | Glass:1629, WoolBlue:140, Cobble:12, Stone:11
+ok  cottage: 11x8x9 vox=345 base=99 | Plank:294, Log:27, Sand:16, Glass:8
+ok  cross: 10x20x2 vox=112 base=4 | WoolYellow:112
+ok  curb1: 16x16x2 vox=239 base=16 | WoolGreen:223, Stone:10, @(116, 116, 116):6
+ok  curb2: 16x16x2 vox=230 base=16 | WoolGreen:214, @(116, 116, 116):9, Stone:7
+ok  curb3: 16x16x1 vox=224 base=16 | WoolGreen:208, Stone:16
+ok  curb4: 16x16x2 vox=227 base=16 | WoolGreen:211, Stone:16
+ok  curb5: 16x16x1 vox=256 base=16 | Stone:256
+ok  curb6: 63x4x2 vox=260 base=63 | WoolGreen:197, Stone:43, @(116, 116, 116):20
+ok  curb7: 4x4x2 vox=16 base=4 | WoolGreen:9, Stone:4, @(116, 116, 116):3
+ok  curb7a: 4x4x2 vox=16 base=4 | WoolGreen:15, Stone:1
+ok  curb8: 32x4x1 vox=96 base=32 | Stone:96
+ok  dogstand: 40x20x40 vox=346 base=6 | WoolWhite:159, Stone:57, Glass:44, WoolYellow:36, @(252, 204, 152):28
+ok  door1: 12x15x2 vox=190 base=12 | WoolWhite:66, Glass:60, Plank:50, Stone:10, @(184, 184, 184):4
+ok  door2: 12x15x2 vox=182 base=12 | Log:106, WoolWhite:40, Glass:24, Stone:10, @(32, 32, 32):2
+ok  door3: 12x16x2 vox=194 base=12 | Glass:128, WoolWhite:52, Stone:10, @(32, 32, 32):2, @(100, 48, 0):2
+ok  door4: 12x15x2 vox=182 base=12 | Plank:112, WoolWhite:40, Glass:18, Stone:10, @(32, 32, 32):2
+ok  driveway1: 18x64x1 vox=1152 base=18 | Stone:1152
+ok  driveway2: 16x46x1 vox=659 base=11 | Stone:619, Cobble:40
+ok  driveway3: 18x32x1 vox=576 base=18 | Stone:576
+ok  fence1: 31x18x2 vox=240 base=2 | Stone:240
+ok  fence2: 16x2x18 vox=130 base=6 | Leaves:130
+ok  fence3: 31x18x1 vox=227 base=4 | Stone:223, Cobble:4
+ok  fence4: 19x8x1 vox=76 base=3 | Stone:76
+ok  fence5: 31x19x4 vox=376 base=2 | Stone:262, Cobble:114
+ok  fence6: 32x8x8 vox=1120 base=28 | Stone:634, Cobble:486
+ok  fence7: 14x10x2 vox=128 base=10 | WoolWhite:128
+ok  fountain: 10x10x10 vox=177 base=20 | DiamondOre:73, Stone:54, @(116, 116, 116):33, @(48, 204, 252):17
+ok  grave1: 10x10x10 vox=26 base=9 | Cobble:26
+ok  grave2: 10x10x10 vox=36 base=15 | Stone:25, Cobble:11
+ok  grave3: 10x10x10 vox=36 base=15 | Stone:24, Cobble:12
+ok  grave4: 10x10x10 vox=15 base=15 | Cobble:12, Stone:3
+ok  grill: 7x5x7 vox=84 base=11 | WoolBlack:68, Cobble:15, @(32, 32, 32):1
+ok  guitarcase: 12x6x2 vox=85 base=12 | Log:78, Stone:5, @(0, 136, 0):1, @(0, 116, 0):1
+ok  halo: 6x4x2 vox=18 base=6 | WoolYellow:16, @(236, 236, 236):2
+ok  house5: 12x12x12 vox=758 base=92 | Sand:319, Brick:237, Log:102, Stone:96, @(32, 32, 32):4
+ok  hydrant: 4x7x5 vox=28 base=4 | WoolRed:28
+ok  mailbox2: 5x13x11 vox=197 base=4 | WoolWhite:92, Stone:84, Cobble:14, @(184, 184, 184):4, @(184, 0, 0):3
+ok  mailbox2a: 5x13x11 vox=197 base=4 | WoolWhite:92, WoolRed:84, @(240, 246, 246):14, @(184, 184, 184):4, @(252, 152, 152):3
+ok  mailbox2b: 5x13x11 vox=197 base=4 | WoolBlue:98, WoolWhite:92, @(184, 184, 184):4, @(240, 246, 246):3
+ok  mushroom1: 3x2x3 vox=10 base=1 | WoolRed:6, WoolWhite:3, @(236, 236, 236):1
+ok  mushroom2: 3x2x3 vox=10 base=1 | Plank:6, WoolYellow:3, @(236, 236, 236):1
+ok  mushroom3: 3x2x3 vox=10 base=1 | Cobble:9, @(240, 246, 246):1
+ok  newsbox1: 8x11x7 vox=274 base=16 | Stone:126, WoolBlack:120, WoolBlue:16, @(184, 184, 184):4, @(236, 236, 236):4
+ok  newsbox2: 8x11x7 vox=274 base=16 | WoolYellow:124, WoolBlack:120, Log:18, @(252, 152, 100):4, @(236, 236, 236):4
+ok  newsbox3: 8x11x7 vox=274 base=16 | Glass:140, Cobble:120, WoolWhite:7, @(48, 152, 100):3, Stone:2
+ok  newsbox4: 8x11x10 vox=281 base=22 | WoolYellow:140, Cobble:86, @(152, 100, 0):24, Log:15, @(48, 204, 252):10
+ok  obj_house1: 32x12x32 vox=9795 base=1024 | Stone:8290, WoolWhite:810, Glass:647, Plank:29, Cobble:17
+ok  obj_house2: 32x12x32 vox=7866 base=1024 | WoolWhite:6255, Cobble:1024, Glass:585, WoolBlack:2
+ok  obj_house3: 32x14x31 vox=10074 base=706 | WoolWhite:5748, Plank:2725, Cobble:1248, WoolBlack:298, Glass:22
+ok  obj_house4: 32x14x32 vox=11598 base=800 | WoolWhite:11116, Cobble:202, Glass:123, WoolBlack:101, Log:56
+ok  obj_house6: 32x12x26 vox=6000 base=565 | Sand:3623, WoolWhite:1529, Stone:371, Cobble:288, Plank:142
+ok  obj_house7: 16x13x16 vox=2378 base=254 | Brick:2373, WoolRed:5
+ok  obj_house8: 25x14x27 vox=5773 base=501 | WoolWhite:5018, Stone:508, Cobble:141, Log:64, Brick:21
+ok  obj_store01: 32x12x32 vox=10846 base=952 | Brick:9236, WoolBlack:828, Cobble:297, WoolWhite:262, Glass:112
+ok  obj_store02: 32x12x32 vox=10876 base=952 | Plank:9989, Cobble:285, WoolBlack:212, Stone:186, WoolGreen:136
+ok  obj_store03: 32x12x32 vox=10416 base=888 | Sand:9414, Cobble:337, WoolBlack:248, WoolWhite:180, Glass:99
+ok  obj_store04: 32x12x32 vox=10631 base=920 | WoolWhite:9685, Cobble:287, Stone:219, WoolBlack:218, Glass:212
+ok  obj_store05: 32x12x32 vox=10630 base=920 | Brick:9715, Cobble:351, WoolWhite:250, WoolBlack:228, Glass:86
+ok  obj_store06: 32x12x32 vox=10630 base=920 | Brick:8531, Cobble:1699, WoolBlack:206, WoolWhite:126, WoolYellow:60
+ok  obj_store07: 16x12x32 vox=5189 base=436 | Plank:4762, Cobble:178, WoolBlack:97, Stone:71, Glass:36
+ok  obj_store08: 16x12x32 vox=5552 base=510 | Sand:4763, Cobble:276, WoolWhite:247, Stone:122, Log:92
+ok  obj_store09: 16x12x32 vox=5162 base=426 | WoolWhite:4768, Cobble:160, Stone:149, WoolBlack:77, WoolGreen:5
+ok  obj_store10: 16x12x32 vox=5592 base=496 | Brick:5361, Cobble:95, WoolBlack:41, Log:32, WoolBlue:25
+ok  obj_store11: 16x12x32 vox=5189 base=436 | Plank:4762, Cobble:178, WoolBlack:97, Stone:71, Glass:53
+ok  obj_store12: 32x12x32 vox=10927 base=952 | Sand:9969, Cobble:244, WoolBlack:242, Stone:186, Glass:111
+ok  obj_store13: 32x12x32 vox=11208 base=1005 | WoolWhite:9922, Cobble:316, WoolBlack:301, Glass:301, Stone:273
+ok  obj_store14: 16x12x32 vox=5604 base=440 | Plank:5284, Cobble:193, WoolBlack:80, WoolWhite:22, Glass:13
+ok  obj_store15: 32x14x32 vox=12430 base=856 | Brick:10965, WoolYellow:595, WoolBlack:454, WoolWhite:284, Cobble:78
+ok  obj_store16: 32x12x32 vox=11174 base=984 | Sand:10096, WoolBlack:470, Cobble:311, Stone:164, Glass:111
+ok  obj_store17: 32x14x32 vox=9988 base=856 | Plank:8794, WoolWhite:691, Stone:243, WoolBlack:140, Brick:72
+ok  obj_story01: 16x10x30 vox=4694 base=466 | Plank:4130, Stone:426, Glass:115, Cobble:15, WoolBlack:8
+ok  obj_story02: 16x10x31 vox=4416 base=496 | Brick:3869, Plank:504, Glass:38, WoolYellow:5
+ok  obj_story03: 16x10x30 vox=4668 base=466 | Plank:4138, Stone:417, Glass:60, WoolYellow:53
+ok  obj_story04: 32x11x30 vox=3311 base=932 | Sand:1856, Plank:1371, WoolYellow:56, Cobble:27, WoolBlack:1
+ok  obj_story05: 16x10x30 vox=4704 base=468 | Brick:4103, Stone:404, Glass:135, Cobble:62
+ok  obj_story06: 16x10x30 vox=4752 base=474 | Plank:4235, Stone:401, Glass:62, WoolYellow:36, Cobble:18
+ok  park_block: 15x2x1 vox=30 base=15 | Stone:30
+ok  path1: 5x30x1 vox=45 base=3 | Cobble:45
+ok  pentagram: 10x2x10 vox=91 base=85 | WoolRed:85, WoolYellow:5, @(252, 100, 0):1
+ok  planter: 8x13x8 vox=548 base=30 | Leaves:422, Stone:102, Log:24
+ok  planter1: 8x13x8 vox=548 base=30 | Leaves:422, Stone:102, Log:24
+ok  planter2: 6x6x3 vox=161 base=18 | Leaves:111, Stone:45, Log:5
+ok  planter3a: 11x6x5 vox=239 base=55 | Stone:139, Log:54, Cobble:28, @(48, 100, 0):12, @(184, 0, 0):4
+ok  planter3b: 11x6x5 vox=233 base=55 | Stone:139, Log:54, Cobble:28, @(48, 100, 0):8, @(252, 204, 0):2
+ok  playgrnd1: 35x16x7 vox=198 base=4 | Plank:126, WoolGreen:68, Log:4
+ok  playgrnd2: 30x20x3 vox=606 base=24 | Plank:324, WoolYellow:222, Log:36, WoolGreen:24
+ok  playgrnd3: 21x5x5 vox=108 base=15 | WoolGreen:63, Plank:28, Log:17
+ok  playgrnd4: 15x15x3 vox=191 base=12 | Plank:155, Log:24, WoolGreen:12
+ok  playgrnd5: 24x15x24 vox=522 base=193 | Plank:249, Log:193, WoolGreen:68, @(48, 100, 0):12
+ok  potty1: 5x8x4 vox=168 base=24 | WoolGreen:137, WoolWhite:29, @(136, 0, 0):2
+ok  potty2: 5x7x4 vox=168 base=24 | WoolBlue:137, WoolWhite:24, @(184, 184, 184):5, Glass:2
+ok  potty3: 5x7x4 vox=168 base=24 | WoolBlue:68, Cobble:68, WoolWhite:26, @(184, 184, 184):6
+ok  pumpkin: 7x6x5 vox=168 base=31 | WoolYellow:167, WoolGreen:1
+ok  rubbish1: 5x6x2 vox=17 base=5 | Log:11, @(152, 100, 48):4, @(152, 152, 152):2
+ok  rubbish2: 5x6x2 vox=7 base=4 | Log:6, @(152, 152, 152):1
+ok  rubbish3: 4x2x2 vox=16 base=8 | Glass:8, @(48, 152, 204):6, @(48, 204, 204):2
+ok  rubbish4: 5x2x3 vox=30 base=15 | WoolRed:24, @(152, 100, 204):6
+ok  sidewalk1: 16x16x1 vox=196 base=14 | Stone:196
+ok  sidewalk2: 16x16x1 vox=196 base=14 | Stone:170, @(116, 116, 116):26
+ok  sidewalk3: 16x16x1 vox=196 base=14 | Stone:196
+ok  sidewalk4: 16x16x1 vox=196 base=14 | Stone:196
+ok  sidewalk5: 64x16x1 vox=840 base=60 | Stone:840
+ok  sign1: 4x19x1 vox=34 base=1 | Stone:19, WoolWhite:9, WoolYellow:3, WoolGreen:3
+ok  sign2: 5x11x2 vox=41 base=1 | WoolWhite:24, Plank:11, Glass:6
+ok  sign3: 5x10x2 vox=35 base=1 | WoolWhite:22, Plank:10, WoolRed:3
+ok  sign4: 3x19x2 vox=40 base=1 | WoolWhite:19, WoolRed:9, @(236, 236, 236):6, WoolGreen:3, @(184, 0, 0):2
+ok  sign5: 5x19x2 vox=40 base=1 | Stone:19, WoolWhite:12, WoolRed:9
+ok  sign6: 5x19x5 vox=35 base=1 | WoolWhite:19, Glass:16
+ok  sign7: 7x11x7 vox=125 base=17 | WoolBlack:65, WoolYellow:29, Stone:20, @(184, 184, 184):11
+ok  sign8: 9x11x7 vox=190 base=14 | WoolWhite:110, WoolRed:56, @(116, 116, 116):14, @(168, 0, 0):10
+ok  sign9: 5x22x13 vox=140 base=4 | WoolWhite:104, WoolYellow:30, @(184, 184, 184):4, @(116, 116, 116):2
+ok  stage: 26x14x7 vox=808 base=60 | Stone:492, WoolWhite:220, Glass:96
+ok  statue1: 8x8x8 vox=257 base=64 | Stone:227, Cobble:30
+ok  statue2: 8x9x8 vox=266 base=64 | Stone:222, Cobble:44
+ok  statue3: 8x9x8 vox=258 base=64 | Stone:211, Cobble:47
+ok  stlight: 19x16x2 vox=88 base=6 | Stone:76, Glowstone:8, WoolBlack:4
+ok  stlight1: 19x16x2 vox=88 base=6 | Stone:76, Glowstone:8, WoolBlack:4
+ok  stlight2: 38x32x4 vox=242 base=16 | Stone:202, Cobble:34, Glowstone:6
+ok  stlight3: 13x32x14 vox=220 base=6 | WoolWhite:100, Stone:100, Glowstone:20
+ok  street1: 42x2x1 vox=24 base=12 | WoolYellow:24
+ok  street2: 19x4x1 vox=76 base=19 | WoolWhite:76
+ok  stretcher: 7x6x15 vox=289 base=4 | WoolYellow:225, WoolBlack:64
+ok  table1: 10x10x7 vox=116 base=10 | Stone:116
+ok  table2: 10x10x7 vox=116 base=10 | Plank:100, Stone:16
+ok  table3: 18x7x20 vox=428 base=4 | Log:428
+ok  table3a: 18x7x20 vox=428 base=4 | Plank:348, Log:80
+ok  table3b: 18x7x20 vox=428 base=4 | Log:348, Stone:80
+ok  tracks1: 30x10x1 vox=60 base=30 | Cobble:60
+ok  tracks2: 30x17x2 vox=400 base=20 | Log:340, Cobble:60
+ok  trashcan: 6x5x6 vox=120 base=36 | Stone:102, WoolBlack:18
+ok  trashcan1: 6x5x6 vox=120 base=36 | Stone:102, Cobble:18
+ok  trashcan2: 6x12x5 vox=181 base=30 | Stone:108, WoolBlack:48, WoolRed:12, @(252, 48, 0):4, @(252, 152, 0):3
+ok  trashcan3: 8x7x7 vox=194 base=36 | Stone:120, WoolBlack:48, Plank:16, Log:6, @(184, 184, 184):3
+ok  trashcan4: 10x5x6 vox=196 base=48 | WoolGreen:171, Stone:24, @(184, 184, 184):1
+ok  tree1: 8x15x8 vox=568 base=4 | Leaves:544, Log:24
+ok  tree1a: 8x15x8 vox=568 base=4 | WoolRed:544, Log:24
+ok  tree1b: 8x15x8 vox=568 base=4 | WoolYellow:544, Log:24
+ok  tree1c: 8x15x8 vox=568 base=4 | WoolRed:544, Log:24
+ok  tree2: 10x19x10 vox=918 base=4 | Leaves:894, Log:24
+ok  tree2a: 10x19x10 vox=918 base=4 | WoolRed:894, Log:24
+ok  tree2b: 10x19x10 vox=918 base=4 | WoolYellow:894, Log:24
+ok  tree2c: 10x19x10 vox=918 base=4 | WoolRed:894, Log:24
+ok  tree3: 10x16x10 vox=577 base=4 | Leaves:544, Log:24, WoolRed:9
+ok  tree4: 6x10x6 vox=274 base=4 | Leaves:266, Log:8
+ok  trellis: 9x9x8 vox=160 base=7 | WoolWhite:134, WoolGreen:15, @(220, 220, 220):6, @(0, 152, 0):5
+ok  trlight1: 6x8x6 vox=136 base=16 | WoolBlack:116, Glowstone:12, WoolGreen:4, WoolRed:4
+ok  trlight2: 3x12x3 vox=61 base=9 | WoolBlack:31, Stone:25, Glowstone:3, @(0, 252, 100):2
+ok  wall: 32x10x1 vox=640 base=64 | Stone:425, WoolWhite:215
+
+VOXLINT PASS
