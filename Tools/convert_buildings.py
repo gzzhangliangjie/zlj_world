@@ -20,10 +20,12 @@ SRC_DIR = 'D:/zlj_world/_refs/mmmm/vox'
 DST_DIR = 'D:/zlj_world/VoxelCraft/Assets/Resources/VoxStructures'
 
 # per-name output limits: (max_w, max_h, max_d) after /2 subsample + bbox crop.
-# mmmm buildings are 64x64 base; /2 gives 32x32 which is already very large
-# for our stamping grid, so we clip footprint to 24x24 and height to 14.
+# mmmm obj_ sources are full STREET BLOCKS (64x64 with sidewalk + multiple
+# facades), not single houses — cropping to the center 24 cut away shop
+# windows and sign strips (the M40 "monochrome, broken windows" review).
+# Keep the whole /2 footprint (32x32) and only clip height.
 LIMITS = {
-    'default': (24, 14, 24),
+    'default': (32, 14, 32),
 }
 
 # block anchor colors — MUST stay in sync with vox_lint.BLOCK and
@@ -51,6 +53,56 @@ def load(path):
         pal.append((r,g,b,al))
     return (X,Y,Z), vs, pal
 
+# semantic role overrides (file -> {source RGB -> block}), applied BEFORE
+# nearest-anchor matching so windows/doors/signs keep their intended material.
+# Catches the two M40 review bugs: greyscale walls collapsing everything to
+# Stone (all-grey monotony) and wall whites/off-blues falling to Glass/white
+# wool (transparent-hole / dead-panel "windows").
+ROLE = {
+    'obj_store01': {
+        (32, 32, 32):   'WoolBlack',    # storefront band + dark trim
+        (204, 252, 252):'Glass',        # display windows / glass door
+        (204, 152, 48): 'WoolYellow',   # awning orange
+        (116, 0, 0):    'WoolRed',      # red sign strip
+        (136, 136, 136):'Stone',        # main wall
+        (168, 168, 168):'Stone',        # light trim
+        (84, 84, 84):   'Cobble',       # dark base
+        (116, 116, 116):'Cobble',
+        (220, 220, 220):'WoolWhite',    # door frame
+    },
+    'obj_house1': {
+        (48, 152, 204): 'Glass', (152, 204, 252): 'Glass', (48, 100, 152): 'Glass',  # window family
+        (100, 48, 0):   'Plank',       # wooden door
+        (136, 136, 136):'Stone',
+        (168, 168, 168):'Stone',
+        (236, 236, 236):'WoolWhite',
+        (184, 184, 184):'Cobble',
+    },
+    'obj_house2': {
+        (152, 204, 252):'Glass',        # windows
+        (236, 236, 236):'WoolWhite',    # main white wall
+        (168, 168, 168):'Cobble',       # base band
+    },
+    'obj_house6': {
+        (48, 152, 252): 'Glass',        # bright windows (z16-22, 164 vox)
+        (100, 48, 0):   'Plank', (152, 100, 0): 'Plank',  # wood door/trim
+        (168, 168, 168):'Sand',         # main light-grey wall -> warm sand render
+        (220, 220, 220):'WoolWhite',    # white base slab + trim (NOT glass)
+        (136, 136, 136):'Stone', (184, 184, 184):'Cobble', (116, 116, 116):'Cobble',
+        (236, 236, 236):'WoolWhite',
+    },
+}
+
+# anchor colors by block name — role targets (keep in sync with vox_lint/BlockForColor)
+ANCHOR = {
+    'Leaves':(96,168,60),'Log':(103,82,49),'Stone':(125,125,125),
+    'Glowstone':(252,224,130),'WoolBlack':(32,32,38),'WoolRed':(176,46,38),
+    'Sand':(219,207,163),'Brick':(150,97,83),'Plank':(156,127,78),
+    'Glass':(200,220,228),'Grass':(106,170,64),'WoolWhite':(232,236,238),
+    'WoolYellow':(234,195,55),'WoolBlue':(53,87,178),'WoolGreen':(86,128,40),
+    'Dirt':(121,85,58),'Cobble':(110,110,110),'Snow':(240,246,246),
+}
+
 def nearest_block(rgb):
     best, bd = None, 1e9
     for k in BLOCK:
@@ -60,11 +112,21 @@ def nearest_block(rgb):
 
 def convert(name):
     size, vs, pal = load(os.path.join(SRC_DIR, name + '.vox'))
-    # 1) /2 subsample, majority color
+    # 1) /2 subsample, majority color; ROLE colors get weighted votes so thin
+    #    window bands / sign strips survive downsampling instead of being
+    #    outvoted by the surrounding wall greys
+    roles = ROLE.get(name, {})
+    def w(ci):
+        rgb = tuple(pal[ci][:3])
+        return 4 if rgb in roles else 1
     acc = {}
     for (x,y,z),c in vs.items():
         acc.setdefault((x//2,y//2,z//2), []).append(c)
-    sub = {k: Counter(cs).most_common(1)[0][0] for k,cs in acc.items()}
+    sub = {}
+    for k, cs in acc.items():
+        cnt = Counter()
+        for c in cs: cnt[c] += w(c)
+        sub[k] = cnt.most_common(1)[0][0]
     # 2) bbox crop
     xs=[p[0] for p in sub]; ys=[p[1] for p in sub]; zs=[p[2] for p in sub]
     x0,x1=min(xs),max(xs); y0,y1=min(ys),max(ys); z0,z1=min(zs),max(zs)
@@ -84,9 +146,11 @@ def convert(name):
     # 3) palette remap to anchors
     # build the output palette: index 1..N distinct remapped colors
     remap = {}
+    roles = ROLE.get(name, {})
     for (x,h,dpt),c in out.items():
-        rgb = pal[c][:3]
-        remap[c] = nearest_block(rgb)
+        rgb = tuple(pal[c][:3])
+        blk = roles.get(rgb)
+        remap[c] = ANCHOR[blk] if blk else nearest_block(rgb)
     # (re)assign: palette = sorted distinct anchor colors
     anchors = sorted(set(remap.values()))
     aidx = {a:i+1 for i,a in enumerate(anchors)}
@@ -114,7 +178,8 @@ def convert(name):
     out_path = os.path.join(DST_DIR, name + '.bytes')
     open(out_path,'wb').write(data)
     # report
-    roles = Counter(BLOCK[a] for a in anchors)
+    INV = {v: k for k, v in ANCHOR.items()}
+    roles = Counter(INV.get(a, '@' + str(a)) for a in anchors)
     print(f'{name}: {X}x{Hh}x{Dd} vox={len(voxels)} -> {out_path}')
     print('   roles:', ', '.join(f'{r}:{n}' for r,n in roles.most_common()))
     return True

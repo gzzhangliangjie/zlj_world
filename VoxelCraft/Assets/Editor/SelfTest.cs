@@ -1063,7 +1063,7 @@ namespace VoxelCraft.Editor
                         }
                     }
                     bool okB = bvox != null && bsolid >= m40MinSolid[bIdx40] && btypes.Count >= 3 &&
-                               bvox.Width <= 24 && bvox.Height <= 14;
+                               bvox.Width <= 32 && bvox.Height <= 14;
                     m40All &= okB;
                     m40Detail.Add($"{m40Names[bIdx40]}:{bvox?.Width}x{bvox?.Height}x{bvox?.Depth} solid={bsolid} types={btypes.Count}{(okB ? "" : " FAIL")}");
                 }

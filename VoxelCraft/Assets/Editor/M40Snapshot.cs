@@ -62,21 +62,21 @@ namespace VoxelCraft.Editor
             int px = 60, pz = -80;
             var remP = new List<Chunk>();
             sim.dataRadius = 8; sim.meshRadius = 8;
-            int pcx = VoxelMath.ChunkCoord(px + 30), pcz = VoxelMath.ChunkCoord(pz + 30);
+            int pcx = VoxelMath.ChunkCoord(px + 70), pcz = VoxelMath.ChunkCoord(pz + 16);
             sim.Step(pcx, pcz, 100000f, 100000f, remP, null);
             foreach (var cP in remP) attach(cP);
 
             int mn = int.MaxValue, mx = int.MinValue;
-            for (int x = -4; x < 68; x += 2)
-                for (int z = -4; z < 68; z += 2)
+            for (int x = -4; x < 146; x += 2)
+                for (int z = -4; z < 40; z += 2)
                 {
                     int g = sim.generator.HeightAt(px + x, pz + z);
                     mn = Mathf.Min(mn, g); mx = Mathf.Max(mx, g);
                 }
             int platBaseY = mx;
             var affected = new List<Chunk>();
-            for (int x = -4; x < 68; x++)
-                for (int z = -4; z < 68; z++)
+            for (int x = -4; x < 146; x++)
+                for (int z = -4; z < 40; z++)
                 {
                     int colTop = sim.SurfaceHeight(px + x, pz + z, true);
                     for (int y = colTop; y <= platBaseY; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Grass, affected);
@@ -106,7 +106,7 @@ namespace VoxelCraft.Editor
             sim.dataRadius = 8; sim.meshRadius = 8;
             // center on the STAMPED area so every touched chunk is inside
             // meshRadius (stamp spans z=-80..-56 → cz -5..-4; center (5,5) missed them)
-            int scx = VoxelMath.ChunkCoord(px + 30), scz = VoxelMath.ChunkCoord(pz + 16);
+            int scx = VoxelMath.ChunkCoord(px + 70), scz = VoxelMath.ChunkCoord(pz + 16);
             sim.Step(scx, scz, 100000f, 100000f, rem2, null);
             foreach (var c2 in rem2) attach(c2);
 
@@ -161,8 +161,8 @@ namespace VoxelCraft.Editor
             }
 
             // Group shot from the front-left
-            float gMidX = px + 30f, gMidZ = oz + 12f, gMidY = platBaseY + 8f;
-            cam.transform.position = new Vector3(gMidX - 30f, platBaseY + 34f, gMidZ - 52f);
+            float gMidX = px + 66f, gMidZ = oz + 13f, gMidY = platBaseY + 8f;
+            cam.transform.position = new Vector3(gMidX - 55f, platBaseY + 38f, gMidZ - 75f);
             cam.transform.LookAt(new Vector3(gMidX, gMidY, gMidZ + 4f));
             Render(cam, "m40_group.jpg", 1f);
             Debug.Log("[M40] all shots saved");
