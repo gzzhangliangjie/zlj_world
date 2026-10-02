@@ -476,9 +476,9 @@ def build_species(sp, cfg):
                     px[u + fw_-1, v] = WHITE; px[u + fw_-1, v+1] = WHITE
 
 
-    if sp == 'cat':                       # 猫脸:south 黑眼+粉鼻(east/west 同步眼)
+    if sp == 'cat':                       # 猫脸:只画主头盒,一对眼+宽粉鼻
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
-            if bn != 'head' or w < 4:
+            if bn != 'head' or w < 4 or h < 5:      # 吻部盒(h=4)不画,只画主头盒
                 continue
             for FACE in ('south', 'east', 'west'):
                 fd = uv[FACE]
@@ -486,11 +486,11 @@ def build_species(sp, cfg):
                 fw_, fh_ = int(fd['uv_size'][0]), int(fd['uv_size'][1])
                 K = (18, 18, 18); PINK = (232, 130, 150)
                 if FACE == 'south':
-                    px[u, v+1] = K; px[u+fw_-1, v+1] = K          # 黑眼(1x2)
-                    px[u, v+2] = K; px[u+fw_-1, v+2] = K
-                    px[u+fw_//2, v+fh_-1] = PINK                  # 粉鼻(中央底行)
+                    px[u, v+1] = K; px[u+fw_-1, v+1] = K          # 一对黑眼(1x1)
+                    for cc in range(fw_):                          # 整行宽粉鼻(对称)
+                        px[u+cc, v+fh_-1] = PINK
                 else:
-                    px[u, v+1] = K; px[u, v+2] = K                # 侧眼前缘
+                    px[u, v+1] = K                                 # 侧眼前缘 1 眼
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
     for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
