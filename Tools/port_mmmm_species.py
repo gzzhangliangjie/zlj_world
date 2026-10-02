@@ -152,10 +152,11 @@ SPECIES = {
         leg_x=lambda vx: vx <= 1 or vx >= 4,     # 只有两侧才是脚,身体底层不进腿
         wing_rule=lambda vx, vy, vz: (vx == 0 or vx == 5) and vy <= 2 and vz >= 3,
         ns_swap=True,                      # 白肚/喙/眼在引擎 +Z(前脸):north/south 互换
-        leg_lift=1,                        # 身体位置不动;腿短 1 格=>腿短身长,总高不变
+        leg_lift=0,                        # 腿短:身体落 1,腿只露 1 格短粗蹼
         leg_h=2,                           # 短腿
         emperor=True,
         belly_light=False,
+        tuft=True,
     ),
 }
 
@@ -254,6 +255,8 @@ def build_species(sp, cfg):
             x0, y0, z0, w, h, d = b
             bones.setdefault('wing0' if x0 < GX // 2 else 'wing1', []).append(b)
 
+    if cfg.get('tuft'):                        # 头顶翘毛(参考图):3 阶小黑盒
+        bones.setdefault('head', []).extend([(2, 9, 1, 1, 1, 1), (3, 10, 1, 1, 1, 1), (4, 11, 1, 1, 1, 1)])
     packer = ShelfPacker()
     front_split = cfg['front_split']
     zmid = GZ / 2
@@ -356,6 +359,15 @@ def build_species(sp, cfg):
                     if c is not None:
                         px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv, belly=cfg.get('belly_light', True))
                         painted += 1
+    if cfg.get('tuft'):
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            if bn == 'head' and oy0 >= 9:
+                for face, fd in uv.items():
+                    u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                    tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                    for vv in range(th):
+                        for uu in range(tw):
+                            px[u+uu, v+vv] = (32, 32, 32)
     # 企鹅背黑:body/head 侧面+顶面涂黑(帝企鹅黑背,白肚只在前脸)
     if cfg.get('emperor'):
         BLACK = (32, 32, 32)
@@ -387,7 +399,7 @@ def build_species(sp, cfg):
             img.paste(a, (us, vs))
     # 企鹅深色蹼(帝企鹅 dark webbed feet)+ 帝企鹅喙(深灰+下颌粉橙条)
     if cfg.get('emperor'):
-        FEET = (242, 140, 40)          # 卡通企鹅:橙蹼(脚底)
+        FEET = (248, 148, 122)        # 参考图:粉橙蹼
         BEAK = (242, 140, 40)          # 橙嘴
         STRIPE = (242, 100, 30)        # 下颌深橙条
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
@@ -399,7 +411,7 @@ def build_species(sp, cfg):
                     for vv in range(th):
                         for uu in range(tw):
                             px[u + uu, v + vv] = FEET
-            elif bn == 'head' and d == 1 and w <= 2:
+            elif bn == 'head' and d == 1 and w <= 2 and oy0 < 9:
                 # 喙盒(前端 2 宽 1 深小盒):面橙,底面=下颌深橙条
                 # (ns_swap 后引擎+Z 脸读 south 键,喙面必须涂 south)
                 for face in ('south', 'east', 'west', 'up'):
@@ -426,10 +438,17 @@ def build_species(sp, cfg):
             for FACE in faces_e:                # 正脸+两侧面都放眼(绕行可见)
                 u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
                 fw_, fh_ = int(uv[FACE]['uv_size'][0]), int(uv[FACE]['uv_size'][1])
-                # 顶行两端放眼(喙盒挡住脸中列,眼必须避开喙投影)
-                EYE, EYERIM = WHITE, SOFT      # 黑脸→白瞳(全脸黑,白眼高对比)
-                px[u, v] = EYE; px[u, v+1] = EYERIM
-                px[u+fw_-1, v] = EYE; px[u+fw_-1, v+1] = EYERim if False else EYERIM
+                # 超大眼(竖 2 格满白)+粉腮红(参考图)
+                BLUSH = (250, 165, 165)
+                if FACE == 'south' and fw_ >= 4:     # 正脸:2x2 大眼+腮红
+                    for cc in (u, u+1, u+fw_-2, u+fw_-1):
+                        px[cc, v] = WHITE; px[cc, v+1] = WHITE
+                    if fh_ >= 3:
+                        px[u+1, v+2] = BLUSH; px[u+2, v+2] = BLUSH
+                elif fw_ >= 3 and fh_ >= 3:           # 侧面:前缘 2x2 眼+腮红
+                    for cc in (u, u+1):
+                        px[cc, v] = WHITE; px[cc, v+1] = WHITE
+                    px[u+1, v+2] = BLUSH
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
