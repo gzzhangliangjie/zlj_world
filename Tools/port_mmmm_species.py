@@ -476,10 +476,25 @@ def build_species(sp, cfg):
                     px[u + fw_-1, v] = WHITE; px[u + fw_-1, v+1] = WHITE
 
 
+    if sp == 'cat':                       # 猫脸:south 黑眼+粉鼻(east/west 同步眼)
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            if bn != 'head' or w < 4:
+                continue
+            for FACE in ('south', 'east', 'west'):
+                fd = uv[FACE]
+                u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                fw_, fh_ = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                K = (18, 18, 18); PINK = (232, 130, 150)
+                if FACE == 'south':
+                    px[u, v+1] = K; px[u+fw_-1, v+1] = K          # 黑眼(1x2)
+                    px[u, v+2] = K; px[u+fw_-1, v+2] = K
+                    px[u+fw_//2, v+fh_-1] = PINK                  # 粉鼻(中央底行)
+                else:
+                    px[u, v+1] = K; px[u, v+2] = K                # 侧眼前缘
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
     for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
-        if bn != 'head' or sp == 'penguin':
+        if bn != 'head' or sp in ('penguin', 'cat'):
             continue
         for face in ('north', 'south'):
             fd = uv[face]
