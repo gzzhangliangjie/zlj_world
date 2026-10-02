@@ -331,6 +331,9 @@ def build_species(sp, cfg):
                     c = col.get((sx, sy, sz))
                     # 侧面(脸)采色:固定层为空或非腿骨时改射线投影,
                     # 取该 texel 向内第一个非空体素(眼在内层也能投到脸上)
+                    # x 侧面强制投影:骨盒边界≠模型边缘(翼列挖走后盒面
+                    # 采到内部浅色),采满到真实模型侧缘的黑背
+
                     if c is None and axis in ('z', 'x'):
                         if axis == 'z':
                             rz = z0 if face == 'north' else z0 + d - 1
@@ -353,6 +356,21 @@ def build_species(sp, cfg):
                     if c is not None:
                         px[u + uu, v + vv] = enhance(c, face, bn, sx, sy, sz, uu, vv, belly=cfg.get('belly_light', True))
                         painted += 1
+    # 企鹅背黑:body/head 侧面+顶面涂黑(帝企鹅黑背,白肚只在前脸)
+    if cfg.get('emperor'):
+        BLACK = (32, 32, 32)
+        for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
+            if bn in ('body', 'head', 'tail'):
+                for face in ('east', 'west', 'up'):
+                    fd = uv[face]
+                    u, v = int(fd['uv'][0]), int(fd['uv'][1])
+                    tw, th = int(fd['uv_size'][0]), int(fd['uv_size'][1])
+                    for vv in range(th):
+                        for uu in range(tw):
+                            hsh = (uu * 2654435761) ^ (vv * 40503) ^ (FACE_ID[face] * 918731)
+                            n = (-10, -5, 0, 5, 8)[hsh % 5]
+                            c0 = BLACK
+                            px[u+uu, v+vv] = tuple(max(0, min(255, cc + n)) for cc in c0)
     # ns_swap:引擎 +Z(脸)采 south 矩形,而脚本把脸(z0)画进 north——
     # 画完后把每盒 north/south 矩形内容互换,脸内容即落到引擎 +Z
     if cfg.get('ns_swap'):
@@ -406,8 +424,12 @@ def build_species(sp, cfg):
                 u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
                 fw_, fh_ = int(uv[FACE]['uv_size'][0]), int(uv[FACE]['uv_size'][1])
                 # 顶行两端放眼(喙盒挡住脸中列,眼必须避开喙投影)
-                px[u, v] = WHITE; px[u, v+1] = SOFT
-                px[u+fw_-1, v] = WHITE; px[u+fw_-1, v+1] = SOFT
+                if FACE == 'south':             # 白脸→黑瞳(白眼无对比)
+                    EYE, EYERIM = (25, 25, 25), (60, 60, 60)
+                else:                           # 黑侧脸→白眼
+                    EYE, EYERIM = WHITE, SOFT
+                px[u, v] = EYE; px[u, v+1] = EYERIM
+                px[u+fw_-1, v] = EYE; px[u+fw_-1, v+1] = EYERim if False else EYERIM
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)

@@ -110,16 +110,16 @@
     },
     "wing0": {
      "rotation": [
-      "math.cos(query.anim_time * 38.17 + 180.0) * 40.0",
       0.0,
-      25.0
+      0.0,
+      "math.cos(query.anim_time * 38.17 + 180.0) * 45.0 + 20.0"
      ]
     },
     "wing1": {
      "rotation": [
-      "math.cos(query.anim_time * 38.17 + 180.0) * 40.0",
       0.0,
-      -25.0
+      0.0,
+      "math.cos(query.anim_time * 38.17 + 180.0) * -45.0 - 20.0"
      ]
     },
     "body": {
