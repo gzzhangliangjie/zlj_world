@@ -401,10 +401,13 @@ def build_species(sp, cfg):
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn != 'head' or w < 4:
                 continue
-            FACE = 'south' if cfg.get('ns_swap') else 'north'   # 引擎+Z 脸
-            u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
-            px[u+1, v+1] = WHITE; px[u+2, v+1] = SOFT; px[u+1, v+2] = SOFT
-            px[u+w-2, v+1] = WHITE; px[u+w-3, v+1] = SOFT; px[u+w-2, v+2] = SOFT
+            faces_e = ('south', 'east', 'west') if cfg.get('ns_swap') else ('north', 'east', 'west')
+            for FACE in faces_e:                # 正脸+两侧面都放眼(绕行可见)
+                u, v = int(uv[FACE]['uv'][0]), int(uv[FACE]['uv'][1])
+                fw_, fh_ = int(uv[FACE]['uv_size'][0]), int(uv[FACE]['uv_size'][1])
+                # 顶行两端放眼(喙盒挡住脸中列,眼必须避开喙投影)
+                px[u, v] = WHITE; px[u, v+1] = SOFT
+                px[u+fw_-1, v] = WHITE; px[u+fw_-1, v+1] = SOFT
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
