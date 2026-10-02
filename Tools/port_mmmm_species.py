@@ -156,7 +156,6 @@ SPECIES = {
         leg_h=1,                           # 腿=1 格脚掌,贴身下沿,旋转不入体
         emperor=True,
         belly_light=False,
-        tuft=True,
     ),
 }
 
@@ -255,8 +254,7 @@ def build_species(sp, cfg):
             x0, y0, z0, w, h, d = b
             bones.setdefault('wing0' if x0 < GX // 2 else 'wing1', []).append(b)
 
-    if cfg.get('tuft'):                        # 喙顶一撮黑(与嘴相连,不向上翘)
-        bones.setdefault('head', []).extend([(2, 8, 0, 2, 1, 1)])
+
     packer = ShelfPacker()
     front_split = cfg['front_split']
     zmid = GZ / 2
@@ -447,6 +445,9 @@ def build_species(sp, cfg):
                             px[u+cc, v+rr] = WHITE        # 白脸
                     DOT = (15, 15, 15)                    # 黑点眼(喙上方白区)
                     px[u, v+1] = DOT; px[u+fw_-1, v+1] = DOT
+                elif FACE in ('east', 'west') and fw_ >= 3 and fh_ >= 3:
+                    # 侧脸中央白点眼(黑帽兜上的白点)
+                    px[u + fw_//2, v + fh_//2] = WHITE
 
     # 眼睛放大:头骨脸面上的眼白/深眼底色向邻 texel 膨胀 1 格(vox 原作眼只有
     # 1-2 texel,渲染太小看不见)
