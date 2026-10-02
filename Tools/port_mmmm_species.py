@@ -280,8 +280,8 @@ def build_species(sp, cfg):
             bones.setdefault('wing0' if x0 < GX // 2 else 'wing1', []).append(b)
 
 
-    if sp == 'cat':                           # 猫鼻:吻前 2x1x1 凸出红鼻头
-        bones.setdefault('head', []).append((4, 4, 0, 2, 1, 1))
+    if sp == 'cat':                           # 猫鼻:吻前 2x1x1 凸出红鼻头(下移)
+        bones.setdefault('head', []).append((4, 3, 0, 2, 1, 1))
     packer = ShelfPacker()
     front_split = cfg['front_split']
     zmid = GZ / 2
@@ -482,12 +482,19 @@ def build_species(sp, cfg):
         for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:
             if bn != 'head' or h != 4:             # 只画吻部盒(h=4,z 小端朝引擎+Z)
                 continue
-            for FACE in ('south',):
+            for FACE in ('south', 'east', 'west', 'north', 'up', 'down'):
                 fd = uv[FACE]
                 u, v = int(fd['uv'][0]), int(fd['uv'][1])
                 fw_, fh_ = int(fd['uv_size'][0]), int(fd['uv_size'][1])
                 K = (18, 18, 18)
-                px[u, v+1] = K; px[u+fw_-1, v+1] = K              # 只画一对正眼
+                if FACE == 'south':
+                    px[u, v+1] = K; px[u+fw_-1, v+1] = K          # 只画一对正眼
+                else:
+                    FUR = (196, 178, 158)                          # 侧面毛色,去白点
+                    for vv in range(fh_):
+                        for uu in range(fw_):
+                            if px[u+uu, v+vv][0] > 200 and px[u+uu, v+vv][1] > 200:
+                                px[u+uu, v+vv] = FUR
     for (bn, x0, y0, z0, w, h, d, uv, oy0) in cube_all:   # 猫红鼻头凸盒
         if sp == 'cat' and bn == 'head' and w == 2 and h == 1 and d == 1:
             RED = (226, 96, 122)
