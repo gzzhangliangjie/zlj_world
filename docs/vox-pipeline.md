@@ -29,8 +29,15 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
    - 红 (252,0,0) → WoolRed (176,46,38)
    - **语义配色 > 原件配色**：fence2 原件整件纯灰 (136,136,136)×130，按"绿篱"语义整件重染 Leaves——原件颜色不表达语义时就别透传
    - **ROLE.get(p0,p0) 只做精确匹配**：源调色板对不上就整个透传再被最近邻全落 Stone（"全是一个颜色"的根因）。每换一批源文件必须先 dump 源调色板（remap_props.py 里的 load()），对着实际 RGB 写映射，不许沿用上一批的 ROLE
-4. **sub=2 减半用多数决投票，但稀有重点色（灯头 12 voxels）必须优先保留**（PRIORITY 集合），否则 Glowstone 被灰色票数吞没、census 里直接消失
-5. **mmmm 的 house/store 全是 64×64 排屋模块**（小身子 + 巨型拼楼盖板），单放=蘑菇形。要么裁身子+自建坡顶（house5：裁 x20..43/z0..23 身子 /2 → 12×8×12 + 程序砖顶），要么不用
+4. **M40 教训:灰阶主墙必须逐楼分色,不许全落 Stone**(35cd98c):
+   - mmmm 店铺/住宅源**每栋 ~4 万体素的墙共用一个 (136,136,136)**,最近邻=Stone,
+     ROLE 只保特征色时整条街仍是灰盒子(vision 量化:灰墙 80-90%,彩色只剩细条)
+   - 修法=**per-building MAIN WALL 映射**:同一灰按楼指定 Brick/Plank/Sand/WoolWhite,
+     留一栋 Stone 作对照;屋顶/饰线灰阶 (168/116/84) 拆到白饰条/Cobble 与墙拉开
+   - vox_lint EXPECT 门禁同步改墙色角色(砖楼必须出 Brick),单色塌缩直接 FAIL
+   - 一批里每栋楼的主墙色不许重复超过 2 栋,否则街景俯视仍单调
+5. **sub=2 减半用多数决投票，但稀有重点色（灯头 12 voxels）必须优先保留**（PRIORITY 集合），否则 Glowstone 被灰色票数吞没、census 里直接消失
+6. **mmmm 的 house/store 全是 64×64 排屋模块**（小身子 + 巨型拼楼盖板），单放=蘑菇形。要么裁身子+自建坡顶（house5：裁 x20..43/z0..23 身子 /2 → 12×8×12 + 程序砖顶），要么不用
 
 ## 撒入规则（TerrainGenerator.StampStructures）
 
@@ -79,6 +86,16 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
 | planter | 8×13×8 | swap | Leaves 422 + Stone 102 + Log 24 |
 | cottage | 11×8×9 | — | Plank/Glass（M31 手建，非 mmmm） |
 | house5 | 12×12×12 | — | Sand/Brick/Log（裁 mmmm 身子+程序坡顶） |
+| obj_store01 | 32×12×32 | z-up | Brick 墙+Glass 橱窗+黑招牌带+黄雨棚 |
+| obj_store02 | 32×12×32 | z-up | Plank 墙+WoolGreen 绿带+Glass |
+| obj_store03 | 32×12×32 | z-up | Sand 墙+WoolRed 粉招牌带+WoolBlue 门面+Glass |
+| obj_store04 | 32×12×32 | z-up | WoolWhite 墙+通高蓝 Glass 带+Glowstone 灯箱 |
+| obj_store05 | 32×12×32 | z-up | Brick 墙+WoolWhite 饰+Glass |
+| obj_house1 | 32×12×32 | z-up | Stone 墙(对照楼)+Glass |
+| obj_house2 | 32×12×32 | z-up | WoolWhite 墙+Cobble 基座+Glass |
+| obj_house6 | 32×12×26 | z-up | Sand 墙+WoolWhite 饰+Plank 木+Glass |
+| obj_story01 | 16×10×30 | z-up | Plank 墙+Glass+WoolBlack |
+| obj_story02 | 16×10×31 | z-up | Brick 墙+Glass+WoolYellow 橙雨棚 |
 
 ## BlockForColor 锚色表（VoxStructure.cs，转换脚本必须同步）
 
