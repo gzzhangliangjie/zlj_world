@@ -42,6 +42,11 @@ EXPECT = {
     'trlight2': (3, {'WoolBlack', 'Glowstone'}), # traffic light w/ lamp
     'newsbox1': (3, {'Stone', 'WoolBlack', 'WoolBlue'}),
     'cone1':    (2, {'WoolYellow', 'WoolWhite'}),
+    # M40 buildings (street blocks): window glass + per-building wall role gates
+    'obj_store01': (4, {'Glass', 'Stone', 'WoolBlack', 'WoolYellow'}),
+    'obj_house1':  (3, {'Glass', 'Stone'}),
+    'obj_house2':  (3, {'Glass', 'WoolWhite'}),
+    'obj_house6':  (3, {'Glass', 'Sand', 'Plank'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19}
 
