@@ -448,7 +448,8 @@ def build_species(sp, cfg):
                         for rr in range(fh_):
                             px[u+cc, v+rr] = WHITE
                     px[u, v+1] = (15, 15, 15); px[u+fw_-1, v+1] = (15, 15, 15)
-                    px[u, v] = (32, 32, 32); px[u+fw_-1, v] = (32, 32, 32)  # 眼上顶角黑帽
+                    for cc in range(1, fw_-1):
+                        px[u+cc, v] = (32, 32, 32)   # 顶行中间黑帽,眼正上方留白
                 elif FACE in ('east', 'west') and fw_ >= 3 and fh_ >= 3:
                     # 侧脸前缘一小片白(眼旁的侧脸白斑)
                     px[u, v] = WHITE; px[u, v+1] = WHITE
