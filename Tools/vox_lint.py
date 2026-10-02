@@ -47,6 +47,12 @@ EXPECT = {
     'obj_house1':  (3, {'Glass', 'Stone'}),
     'obj_house2':  (3, {'Glass', 'WoolWhite'}),
     'obj_house6':  (3, {'Glass', 'Sand', 'Plank'}),
+    'obj_store02': (3, {'Glass', 'Stone', 'WoolGreen'}),
+    'obj_store03': (4, {'Glass', 'Stone', 'WoolRed', 'WoolBlue'}),
+    'obj_store04': (3, {'Glass', 'Stone'}),
+    'obj_store05': (3, {'Glass', 'Stone', 'WoolBlack'}),
+    'obj_story01': (2, {'Glass', 'Stone'}),
+    'obj_story02': (3, {'Glass', 'Stone', 'WoolYellow'}),
 }
 HEIGHT_WHITELIST = {'tree2': 19}
 

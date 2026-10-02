@@ -55,7 +55,8 @@ namespace VoxelCraft.Editor
                 if (stale != null) UnityEngine.Object.DestroyImmediate(stale);
             };
 
-            string[] names = { "obj_store01", "obj_house1", "obj_house2", "obj_house6" };
+            string[] names = { "obj_store02", "obj_store03", "obj_store04", "obj_store05",
+                "obj_story01", "obj_story02" };
             var vxs = names.Select(n => Vox.StructureRegistry.Load(n)).ToArray();
 
             // Platform: terrain around (60,-80), flattened like M31 shot7.

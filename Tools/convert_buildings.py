@@ -91,6 +91,47 @@ ROLE = {
         (136, 136, 136):'Stone', (184, 184, 184):'Cobble', (116, 116, 116):'Cobble',
         (236, 236, 236):'WoolWhite',
     },
+    'obj_store02': {
+        (0, 152, 100):  'WoolGreen',    # green awning/sign band
+        (204, 252, 252):'Glass',        # display windows
+        (32, 32, 32):   'WoolBlack',    # storefront band
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
+        (220, 220, 220):'WoolWhite',
+    },
+    'obj_store03': {
+        (252, 204, 204):'WoolRed',      # pink top sign band (z17-22)
+        (152, 100, 204):'WoolBlue',     # purple storefront panels (z5-12)
+        (204, 252, 252):'Glass',
+        (32, 32, 32):   'WoolBlack',
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
+    },
+    'obj_store04': {
+        (48, 152, 204): 'Glass',        # tall blue window band (z5-22)
+        (204, 252, 252):'Glass',
+        (32, 32, 32):   'WoolBlack',
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
+    },
+    'obj_store05': {
+        (204, 252, 252):'Glass',
+        (32, 32, 32):   'WoolBlack',
+        (220, 220, 220):'WoolWhite',    # white trim
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (84, 84, 84):   'Cobble', (116, 116, 116):'Cobble',
+    },
+    'obj_story01': {
+        (252, 100, 0):  'WoolYellow',   # orange awning strip
+        (204, 252, 252):'Glass', (152, 204, 252):'Glass',
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+        (116, 116, 116):'Cobble', (68, 68, 68):'WoolBlack',
+    },
+    'obj_story02': {
+        (252, 100, 0):  'WoolYellow',   # orange awnings
+        (152, 204, 252):'Glass',
+        (136, 136, 136):'Stone', (168, 168, 168):'Stone',
+    },
 }
 
 # anchor colors by block name — role targets (keep in sync with vox_lint/BlockForColor)

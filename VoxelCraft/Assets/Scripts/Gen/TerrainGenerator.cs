@@ -181,6 +181,8 @@ namespace VoxelCraft.Gen
             "trlight2", "newsbox1", "cone1",
             "cottage", "house5",
             "obj_store01", "obj_house1", "obj_house2", "obj_house6",
+            "obj_store02", "obj_store03", "obj_store04", "obj_store05",
+            "obj_story01", "obj_story02",
         };
 
         /// <summary>

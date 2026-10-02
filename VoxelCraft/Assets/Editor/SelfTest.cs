@@ -1046,8 +1046,10 @@ namespace VoxelCraft.Editor
 
                 // ---- M40: mmmm obj_ buildings through the structure pipeline ----
                 // parse + role census + in-world stamping for the 4 new buildings.
-                string[] m40Names = { "obj_store01", "obj_house1", "obj_house2", "obj_house6" };
-                int[] m40MinSolid = { 3000, 3000, 2500, 2000 };
+                string[] m40Names = { "obj_store01", "obj_house1", "obj_house2", "obj_house6",
+                    "obj_store02", "obj_store03", "obj_store04", "obj_store05",
+                    "obj_story01", "obj_story02" };
+                int[] m40MinSolid = { 3000, 3000, 2500, 2000, 3000, 3000, 3000, 3000, 2000, 2000 };
                 bool m40All = true;
                 var m40Detail = new List<string>();
                 for (int bIdx40 = 0; bIdx40 < m40Names.Length; bIdx40++)
