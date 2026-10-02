@@ -137,7 +137,7 @@ SPECIES = {
         leg_y_range=(0, 3, 11, 14),      # 腿只在前后肢段(vox y),身体底层不吃
         leg_lift=2,
         slim_legs=True,
-        leg_pivots={'leg0': (3.5, 2.5), 'leg1': (6.5, 2.5), 'leg2': (2.0, 12.0), 'leg3': (4.0, 12.0)},
+        leg_pivots={'leg0': (3.5, 2.5), 'leg1': (6.5, 2.5), 'leg2': (2.5, 11.5), 'leg3': (4.5, 11.5)},
     ),
     'bear': dict(
         voxfile='mob_bear.vox',
@@ -263,9 +263,9 @@ def build_species(sp, cfg):
         for (x0, y0, z0, w, h, d) in bones.get('leg1', []):
             nb.append((x0, y0, z0 + 2, w, h, 1))
         bones['leg1'] = nb
-        # 后腿:大板拆窄,每只一条 2 宽,贴身体侧(左 x1-2,右 x3-4)
-        bones['leg2'] = [(1, 0, 11, 2, 3, 1), (2, 0, 12, 2, 3, 1)]
-        bones['leg3'] = [(3, 0, 11, 2, 3, 1), (3, 0, 12, 2, 3, 1)]
+        # 后腿:单盒 1 宽与前腿一致(左 x2,右 x4,贴身体 x3-6 侧沿)
+        bones['leg2'] = [(2, 0, 11, 1, 3, 1)]
+        bones['leg3'] = [(4, 0, 11, 1, 3, 1)]
     if cfg.get('web_extend'):                 # 蹼前伸:脚掌盒向 +z(引擎前方)加长
         ext = cfg['web_extend']
         for i, bn in enumerate(('leg0', 'leg1', 'leg2', 'leg3')):
