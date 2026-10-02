@@ -16,6 +16,15 @@ namespace VoxelCraft.Editor
         public static void Run()
         {
             var sim = new WorldSim(1337);
+            // suppress worldgen structures during this run: random anchors
+            // (30%/cell) stamp buildings INTO the platform area, contaminating
+            // both the census and the shots (dogstand census showed +296 alien
+            // voxels incl. 257 Brick)
+            var savedSet = (string[])TerrainGenerator.StructureSet.Clone();
+            for (int si = 0; si < TerrainGenerator.StructureSet.Length; si++)
+            {
+                TerrainGenerator.StructureSet[si] = "zz_disabled_" + si; // Load() returns null -> skip
+            }
             var atlas = Art.TextureFactory.Build();
             var rects = new Rect[59];
             for (int i = 0; i < rects.Length; i++) { rects[i] = atlas.TileRect((TileId)i); }
@@ -60,19 +69,17 @@ namespace VoxelCraft.Editor
             sim.Step(pcx, pcz, 100000f, 100000f, remP, null);
             foreach (var cP in remP) attach(cP);
 
-            // flat 60x60 platform at a fixed height
-            int mx = int.MinValue;
-            for (int x = -4; x < 60; x += 2)
-                for (int z = -4; z < 60; z += 2)
-                    mx = Mathf.Max(mx, sim.generator.HeightAt(px + x, pz + z));
-            int platBaseY = mx;
+            // flat 60x60 platform at a FIXED LOW height — max-of-terrain put tall
+            // props (dogstand H=20 umbrella) past ChunkHeight=80, silently
+            // dropping their top layers (59 voxels vanished)
+            int platBaseY = 34;
             var affected = new List<Chunk>();
             for (int x = -4; x < 60; x++)
                 for (int z = -4; z < 60; z++)
                 {
                     int colTop = sim.SurfaceHeight(px + x, pz + z, true);
                     for (int y = colTop; y <= platBaseY; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Grass, affected);
-                    for (int y = platBaseY + 1; y <= platBaseY + 30; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Air, affected);
+                    for (int y = platBaseY + 1; y <= platBaseY + 40; y++) sim.SetBlock(px + x, y, pz + z, BlockType.Air, affected);
                 }
 
             // camera + render helper with the fog/brightness globals (M31 lesson)

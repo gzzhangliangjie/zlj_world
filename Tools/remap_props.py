@@ -467,7 +467,7 @@ CFG = {
     'stlight1':  dict(swap=True,  sub=2),  # 38x4x32 like stlight
     'trlight1':  dict(swap=True,  sub=1),  # 6x6x8 lamp box
     'container1':dict(swap=False, sub=2),  # 60x15x15 shipping crate /2
-    'fence1':    dict(swap=False, sub=1),  # 31x2x18 long fence (Y-up)
+    'fence1':    dict(swap=True,  sub=1),  # 31x2x18: y is only a 2-voxel-thick slab, the 11-voxel-per-layer z axis is the height (upright fence; swap=False laid it flat on the ground)
     'column1':   dict(swap=True,  sub=2),  # 20x21x20 column -> 10x10x10
     'mushroom1': dict(swap=True,  sub=1),  # tiny red mushroom
     'planter1':  dict(swap=True,  sub=1),  # like planter
@@ -476,7 +476,7 @@ CFG = {
     'playgrnd1': dict(swap=True,  sub=1),  # 35x7x16 climbing frame
     'grill':     dict(swap=False, sub=1),  # 7x5x7 BBQ
     'campfire':  dict(swap=False, sub=1),  # 8x8x7 logs+fire
-    'dogstand':  dict(swap=True,  sub=2),  # 40x20x20 stand -> 20x10x10
+    'dogstand':  dict(swap=True,  sub=1),  # 40x40x20 sparse wireframe stand — /2 eats 3/4 of 346 voxels, keep full res
     'rubbish1':  dict(swap=False, sub=1),  # 5x6x2 litter pile
     # table3 skipped: ambiguous tall profile
 }

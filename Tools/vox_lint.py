@@ -104,7 +104,7 @@ EXPECT = {
     'dogstand':  (3, {'Glass', 'WoolYellow', 'WoolWhite'}),
     'rubbish1':  (1, {'Log'}),
 }
-HEIGHT_WHITELIST = {'tree2': 19, 'sign1': 19, 'sign5': 19}   # tall thin poles, y-guard in stamper
+HEIGHT_WHITELIST = {'tree2': 19, 'sign1': 19, 'sign5': 19, 'dogstand': 20, 'fence1': 18}   # tall thin poles, y-guard in stamper
 FLAT_OK = {'sidewalk2', 'sign1', 'sign5', 'curb2'}             # flat pavement tiles & 1-deep sign plates
 
 def load(path):
