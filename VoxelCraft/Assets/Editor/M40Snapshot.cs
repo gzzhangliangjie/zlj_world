@@ -55,14 +55,17 @@ namespace VoxelCraft.Editor
                 if (stale != null) UnityEngine.Object.DestroyImmediate(stale);
             };
 
-            string[] names = { "obj_store02", "obj_store03", "obj_store04", "obj_store05",
-                "obj_story01", "obj_story02" };
+            string[] names = { "obj_store06", "obj_store07", "obj_store08", "obj_store09",
+                "obj_store10", "obj_store11", "obj_store12", "obj_store13",
+                "obj_store14", "obj_store15", "obj_store16", "obj_store17",
+                "obj_house3", "obj_house4", "obj_house7", "obj_house8",
+                "obj_story03", "obj_story04", "obj_story05", "obj_story06" };
             var vxs = names.Select(n => Vox.StructureRegistry.Load(n)).ToArray();
 
             // Platform: terrain around (60,-80), flattened like M31 shot7.
             int px = 60, pz = -80;
             var remP = new List<Chunk>();
-            sim.dataRadius = 8; sim.meshRadius = 8;
+            sim.dataRadius = 11; sim.meshRadius = 11;
             int pcx = VoxelMath.ChunkCoord(px + 70), pcz = VoxelMath.ChunkCoord(pz + 16);
             sim.Step(pcx, pcz, 100000f, 100000f, remP, null);
             foreach (var cP in remP) attach(cP);
@@ -87,6 +90,8 @@ namespace VoxelCraft.Editor
             // Stamp the four buildings in a row with 6-block gaps.
             int ox = px, oz = pz;
             var bases = new int[names.Length];
+            var stampX = new int[names.Length];
+            var stampZ = new int[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 var v = vxs[i];
@@ -98,16 +103,17 @@ namespace VoxelCraft.Editor
                             var t = v.blocks[x, y, z];
                             if (t != BlockType.Air) sim.SetBlock(ox + x, bY + y, oz + z, t, affected);
                         }
-                bases[i] = bY;
+                bases[i] = bY; stampX[i] = ox; stampZ[i] = oz;
                 Debug.Log($"[M40] {names[i]} stamped at ({ox},{oz}) base={bY} {v.Width}x{v.Height}x{v.Depth}");
                 ox += v.Width + 6;
+                if (ox > px + 180) { ox = px; oz -= 64; }   // wrap rows: dataRadius=8 around chunk 8 covers x<272 only
             }
 
             var rem2 = new List<Chunk>();
-            sim.dataRadius = 8; sim.meshRadius = 8;
+            sim.dataRadius = 11; sim.meshRadius = 11;
             // center on the STAMPED area so every touched chunk is inside
             // meshRadius (stamp spans z=-80..-56 → cz -5..-4; center (5,5) missed them)
-            int scx = VoxelMath.ChunkCoord(px + 70), scz = VoxelMath.ChunkCoord(pz + 16);
+            int scx = VoxelMath.ChunkCoord(px + 70), scz = VoxelMath.ChunkCoord(pz - 80);  // center between row z=-80 and z=-208
             sim.Step(scx, scz, 100000f, 100000f, rem2, null);
             foreach (var c2 in rem2) attach(c2);
 
@@ -115,11 +121,11 @@ namespace VoxelCraft.Editor
             for (int i = 0; i < names.Length; i++)
             {
                 var v = vxs[i];
-                var bx0 = px + (v.Width + 6) * i;
+                var bx0 = stampX[i];  // actual stamp origin — (W+6)*i drifts when widths vary
                 var census = new Dictionary<BlockType, int>();
                 int solidCount = 0;
                 for (int y = bases[i]; y < bases[i] + v.Height; y++)
-                    for (int z = oz; z < oz + v.Depth; z++)
+                    for (int z = stampZ[i]; z < stampZ[i] + v.Depth; z++)
                         for (int x = bx0; x < bx0 + v.Width; x++)
                         {
                             var b = sim.GetBlock(x, y, z);
@@ -128,17 +134,15 @@ namespace VoxelCraft.Editor
                 Debug.Log($"[M40] census {names[i]} solid={solidCount} {string.Join(",", census.Select(kv => kv.Key + ":" + kv.Value).Take(6))}");
             }
 
-            // 3/4 view of each building
-            int cx0 = px;
+            // 3/4 view of each building (camera uses stamped origins)
             for (int i = 0; i < names.Length; i++)
             {
                 var v = vxs[i];
-                float midX = cx0 + v.Width / 2f, midZ = oz + v.Depth / 2f, midY = bases[i] + v.Height / 2f;
+                float midX = stampX[i] + v.Width / 2f, midZ = stampZ[i] + v.Depth / 2f, midY = bases[i] + v.Height / 2f;
                 float dist = Mathf.Max(v.Width, v.Depth) * 0.9f + 8f;
                 cam.transform.position = new Vector3(midX - dist * 0.7f, midY + v.Height * 0.7f + 4f, midZ - dist * 0.7f);
                 cam.transform.LookAt(new Vector3(midX, midY, midZ));
                 Render(cam, $"m40_{names[i]}.jpg", 1f);
-                cx0 += v.Width + 6;
             }
 
             // mesh state probe for the stamped chunks

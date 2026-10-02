@@ -21,6 +21,7 @@ BLOCK = {
     (156, 127, 78): 'Plank', (200, 220, 228): 'Glass', (106, 170, 64): 'Grass',
     (232, 236, 238): 'WoolWhite', (234, 195, 55): 'WoolYellow',
     (53, 87, 178): 'WoolBlue', (86, 128, 40): 'WoolGreen',
+    (110, 110, 110): 'Cobble', (160, 210, 255): 'Ice', (93, 236, 245): 'DiamondOre',
 }
 # per-prop expectations: (min distinct colors, required roles)
 EXPECT = {
@@ -53,8 +54,58 @@ EXPECT = {
     'obj_store05': (3, {'Glass', 'Brick', 'WoolBlack'}),
     'obj_story01': (2, {'Glass', 'Stone'}),
     'obj_story02': (3, {'Glass', 'Brick', 'WoolYellow'}),
+    # batch 3 buildings
+    'obj_store06': (3, {'Brick', 'Cobble', 'Glass'}),
+    'obj_store07': (3, {'Plank', 'Glass'}),
+    'obj_store08': (3, {'Sand', 'WoolWhite'}),
+    'obj_store09': (3, {'WoolWhite', 'Stone'}),
+    'obj_store10': (3, {'Brick', 'WoolWhite'}),
+    'obj_store11': (3, {'Plank', 'Glass'}),
+    'obj_store12': (3, {'Sand', 'Glass'}),
+    'obj_store13': (3, {'WoolWhite', 'Glass'}),
+    'obj_store14': (3, {'Plank', 'Glass', 'WoolWhite'}),
+    'obj_store15': (3, {'Brick', 'WoolYellow', 'WoolWhite'}),
+    'obj_store16': (3, {'Sand', 'Glass'}),
+    'obj_store17': (3, {'Plank', 'WoolWhite'}),
+    'obj_house3':  (4, {'WoolWhite', 'Plank', 'Cobble', 'Glass'}),
+    'obj_house4':  (3, {'WoolWhite', 'Glass', 'WoolBlack'}),
+    'obj_house7':  (2, {'Brick'}),
+    'obj_house8':  (3, {'WoolWhite', 'Stone', 'Cobble'}),
+    'obj_story03': (3, {'Plank', 'Glass', 'WoolYellow'}),
+    'obj_story04': (3, {'Sand', 'Plank', 'WoolYellow'}),
+    'obj_story05': (3, {'Brick', 'Glass'}),
+    'obj_story06': (3, {'Plank', 'Glass', 'WoolYellow'}),
+    # batch 3 props
+    'sign1':     (2, {'Stone', 'WoolWhite'}),
+    'sign5':     (2, {'Stone', 'WoolRed'}),
+    'chair1':    (1, {'WoolBlack'}),
+    'table1':    (1, {'Stone'}),
+    'cart1':     (2, {'Stone', 'WoolRed'}),
+    'cart2':     (2, {'WoolRed', 'WoolWhite'}),
+    'cart1a':    (2, {'WoolBlue', 'WoolRed'}),
+    'busstop':   (2, {'Glass', 'Stone'}),
+    'fountain':  (2, {'DiamondOre', 'Stone'}),  # water renders as DiamondOre anchor
+    'statue1':   (2, {'Stone', 'Cobble'}),
+    'mailbox2':  (2, {'Stone', 'WoolWhite'}),   # white pillar box (default-palette source)
+    'newsbox2':  (2, {'WoolYellow', 'WoolBlack'}),
+    'trashcan2': (3, {'Stone', 'WoolBlack', 'WoolRed'}),
+    'stlight1':  (2, {'Stone', 'Glowstone'}),
+    'trlight1':  (2, {'WoolBlack', 'Glowstone'}),
+    'container1':(2, {'WoolRed', 'Stone'}),
+    'fence1':    (1, {'Stone'}),
+    'column1':   (1, {'Stone'}),
+    'mushroom1': (2, {'WoolRed', 'WoolWhite'}),
+    'planter1':  (3, {'Leaves', 'Stone', 'Log'}),
+    'trellis':   (2, {'WoolWhite', 'WoolGreen'}),
+    'stage':     (2, {'Stone', 'Glass'}),        # grey stage + cyan backdrop
+    'playgrnd1': (2, {'Plank', 'WoolGreen'}),   # timber frame + green
+    'grill':     (1, {'WoolBlack'}),
+    'campfire':  (3, {'Log', 'Stone'}),
+    'dogstand':  (2, {'Glass', 'WoolYellow'}),
+    'rubbish1':  (1, {'Log'}),
 }
-HEIGHT_WHITELIST = {'tree2': 19}
+HEIGHT_WHITELIST = {'tree2': 19, 'sign1': 19, 'sign5': 19}   # tall thin poles, y-guard in stamper
+FLAT_OK = {'sidewalk2', 'sign1', 'sign5', 'curb2'}             # flat pavement tiles & 1-deep sign plates
 
 def load(path):
     d = open(path, 'rb').read()
@@ -86,7 +137,8 @@ def main():
         size, vox, pal = load(os.path.join(dst, fn))
         W, H, D = size
         # 1. size sanity
-        if W < 2 or D < 2 or H < 2 or H > HEIGHT_WHITELIST.get(name, 16):
+        flat_ok = name in FLAT_OK  # thin/flat pieces: 1-deep signs, 1-tall pavement
+        if W < 2 or D < (1 if flat_ok else 2) or H < (1 if flat_ok else 2) or H > HEIGHT_WHITELIST.get(name, 16):
             fails.append(f'{name}: bad size {W}x{H}x{D}')
         if len(vox) == 0:
             fails.append(f'{name}: EMPTY')

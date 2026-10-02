@@ -140,6 +140,94 @@ ROLE = {
         (252, 100, 0):  'WoolYellow',
         (152, 204, 252):'Glass',
     },
+    'obj_store06': {
+        (168, 168, 168):'Brick',         # MAIN WALL (168 dominates here)
+        (136, 136, 136):'Cobble',        # secondary grey
+        (32, 32, 32):   'WoolBlack', (236, 236, 236):'WoolWhite',
+        (204, 252, 252):'Glass', (84, 84, 84):'Cobble',
+    },
+    'obj_store07': {
+        (136, 136, 136):'Plank', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass', (84, 84, 84):'Cobble',
+    },
+    'obj_store08': {
+        (136, 136, 136):'Sand', (184, 184, 184):'WoolWhite', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (116, 116, 116):'Cobble',
+    },
+    'obj_store09': {
+        (136, 136, 136):'WoolWhite', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (236, 236, 236):'WoolWhite', (84, 84, 84):'Cobble',
+    },
+    'obj_store10': {
+        (136, 136, 136):'Brick', (168, 168, 168):'WoolWhite',
+        (32, 32, 32):'WoolBlack', (184, 184, 184):'Cobble',
+    },
+    'obj_store11': {
+        (136, 136, 136):'Plank', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass', (84, 84, 84):'Cobble',
+    },
+    'obj_store12': {
+        (136, 136, 136):'Sand', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass', (116, 116, 116):'Cobble',
+    },
+    'obj_store13': {
+        (136, 136, 136):'WoolWhite', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass', (116, 116, 116):'Cobble',
+    },
+    'obj_store14': {
+        (136, 136, 136):'Plank', (32, 32, 32):'WoolBlack',
+        (84, 84, 84):'Cobble', (220, 220, 220):'WoolWhite', (204, 252, 252):'Glass',
+    },
+    'obj_store15': {
+        (136, 136, 136):'Brick', (168, 168, 168):'WoolWhite',
+        (252, 204, 100):'WoolYellow',   # big yellow band
+        (32, 32, 32):'WoolBlack', (84, 84, 84):'Cobble',
+    },
+    'obj_store16': {
+        (136, 136, 136):'Sand', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass', (84, 84, 84):'Cobble',
+    },
+    'obj_store17': {
+        (136, 136, 136):'Plank', (220, 220, 220):'WoolWhite', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (236, 236, 236):'WoolWhite',
+    },
+    'obj_house3': {
+        (220, 220, 220):'WoolWhite',    # white wall 56k
+        (152, 152, 100):'Plank',        # khaki timber 44k
+        (116, 116, 116):'Cobble', (168, 168, 168):'Stone',
+        (32, 32, 32):'WoolBlack', (204, 252, 252):'Glass',
+    },
+    'obj_house4': {
+        (236, 236, 236):'WoolWhite',    # near-white wall 155k
+        (68, 68, 68):'WoolBlack', (168, 168, 168):'Stone',
+        (152, 204, 252):'Glass', (184, 184, 184):'Cobble',
+    },
+    'obj_house7': {
+        (199, 5, 24):'Brick',           # all-red brick chapel
+        (199, 15, 25):'Brick', (199, 17, 22):'Brick', (199, 22, 22):'Brick', (199, 18, 22):'Brick',
+    },
+    'obj_house8': {
+        (152, 152, 152):'WoolWhite',    # light grey wall
+        (184, 184, 184):'Stone', (168, 168, 168):'Cobble',
+        (220, 220, 220):'WoolWhite', (84, 84, 84):'Cobble',
+    },
+    'obj_story03': {
+        (136, 136, 136):'Plank', (168, 168, 168):'Stone',
+        (204, 252, 252):'Glass', (252, 252, 204):'WoolYellow',
+        (152, 204, 252):'Glass', (116, 116, 116):'Cobble',
+    },
+    'obj_story04': {
+        (136, 136, 136):'Sand', (168, 168, 168):'Plank',   # 9.6k trim = timber beams
+        (252, 252, 204):'WoolYellow', (116, 116, 116):'Cobble',
+    },
+    'obj_story05': {
+        (136, 136, 136):'Brick', (168, 168, 168):'Stone',
+        (204, 252, 252):'Glass', (116, 116, 116):'Cobble', (152, 204, 252):'Glass',
+    },
+    'obj_story06': {
+        (136, 136, 136):'Plank', (168, 168, 168):'Stone',
+        (204, 252, 252):'Glass', (252, 252, 204):'WoolYellow', (116, 116, 116):'Cobble',
+    },
 }
 
 # anchor colors by block name — role targets (keep in sync with vox_lint/BlockForColor)

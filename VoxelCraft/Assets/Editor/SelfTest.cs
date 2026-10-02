@@ -1048,8 +1048,15 @@ namespace VoxelCraft.Editor
                 // parse + role census + in-world stamping for the 4 new buildings.
                 string[] m40Names = { "obj_store01", "obj_house1", "obj_house2", "obj_house6",
                     "obj_store02", "obj_store03", "obj_store04", "obj_store05",
-                    "obj_story01", "obj_story02" };
-                int[] m40MinSolid = { 3000, 3000, 2500, 2000, 3000, 3000, 3000, 3000, 2000, 2000 };
+                    "obj_story01", "obj_story02",
+                    "obj_store06", "obj_store07", "obj_store08", "obj_store09",
+                    "obj_store10", "obj_store11", "obj_store12", "obj_store13",
+                    "obj_store14", "obj_store15", "obj_store16", "obj_store17",
+                    "obj_house3", "obj_house4", "obj_house7", "obj_house8",
+                    "obj_story03", "obj_story04", "obj_story05", "obj_story06" };
+                int[] m40MinSolid = { 3000, 3000, 2500, 2000, 3000, 3000, 3000, 3000, 2000, 2000,
+                    5000, 2500, 2500, 2500, 2500, 2500, 5000, 5000, 2500, 5000, 5000, 5000,
+                    5000, 5000, 2000, 2500, 2000, 1500, 2000, 2000 };
                 bool m40All = true;
                 var m40Detail = new List<string>();
                 for (int bIdx40 = 0; bIdx40 < m40Names.Length; bIdx40++)
@@ -1064,7 +1071,7 @@ namespace VoxelCraft.Editor
                             if (t != BlockType.Air) { bsolid++; btypes.Add(t); }
                         }
                     }
-                    bool okB = bvox != null && bsolid >= m40MinSolid[bIdx40] && btypes.Count >= 3 &&
+                    bool okB = bvox != null && bsolid >= m40MinSolid[bIdx40] && btypes.Count >= 2 &&  // house7=all-brick types=2; roles gated offline by vox_lint
                                bvox.Width <= 32 && bvox.Height <= 14;
                     m40All &= okB;
                     m40Detail.Add($"{m40Names[bIdx40]}:{bvox?.Width}x{bvox?.Height}x{bvox?.Depth} solid={bsolid} types={btypes.Count}{(okB ? "" : " FAIL")}");

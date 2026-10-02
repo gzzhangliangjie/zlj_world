@@ -179,10 +179,23 @@ namespace VoxelCraft.Gen
             "fence2", "stlight", "trashcan", "planter", // street props
             "bench3", "bench4", "hydrant", "pumpkin",   // batch 2 street props
             "trlight2", "newsbox1", "cone1",
+            // batch 3 street props (2026-10-02)
+            "sidewalk2", "curb2", "sign1", "sign5", "chair1", "table1",
+            "cart1", "cart2", "cart1a", "busstop", "fountain", "statue1",
+            "mailbox2", "newsbox2", "trashcan2", "stlight1", "trlight1",
+            "container1", "fence1", "column1", "mushroom1", "planter1",
+            "trellis", "stage", "playgrnd1", "grill", "campfire", "dogstand",
+            "rubbish1",
             "cottage", "house5",
             "obj_store01", "obj_house1", "obj_house2", "obj_house6",
             "obj_store02", "obj_store03", "obj_store04", "obj_store05",
             "obj_story01", "obj_story02",
+            // batch 3 buildings
+            "obj_store06", "obj_store07", "obj_store08", "obj_store09",
+            "obj_store10", "obj_store11", "obj_store12", "obj_store13",
+            "obj_store14", "obj_store15", "obj_store16", "obj_store17",
+            "obj_house3", "obj_house4", "obj_house7", "obj_house8",
+            "obj_story03", "obj_story04", "obj_story05", "obj_story06",
         };
 
         /// <summary>
