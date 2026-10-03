@@ -70,6 +70,9 @@ namespace VoxelCraft.Editor
             // row 4 (z=-30): bullet train (converted CC-BY GLB, single EMU)
             place("bullettrain", new Vector3(6f, 0f, -32f), 90f);
 
+            // row 5 (z=-40): HXD3D electric loco (M48, Sketchfab CC-BY rip)
+            place("hxd3d", new Vector3(6f, 0f, -42f), 90f);
+
             // player-height reference bar (1.98u) at the row-2 end
             var refGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             refGo.name = "PlayerRef";
@@ -82,8 +85,8 @@ namespace VoxelCraft.Editor
             var gnd = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.DestroyImmediate(gnd.GetComponent<BoxCollider>());
             gnd.name = "Ground";
-            gnd.transform.localScale = new Vector3(90f, 0.2f, 60f);
-            gnd.transform.position = new Vector3(2f, -0.1f, -14f);
+            gnd.transform.localScale = new Vector3(90f, 0.2f, 74f);
+            gnd.transform.position = new Vector3(2f, -0.1f, -21f);
             gnd.GetComponent<Renderer>().material.color = new Color(0.44f, 0.55f, 0.38f);
 
             // rails under row 1
@@ -96,7 +99,7 @@ namespace VoxelCraft.Editor
                 tie.GetComponent<Renderer>().material.color = new Color(0.35f, 0.25f, 0.15f);
             }
 
-            cam.transform.position = new Vector3(2f, 24f, 22f);
+            cam.transform.position = new Vector3(2f, 24f, 28f);
             cam.transform.rotation = Quaternion.Euler(42f, 180f, 0f);
 
             var rt = new RenderTexture(1280, 800, 24);

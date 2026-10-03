@@ -281,6 +281,24 @@ namespace VoxelCraft.Core
             }
             bullet.BuildConsist(new Vector2Int(20, bulletZ));
 
+            // Fifth demo track (z=40): the HXD3D electric locomotive — real-world
+            // CR HXD3D, ripped from a CC-BY Sketchfab model via Tools/sketchfab_rip.py
+            // (sketchfang decrypt pipeline) then voxelized + converted (M48).
+            var hxdTrack = new GameObject("HxdTrack");
+            var hxd = hxdTrack.AddComponent<Creatures.TrackTrain>();
+            hxd.world = worldRoot;
+            hxd.locomotiveName = "hxd3d";
+            hxd.carNames = new string[] { };            // single loco, no consist
+            hxd.carGap = 0.15f;
+            int hxdZ = 40;
+            for (int rx5 = 6; rx5 < 60; rx5++)
+            {
+                int ry5 = worldRoot.sim.SurfaceHeight(rx5, hxdZ, true) + 1;
+                var remeshed6 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx5, ry5, hxdZ, Core.BlockType.RailX, remeshed6);
+            }
+            hxd.BuildConsist(new Vector2Int(20, hxdZ));
+
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");
             var dayNight = envGo.AddComponent<Environment.DayNightCycle>();
