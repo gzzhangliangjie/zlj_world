@@ -122,9 +122,11 @@ namespace VoxelCraft.Editor
             cam.fieldOfView = 46f;
             // camera: player eye height ON the rails, carts ahead — like the
             // reference screenshot (flat grass, ties receding, cart dominant)
-            float eyeY = (float)targetY + 1.75f;
-            cam.transform.position = new Vector3(8.5f, eyeY, z0 + 0.5f);
-            cam.transform.LookAt(new Vector3(15f, eyeY - 0.9f, z0 + 0.5f));
+            float eyeY = (float)targetY + 1.9f;
+            // 3/4 view: stand off the track's left side, carts on the near
+            // track receding to the right — reads instantly as "minecart on rail"
+            cam.transform.position = new Vector3(9.5f, eyeY, z0 + 3.6f);
+            cam.transform.LookAt(new Vector3(16.5f, eyeY - 1.1f, z0 + 0.1f));
 
             // project each CART to screen — the crop will follow these numbers
             var consist = GameObject.Find("ConsistRoot");
@@ -142,6 +144,60 @@ namespace VoxelCraft.Editor
                 var sp = cam.WorldToScreenPoint(new Vector3(ax + 0.5f, ay, z0 + 0.5f));
                 Debug.Log($"[M42W] rail x={ax} screen=({sp.x:F0},{sp.y:F0}) w={sp.z:F1}");
             }
+
+            // marker pass: render a frame, then stamp each car's bounds corners red
+            var rtM = new RenderTexture(1520, 960, 24);
+            cam.targetTexture = rtM;
+            cam.Render();
+            RenderTexture.active = rtM;
+            var markerTex = new Texture2D(1520, 960, TextureFormat.RGB24, false);
+            markerTex.ReadPixels(new Rect(0, 0, 1520, 960), 0, 0);
+            markerTex.Apply();
+            var px = markerTex.GetPixels32();
+            void Dot(int sx, int sy)
+            {
+                for (int oy = -3; oy <= 3; oy++)
+                    for (int ox = -3; ox <= 3; ox++)
+                    {
+                        int xx = sx + ox, yy = sy + oy;
+                        if (xx < 0 || yy < 0 || xx >= 1520 || yy >= 960) continue;
+                        px[yy * 1520 + xx] = new Color32(255, 0, 0, 255);
+                    }
+            }
+            var cons = GameObject.Find("ConsistRoot");
+            if (cons != null)
+                foreach (Transform car in cons.transform)
+                {
+                    var rs = car.GetComponentsInChildren<Renderer>();
+                    if (rs.Length == 0) continue;
+                    var b = rs[0].bounds;
+                    foreach (var r2 in rs) b.Encapsulate(r2.bounds);
+                    Vector3[] corners =
+                    {
+                        new Vector3(b.min.x, b.min.y, b.min.z), new Vector3(b.max.x, b.min.y, b.min.z),
+                        new Vector3(b.min.x, b.max.y, b.min.z), new Vector3(b.max.x, b.max.y, b.min.z),
+                        new Vector3(b.min.x, b.min.y, b.max.z), new Vector3(b.max.x, b.min.y, b.max.z),
+                        new Vector3(b.min.x, b.max.y, b.max.z), new Vector3(b.max.x, b.max.y, b.max.z),
+                    };
+                    foreach (var c3 in corners)
+                    {
+                        var sp = cam.WorldToScreenPoint(c3);
+                        if (sp.z > 0) Dot((int)sp.x, (int)sp.y);
+                    }
+                    Debug.Log($"[M42W] MARK {car.name} world b={b}");
+                    var ce = car.rotation.eulerAngles;
+                    var be = car.Find("Body") != null ? car.Find("Body").rotation.eulerAngles : Vector3.zero;
+                    Debug.Log($"[M42W] CAR {car.name} rot=({ce.x:F1},{ce.y:F1},{ce.z:F1}) body=({be.x:F1},{be.y:F1},{be.z:F1})");
+                    foreach (var rr in car.GetComponentsInChildren<Renderer>())
+                    {
+                        var ee = rr.transform.rotation.eulerAngles;
+                        Debug.Log($"[M42W] PLATE {rr.name} rot=({ee.x:F1},{ee.y:F1},{ee.z:F1})");
+                    }
+                }
+            markerTex.SetPixels32(px);
+            markerTex.Apply();
+            System.IO.File.WriteAllBytes("D:/zlj_world/_shots/m42_marked.png", markerTex.EncodeToPNG());
+            Debug.Log("[M42W] saved m42_marked.png");
 
             // render
             var rt = new RenderTexture(1520, 960, 24);

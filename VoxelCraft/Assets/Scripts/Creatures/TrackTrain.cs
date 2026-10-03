@@ -105,9 +105,18 @@ namespace VoxelCraft.Creatures
                 var geoAsset = Resources.Load<TextAsset>("Geo/" + n + ".geo");
                 if (skin != null && geoAsset != null)
                 {
-                    BedrockGeoImporter.Build(carGo.transform, geoAsset, null, skin, 0f, null,
+                    // Body wrapper survives PlaceConsist's t.rotation writes:
+                    // the wrapper carries the geo, the yaw fix lives inside.
+                    var bodyGo = new GameObject("Body");
+                    bodyGo.transform.SetParent(carGo.transform, false);
+                    BedrockGeoImporter.Build(bodyGo.transform, geoAsset, null, skin, 0f, null,
                         out _, out _, out _, out _);
                     carGo.transform.localScale = Vector3.one * unitScale;
+                    // Bedrock v1.8 cart geo (minecart) is authored with its
+                    // LONG axis on X while TrackTrain orients cars along the
+                    // rail with Unity Z-forward — yaw the body a quarter turn
+                    // so the tub sits square on the track.
+                    if (n == "minecart") bodyGo.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
                     var rends = carGo.GetComponentsInChildren<Renderer>();
                     if (rends.Length > 0)
                     {
@@ -128,12 +137,14 @@ namespace VoxelCraft.Creatures
                 if (n == "minecart")
                 {
                     const float R = 0.09f;       // wheel radius (u)
+                    // body yaws +90° (X↔Z swap), wheels parent to the car and
+                    // pre-swap their offsets so they land under the tub corners
                     float wx = 0.40f, wz0 = carHalf[carHalf.Count - 1] * 0.45f;
                     var wheelMat = Art.CreatureTextureFactory.GetSkinMaterial("minecart_skin");
                     Vector3[] wpos =
                     {
-                        new Vector3(-wx, R, -wz0), new Vector3(wx, R, -wz0),
-                        new Vector3(-wx, R,  wz0), new Vector3(wx, R,  wz0),
+                        new Vector3(-wz0, R, -wx), new Vector3(wz0, R, -wx),
+                        new Vector3(-wz0, R,  wx), new Vector3(wz0, R,  wx),
                     };
                     for (int wi = 0; wi < 4; wi++)
                     {
@@ -142,7 +153,7 @@ namespace VoxelCraft.Creatures
                         Object.Destroy(wh.GetComponent<Collider>());
                         wh.transform.SetParent(carGo.transform, false);
                         wh.transform.localPosition = wpos[wi];
-                        wh.transform.localRotation = Quaternion.Euler(0f, 0f, 90f); // axle along X
+                        wh.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // axle across track
                         wh.transform.localScale = new Vector3(R * 2f, 0.045f, R * 2f);
                         if (wheelMat != null) wh.GetComponent<Renderer>().sharedMaterial = wheelMat;
                     }
@@ -301,15 +312,19 @@ namespace VoxelCraft.Creatures
                 var t = cars[i];
                 if (fwd.sqrMagnitude > 1e-6f)
                 {
-                    t.rotation = Quaternion.LookRotation(fwd.normalized, Vector3.up);
+                    // flatten heading: rails are flat plates, the consist must
+                    // stay level (a pitched forward vector tipped carts 26°)
+                    var flatFwd = new Vector3(fwd.x, 0f, fwd.z);
+                    t.rotation = Quaternion.LookRotation(flatFwd.sqrMagnitude > 1e-8f ? flatFwd.normalized : Vector3.forward, Vector3.up);
                 }
                 t.position = pos;
                 int ci = Mathf.Clamp(Mathf.RoundToInt(arc), 0, cells.Count - 1);
                 if (RailBlockAt(cells[ci]) != BlockType.Air) RailsUnder++;
                 if (i == 0)
                 {
+                    var ff = new Vector3(fwd.x, 0f, fwd.z);
                     transform.SetPositionAndRotation(pos,
-                        fwd.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(fwd.normalized, Vector3.up) : transform.rotation);
+                        ff.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(ff.normalized, Vector3.up) : transform.rotation);
                 }
             }
         }
