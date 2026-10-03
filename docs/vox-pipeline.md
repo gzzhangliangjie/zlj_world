@@ -20,6 +20,12 @@ mmmm 原件 (.vox, D:/zlj_world/_refs/mmmm/vox/obj_*.vox)
    - 立着的竖轴在 Z → swap(y,z)：tree1-4、planter、stlight、house 系列
    - 竖轴本来就在 Y → 不换：fence2（16×2×18 的 2 格高绿篱）、trashcan（6×5×6 方桶）
    - **换轴判据是形状语义（树干细、灯杆细），不是"z 跨度 > y 跨度"这种数值规则**——fence2 的 z 跨度 18 > y 跨度 2，但它本来就是 Y-up 的
+1a. **坐标映射总结（M44 火车车厢三轮翻车教训，ccc83f0）**：
+   - **每根轴必须用"结构证据"指认，不许按跨度数值推**。scene_train.vox 实测：X=列车长度、**Y=车宽**（两条钢轨恰在 y=27/y=36，轨距 9 格）、Z=高度——"Y 竖直"的惯性猜测直接让车厢绕长轴滚 90°、窗带朝天
+   - **场景文件的辅助结构就是轴标定器**：铁轨/枕木/地面能同时锁定"长/宽/高"三轴。剖子模型前先在场景里找这些参照物
+   - **从场景里 carve 独立模型时的正确姿势**：先定旧坐标三轴语义（长/宽/高各是哪根），再写映射 `creature x=旧宽轴, y=旧高轴, z=旧长轴`（convert 的 v2 是 `(x,z,y)`：creature y=vox z、creature z=vox y），最后用**已知特征的位置**验证——车窗应落在高度 55%-75% 的侧壁腰线上、轮子应在 y=0
+   - **验证必须看渲染产物**：geo bbox 对（X34 Y36 Z92）但窗朝天照样发生——bbox 只证"尺寸对"不证"朝向对"。像素审计窗带高度（应在车身中部 40-70%，出现 >85% 或 <15% 即侧翻/倒扣）+ vision 问"窗在哪面"双确认
+   - **写 .vox 的调色板映射**：XYZI 的色号 j 对应 RGBA 区第 j-1 项（probe 实测），remap 时色放 file[k]、号写 k+1；MAIN chunk 头是 contentLen=0 + childrenLen=总长（写反则 load 返回空模型，静默不报错）
 2. **高度硬上限 16**（ChunkHeight=80，山顶 baseY 可到 ~60，baseY+H+1 必须 ≤79）。超了就 sub=2 减半（stlight 38×4×32 → swap → 19×16×2）。tree2 H=19 是已知例外，靠 StampStructures 的 y 越界 guard 兜底
 3. **调色板按角色重映射，不是最近邻碰运气**（锚色 = BlockForColor 表里的 Color32，改表必须两边同步）：
    - 叶绿 (100,204,0) → Leaves (96,168,60)
