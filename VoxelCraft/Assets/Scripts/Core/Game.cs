@@ -253,7 +253,7 @@ namespace VoxelCraft.Core
             var diesel = dTrack.AddComponent<Creatures.TrackTrain>();
             diesel.world = worldRoot;
             diesel.locomotiveName = "train2";
-            diesel.carNames = new[] { "coach3" };
+            diesel.carNames = new[] { "coach3", "train3" };   // coach + flatcar (63-vox deck)
             diesel.carGap = 0.15f;
             int dieselZ = 32;
             for (int rx3 = 6; rx3 < 60; rx3++)

@@ -61,9 +61,9 @@ namespace VoxelCraft.Editor
             for (int i = 0; i < row2.Length; i++)
                 place(row2[i], new Vector3(row2x[i], 0f, -10f), 90f);
 
-            // row 3 (z=-20): diesel locomotive train2 + one coach (M45)
-            float[] row3x = { -20f, -9.6f };
-            string[] row3 = { "train2", "coach3" };
+            // row 3 (z=-20): diesel train2 + coach + flatcar train3 (M45/M46)
+            float[] row3x = { -20f, -9.6f, -1.4f };
+            string[] row3 = { "train2", "coach3", "train3" };
             for (int i = 0; i < row3.Length; i++)
                 place(row3[i], new Vector3(row3x[i], 0f, -20f), 90f);
 
