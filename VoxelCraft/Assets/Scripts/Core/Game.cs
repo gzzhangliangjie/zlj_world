@@ -264,6 +264,23 @@ namespace VoxelCraft.Core
             }
             diesel.BuildConsist(new Vector2Int(22, dieselZ));
 
+            // Fourth demo track (z=36): the Shinkansen-style bullet train
+            // (veh_bullettrain.vox, converted from a CC-BY poly.pizza GLB).
+            var bTrack = new GameObject("BulletTrack");
+            var bullet = bTrack.AddComponent<Creatures.TrackTrain>();
+            bullet.world = worldRoot;
+            bullet.locomotiveName = "bullettrain";
+            bullet.carNames = new string[] { };            // single-unit EMU, no trailers
+            bullet.carGap = 0.15f;
+            int bulletZ = 36;
+            for (int rx4 = 6; rx4 < 60; rx4++)
+            {
+                int ry4 = worldRoot.sim.SurfaceHeight(rx4, bulletZ, true) + 1;
+                var remeshed5 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx4, ry4, bulletZ, Core.BlockType.RailX, remeshed5);
+            }
+            bullet.BuildConsist(new Vector2Int(20, bulletZ));
+
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");
             var dayNight = envGo.AddComponent<Environment.DayNightCycle>();
