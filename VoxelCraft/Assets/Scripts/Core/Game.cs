@@ -247,6 +247,23 @@ namespace VoxelCraft.Core
             }
             carts.BuildConsist(new Vector2Int(24, cartZ));
 
+            // Third demo track (z=32): the diesel locomotive train2 hauling
+            // one passenger coach — same geo pipeline, loco swapped (M45).
+            var dTrack = new GameObject("DieselTrack");
+            var diesel = dTrack.AddComponent<Creatures.TrackTrain>();
+            diesel.world = worldRoot;
+            diesel.locomotiveName = "train2";
+            diesel.carNames = new[] { "coach3" };
+            diesel.carGap = 0.15f;
+            int dieselZ = 32;
+            for (int rx3 = 6; rx3 < 60; rx3++)
+            {
+                int ry3 = worldRoot.sim.SurfaceHeight(rx3, dieselZ, true) + 1;
+                var remeshed4 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx3, ry3, dieselZ, Core.BlockType.RailX, remeshed4);
+            }
+            diesel.BuildConsist(new Vector2Int(22, dieselZ));
+
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");
             var dayNight = envGo.AddComponent<Environment.DayNightCycle>();
