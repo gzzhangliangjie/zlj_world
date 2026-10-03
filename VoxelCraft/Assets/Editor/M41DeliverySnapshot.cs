@@ -50,40 +50,40 @@ namespace VoxelCraft.Editor
 
             // row 1 (z=0): coupled consist — train 9.7u + 2 coaches 9.1u
             // (46-vox carved from scene_train, full 27..70 span), 0.15u gaps
-            float[] row1x = { -20f, -10.35f, -0.9f };
+            float[] row1x = { -10f, -0.35f, 9.1f };
             string[] consist = { "train", "coach3", "coach3" };
             for (int i = 0; i < consist.Length; i++)
                 place(consist[i], new Vector3(row1x[i], 0f, 0f), 90f);
 
             // row 2 (z=-10): tank+trucks+ambulance+bus, each ~6.7-12.9u long
             string[] row2 = { "tank1", "truck1", "truck4", "truck6", "ambulance", "bus" };
-            float[] row2x = { -20f, -11.5f, -4.4f, 2.7f, 9.8f, 17.2f };
+            float[] row2x = { -10f, -1.8f, 4.9f, 11.5f, 18.1f, 25.2f };
             for (int i = 0; i < row2.Length; i++)
                 place(row2[i], new Vector3(row2x[i], 0f, -10f), 90f);
 
             // row 3 (z=-20): diesel train2 + coach + flatcar train3 (M45/M46)
-            float[] row3x = { -20f, -9.6f, -1.4f };
+            float[] row3x = { -10f, 0.4f, 8.6f };
             string[] row3 = { "train2", "coach3", "train3" };
             for (int i = 0; i < row3.Length; i++)
                 place(row3[i], new Vector3(row3x[i], 0f, -20f), 90f);
 
             // row 4 (z=-30): bullet train + jeremy trailer (same CC-BY family)
-            place("bullettrain", new Vector3(1.5f, 0f, -32f), 90f);
-            place("traincar", new Vector3(14f, 0f, -32f), 90f);
+            place("bullettrain", new Vector3(10.5f, 0f, -32f), 90f);
+            place("traincar", new Vector3(23f, 0f, -32f), 90f);
 
             // row 5 (z=-40): HXD3D electric loco (M48, Sketchfab CC-BY rip)
-            place("hxd3d", new Vector3(0f, 0f, -42f), 90f);
+            place("hxd3d", new Vector3(9f, 0f, -42f), 90f);
 
             // row 6 (z=-52): CRH2 Hexie EMU head car (M50, procedural)
-            place("crh2", new Vector3(0f, 0f, -52f), 90f);
-            place("cr400bf", new Vector3(13f, 0f, -52f), 90f);
+            place("crh2", new Vector3(9f, 0f, -52f), 90f);
+            place("cr400bf", new Vector3(22f, 0f, -52f), 90f);
 
             // player-height reference bar (1.98u) at the row-2 end
             var refGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             refGo.name = "PlayerRef";
             Object.DestroyImmediate(refGo.GetComponent<BoxCollider>());
             refGo.transform.localScale = new Vector3(0.6f, 1.98f, 0.6f);
-            refGo.transform.position = new Vector3(27f, 0.99f, -5f);
+            refGo.transform.position = new Vector3(36f, 0.99f, -5f);
             refGo.GetComponent<Renderer>().material.color = new Color(0.95f, 0.78f, 0.15f);
 
             // yellow ground plane so subjects are grounded
@@ -91,7 +91,7 @@ namespace VoxelCraft.Editor
             Object.DestroyImmediate(gnd.GetComponent<BoxCollider>());
             gnd.name = "Ground";
             gnd.transform.localScale = new Vector3(90f, 0.2f, 100f);
-            gnd.transform.position = new Vector3(2f, -0.1f, -28f);
+            gnd.transform.position = new Vector3(11f, -0.1f, -28f);
             gnd.GetComponent<Renderer>().material.color = new Color(0.44f, 0.55f, 0.38f);
 
             // rails under row 1
@@ -104,7 +104,7 @@ namespace VoxelCraft.Editor
                 tie.GetComponent<Renderer>().material.color = new Color(0.35f, 0.25f, 0.15f);
             }
 
-            cam.transform.position = new Vector3(2f, 24f, 28f);
+            cam.transform.position = new Vector3(8f, 24f, 28f);
             cam.transform.rotation = Quaternion.Euler(42f, 180f, 0f);
 
             var rt = new RenderTexture(1280, 800, 24);
