@@ -372,7 +372,10 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
         'minecraft:geometry': [{
             'description': {
                 'identifier': f'geometry.{name}',
-                'texture_width': 128, 'texture_height': texH[0],
+                # must equal the SAVED png height (pow2 finalH): UVs are
+                # normalized by this number — texH[0] (unpadded content
+                # height) made lower faces sample the black pad below
+                'texture_width': 128, 'texture_height': finalH,
                 'visible_bounds_width': (max(W, D) * scale) / 16 + 1,
                 'visible_bounds_height': (H * scale) / 16 + 0.5,
                 'visible_bounds_offset': [0, (H * scale) / 32, 0],
