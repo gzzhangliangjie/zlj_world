@@ -48,10 +48,10 @@ namespace VoxelCraft.Editor
                     target.x - b.center.x, target.y - b.min.y, target.z - b.center.z);
             };
 
-            // row 1 (z=0): coupled consist — train 9.7u + 2 coaches 3.8u,
-            // 0.15u coupling gaps (gap math in M44 notes)
-            float[] row1x = { -20f, -13.12f, -9.21f };
-            string[] consist = { "train", "coach1", "coach2" };
+            // row 1 (z=0): coupled consist — train 9.7u + 2 coaches 9.1u
+            // (46-vox carved from scene_train, full 27..70 span), 0.15u gaps
+            float[] row1x = { -20f, -10.35f, -0.9f };
+            string[] consist = { "train", "coach3", "coach3" };
             for (int i = 0; i < consist.Length; i++)
                 place(consist[i], new Vector3(row1x[i], 0f, 0f), 90f);
 
