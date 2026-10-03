@@ -108,7 +108,7 @@ $ErrPatterns = @(
     "It looks like another Unity instance",
     "scripts have compiler errors"
 )
-$GoodMarkers = @("SELFTEST PASS", "WEBGL BUILD OK", "WINDOWS BUILD OK", "MODEL SNAPSHOT OK", "M34CONTROL RESULT: PASS", "VehGifs] RESULT: PASS", "M41TRAIN RESULT: PASS")
+$GoodMarkers = @("SELFTEST PASS", "WEBGL BUILD OK", "WINDOWS BUILD OK", "MODEL SNAPSHOT OK", "M34CONTROL RESULT: PASS", "VehGifs] RESULT: PASS", "M41TRAIN RESULT: PASS", "M42CART RESULT: PASS")
 $BadMarkers  = @("SELFTEST FAIL", "WEBGL BUILD FAIL", "WINDOWS BUILD FAIL", "SNAPSHOT FAIL", "M34CONTROL RESULT: FAIL", "VehGifs] RESULT: FAIL")
 
 function Get-LogSummary([string]$LogPath) {

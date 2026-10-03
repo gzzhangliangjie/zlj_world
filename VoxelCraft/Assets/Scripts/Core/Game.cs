@@ -225,6 +225,25 @@ namespace VoxelCraft.Core
             }
             track.BuildConsist(new Vector2Int(20, trackZ));
 
+            // Second demo track one block south: official minecart geo (1.12
+            // unit scale — NO 1.585 vehicle multiplier) hauling cargo carts.
+            var cartTrack = new GameObject("MinecartTrack");
+            var carts = cartTrack.AddComponent<Creatures.TrackTrain>();
+            carts.world = worldRoot;
+            carts.locomotiveName = "minecart";
+            carts.carNames = new[] { "minecart", "minecart" };
+            carts.unitScale = 0.5f;        // bedrock renders minecart at half scale (1.8 double-space geo)
+            carts.carGap = 0.15f;
+            carts.maxSpeed = 4.5f;
+            int cartZ = 28;
+            for (int rx2 = 6; rx2 < 60; rx2++)
+            {
+                int ry2 = worldRoot.sim.SurfaceHeight(rx2, cartZ, true) + 1;
+                var remeshed3 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx2, ry2, cartZ, Core.BlockType.RailX, remeshed3);
+            }
+            carts.BuildConsist(new Vector2Int(24, cartZ));
+
             // Day/night cycle + weather, wired into the interaction (clock tool).
             var envGo = new GameObject("Environment");
             var dayNight = envGo.AddComponent<Environment.DayNightCycle>();

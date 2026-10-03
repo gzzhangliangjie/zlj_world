@@ -41,6 +41,10 @@ namespace VoxelCraft.Creatures
         public float accel = 1.6f;
         public float brake = 3.2f;
         public float carGap = 0.35f;        // coupler gap (u)
+        /// <summary>Model scale: mmmm geo needs the M34 1.585 vehicle
+        /// multiplier; official Bedrock geo (minecart) is already 1/16 u per
+        /// px, so it runs at 1.0.</summary>
+        public float unitScale = 1.585f;
 
         // driver input (Update forwards; Tick consumes)
         public float throttleIn;            // -1..1
@@ -78,7 +82,7 @@ namespace VoxelCraft.Creatures
             if (Seat != null) return;
             Seat = new GameObject("Seat").transform;
             Seat.SetParent(transform, false);
-            Seat.localPosition = new Vector3(0f, 2.3f, 0f);
+            Seat.localPosition = new Vector3(0f, 1.4f * unitScale, 0f);
         }
 
         /// <summary>Build the consist. startCell must hold a Rail/RailX block;
@@ -103,7 +107,7 @@ namespace VoxelCraft.Creatures
                 {
                     BedrockGeoImporter.Build(carGo.transform, geoAsset, null, skin, 0f, null,
                         out _, out _, out _, out _);
-                    carGo.transform.localScale = Vector3.one * 1.585f; // M34: 1 vox = 0.198u
+                    carGo.transform.localScale = Vector3.one * unitScale;
                     var rends = carGo.GetComponentsInChildren<Renderer>();
                     if (rends.Length > 0)
                     {
@@ -130,7 +134,7 @@ namespace VoxelCraft.Creatures
             tailArc = cumBehind[cumBehind.Count - 1] + carHalf[carHalf.Count - 1];
 
             var col = gameObject.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.6f, 2.4f, carHalf[0] * 2f + 0.6f);
+            col.size = new Vector3(1.7f * unitScale / 1.585f, 1.6f * unitScale / 1.585f, carHalf[0] * 2f + 0.6f);
             col.center = new Vector3(0f, 1.2f, 0f);
 
             // seed the path at the anchor and extend for the whole consist
