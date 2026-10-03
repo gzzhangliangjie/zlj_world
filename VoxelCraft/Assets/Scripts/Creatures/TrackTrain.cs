@@ -122,6 +122,31 @@ namespace VoxelCraft.Creatures
                     Debug.LogError("[Train] missing geo/skin for " + n);
                     carHalf.Add(2f);
                 }
+                // Official minecart geo ships WITHOUT wheels (5 plates only —
+                // vanilla fakes it with the dark under-plate). Stamp four small
+                // hub wheels so the cart visibly rolls on the rail.
+                if (n == "minecart")
+                {
+                    const float R = 0.09f;       // wheel radius (u)
+                    float wx = 0.40f, wz0 = carHalf[carHalf.Count - 1] * 0.45f;
+                    var wheelMat = Art.CreatureTextureFactory.GetSkinMaterial("minecart_skin");
+                    Vector3[] wpos =
+                    {
+                        new Vector3(-wx, R, -wz0), new Vector3(wx, R, -wz0),
+                        new Vector3(-wx, R,  wz0), new Vector3(wx, R,  wz0),
+                    };
+                    for (int wi = 0; wi < 4; wi++)
+                    {
+                        var wh = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        wh.name = "wheel" + wi;
+                        Object.Destroy(wh.GetComponent<Collider>());
+                        wh.transform.SetParent(carGo.transform, false);
+                        wh.transform.localPosition = wpos[wi];
+                        wh.transform.localRotation = Quaternion.Euler(0f, 0f, 90f); // axle along X
+                        wh.transform.localScale = new Vector3(R * 2f, 0.045f, R * 2f);
+                        if (wheelMat != null) wh.GetComponent<Renderer>().sharedMaterial = wheelMat;
+                    }
+                }
                 cars.Add(carGo.transform);
             }
 
@@ -178,8 +203,11 @@ namespace VoxelCraft.Creatures
             // returns the rail y, so its top is g+1 either way.
             int g = world.sim.SurfaceHeight(c.x, c.y, true);
             var b0 = world.sim.GetBlock(c.x, g, c.y);
-            float y = (b0 == BlockType.Rail || b0 == BlockType.RailX) ? g + 1f : g + 1f;
-            path.Add(new Vector3(c.x + 0.5f, y + 1f / 16f + 0.02f, c.y + 0.5f));
+            // The rail is a 1/16 plate at the BOTTOM of its own block (its
+            // visible face sits at g + 1/16). SurfaceHeight returns the rail
+            // block itself, so ride height = rail block y + plate thickness.
+            float y = g + 1f / 16f + 0.02f;
+            path.Add(new Vector3(c.x + 0.5f, y, c.y + 0.5f));
         }
 
         /// <summary>Grow the path forward until it covers `need` arc length or

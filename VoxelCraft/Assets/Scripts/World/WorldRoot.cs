@@ -55,7 +55,17 @@ namespace VoxelCraft.World
             sim.SetBlock(pos.x, pos.y, pos.z, type, affected);
             for (int i = 0; i < affected.Count; i++)
             {
-                ApplyMeshes(affected[i]);
+                var ch = affected[i];
+                if (ch.dataReady && ch.solidMeshData != null)
+                {
+                    // MarkDirty only flags; the actual remesh normally happens
+                    // in the next sim.Step. Apply it now so edits are instant
+                    // (also the only path in edit mode / batch tests).
+                    ChunkMesher.Build(ch, sim, sim.tileRects, ch.solidMeshData, ch.waterMeshData);
+                    ch.meshDirty = false;
+                    ch.meshBuilt = true;
+                }
+                ApplyMeshes(ch);
             }
         }
 
