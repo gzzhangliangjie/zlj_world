@@ -27,8 +27,8 @@ namespace VoxelCraft.World
                 case BlockType.BedFoot:
                 case BlockType.BedHead: Bed(block, x, y, z, wx, wz, sim, tileRects, target); return true;
                 case BlockType.Fence: Fence(x, y, z, wx, wz, sim, tileRects, target); return true;
-                case BlockType.Rail: RailShape(x, y, z, tileRects[(int)TileId.RailNormal], target); return true;
-                case BlockType.RailX: RailShape(x, y, z, tileRects[(int)TileId.RailTurned], target); return true;
+                case BlockType.Rail: RailShape(x, y, z, tileRects[(int)TileId.RailNormal], false, target); return true;
+                case BlockType.RailX: RailShape(x, y, z, tileRects[(int)TileId.RailNormal], true, target); return true;
                 default: return false;
             }
         }
@@ -292,13 +292,48 @@ namespace VoxelCraft.World
         // The vanilla texture is a straight track (two rails + sleepers) drawn
         // diagonally-symmetric on the tile; rail_normal renders Z-running track
         // and rail_normal_turned the 90-deg-rotated variant for X-running track.
-        private static void RailShape(int x, int y, int z, Rect tile, MeshData target)
+        private static void RailShape(int x, int y, int z, Rect tile, bool rotate90, MeshData target)
         {
+            // rail_normal is a straight track running along Z (two vertical
+            // rail bars). For an east-west track the same texture is rotated a
+            // quarter turn — NOT rail_normal_turned, which is a CURVE piece.
             float top = y + 1f / 16f;
-            Quad(target,
-                new Vector3(x, top, z + 1f), new Vector3(x + 1f, top, z + 1f),
-                new Vector3(x + 1f, top, z), new Vector3(x, top, z),
-                tile, 1f);
+            if (!rotate90)
+            {
+                Quad(target,
+                    new Vector3(x, top, z + 1f), new Vector3(x + 1f, top, z + 1f),
+                    new Vector3(x + 1f, top, z), new Vector3(x, top, z),
+                    tile, 1f);
+            }
+            else
+            {
+                // 90° CW rotation of the SAME texture: swap the u/v mapping of
+                // the quad corners (a=b cyclically in UV space).
+                QuadRotated(target,
+                    new Vector3(x, top, z + 1f), new Vector3(x + 1f, top, z + 1f),
+                    new Vector3(x + 1f, top, z), new Vector3(x, top, z),
+                    tile, 1f);
+            }
+        }
+
+        // Same quad but UV corners rotated one step (0,0)->(1,0)->(1,1)->(0,1):
+        // rotates the sampled image 90° within the atlas cell.
+        private static void QuadRotated(
+            MeshData t, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Rect rect, float shade)
+        {
+            int vb = t.Vertices.Count;
+            t.Vertices.Add(a); t.Vertices.Add(b); t.Vertices.Add(c); t.Vertices.Add(d);
+            var u0 = new Vector2(rect.x, rect.y);
+            var u1 = new Vector2(rect.x + rect.width, rect.y);
+            var u2 = new Vector2(rect.x + rect.width, rect.y + rect.height);
+            var u3 = new Vector2(rect.x, rect.y + rect.height);
+            // original assignment a=u0 b=u1 c=u2 d=u3; rotate: a=u1 b=u2 c=u3 d=u0
+            t.Uvs.Add(u1); t.Uvs.Add(u2); t.Uvs.Add(u3); t.Uvs.Add(u0);
+            byte l = (byte)(Mathf.Clamp01(shade) * 255f);
+            var col = new Color32(l, l, l, 255);
+            t.Colors.Add(col); t.Colors.Add(col); t.Colors.Add(col); t.Colors.Add(col);
+            t.Indices.Add(vb); t.Indices.Add(vb + 1); t.Indices.Add(vb + 2);
+            t.Indices.Add(vb); t.Indices.Add(vb + 2); t.Indices.Add(vb + 3);
         }
     }
 }
