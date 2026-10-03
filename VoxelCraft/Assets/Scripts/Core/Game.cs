@@ -281,6 +281,25 @@ namespace VoxelCraft.Core
             }
             bullet.BuildConsist(new Vector2Int(20, bulletZ));
 
+            // Sixth demo track (z=44): CRH2 "Hexie" EMU head car
+            // (procedural voxel shell, white body + navy band, long nose)
+            var crhTrack = new GameObject("Track_CRH2");
+            var crh = crhTrack.AddComponent<Creatures.TrackTrain>();
+            crh.world = worldRoot;
+            crh.locomotiveName = "crh2";
+            crh.carNames = new string[] { };
+            crh.carGap = 0.15f;
+            crh.unitScale = 1.585f;
+            int crhZ = 44;
+            for (int rx6 = 4; rx6 < 40; rx6++)
+            {
+                int ry6 = worldRoot.sim.SurfaceHeight(rx6, crhZ, true) + 1;
+                var remeshed6 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx6, ry6, crhZ, Core.BlockType.RailX, remeshed6);
+            }
+            crh.BuildConsist(new Vector2Int(20, crhZ));
+
+
             // Fifth demo track (z=40): the HXD3D electric locomotive — real-world
             // CR HXD3D, ripped from a CC-BY Sketchfab model via Tools/sketchfab_rip.py
             // (sketchfang decrypt pipeline) then voxelized + converted (M48).
