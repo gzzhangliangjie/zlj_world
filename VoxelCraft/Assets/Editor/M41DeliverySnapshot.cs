@@ -48,10 +48,10 @@ namespace VoxelCraft.Editor
                     target.x - b.center.x, target.y - b.min.y, target.z - b.center.z);
             };
 
-            // row 1 (z=0): consist along X — measured lengths from the geo report
-            // train ~12.9u, wagon ~6.7u each => total ~40u; start x = -20
-            float[] row1x = { -20f, -11.5f, -4.4f, 2.7f, 9.8f };
-            string[] consist = { "train", "wagon1", "wagon2", "wagon3", "wagon4" };
+            // row 1 (z=0): coupled consist — train 9.7u + 2 coaches 3.8u,
+            // 0.15u coupling gaps (gap math in M44 notes)
+            float[] row1x = { -20f, -13.12f, -9.21f };
+            string[] consist = { "train", "coach1", "coach2" };
             for (int i = 0; i < consist.Length; i++)
                 place(consist[i], new Vector3(row1x[i], 0f, 0f), 90f);
 

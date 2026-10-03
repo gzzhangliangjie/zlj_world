@@ -214,7 +214,10 @@ namespace VoxelCraft.Core
             var track = trackGo.AddComponent<Creatures.TrackTrain>();
             track.world = worldRoot;
             track.locomotiveName = "train";
-            track.carNames = new[] { "wagon1", "wagon2", "wagon3", "wagon4" };
+            // wagons 1-4 turned out to be reskinned car1 bodies; the real
+            // passenger coaches live inside scene_train.vox (carved out as
+            // coach1/coach2 geo, M44)
+            track.carNames = new[] { "coach1", "coach2" };
             int trackZ = 24;
             int trackY = worldRoot.sim.SurfaceHeight(6, trackZ, true) + 1;
             for (int rx = 6; rx < 60; rx++)

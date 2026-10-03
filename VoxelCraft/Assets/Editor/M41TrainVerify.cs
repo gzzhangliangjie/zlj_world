@@ -75,7 +75,7 @@ namespace VoxelCraft.Editor
             var train = trainGo.AddComponent<TrackTrain>();
             train.world = stub;
             train.locomotiveName = "train";
-            train.carNames = new[] { "wagon1", "wagon2", "wagon3", "wagon4" };
+            train.carNames = new[] { "coach1", "coach2" };
             train.maxSpeed = 7f;
             train.BuildConsist(new Vector2Int(40, z0));
 

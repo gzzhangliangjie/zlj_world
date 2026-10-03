@@ -93,7 +93,7 @@ namespace VoxelCraft.Editor
                 "policetape", "splatter1", "splatter2", "splatter3",
                 // batch 6
                 "train", "train2", "train3",
-                "wagon1", "wagon2", "wagon3", "wagon4",
+                "coach1", "coach2",
                 "overpass1", "tunnel1",
                 // batch 6b: road vehicles
                 "ambulance", "bus", "cab1",
