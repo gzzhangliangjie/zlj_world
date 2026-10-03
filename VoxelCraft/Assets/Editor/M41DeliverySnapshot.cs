@@ -69,7 +69,7 @@ namespace VoxelCraft.Editor
 
             // row 4 (z=-30): bullet train + jeremy trailer (same CC-BY family)
             place("bullettrain", new Vector3(1.5f, 0f, -32f), 90f);
-            place("traincar", new Vector3(11.5f, 0f, -32f), 90f);
+            place("traincar", new Vector3(14f, 0f, -32f), 90f);
 
             // row 5 (z=-40): HXD3D electric loco (M48, Sketchfab CC-BY rip)
             place("hxd3d", new Vector3(6f, 0f, -42f), 90f);
