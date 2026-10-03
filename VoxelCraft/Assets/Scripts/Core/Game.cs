@@ -299,6 +299,25 @@ namespace VoxelCraft.Core
             }
             crh.BuildConsist(new Vector2Int(20, crhZ));
 
+            // Seventh demo track (z=48): CR400BF "Golden Phoenix" Fuxing
+            // EMU head car (procedural, white body + gold swoosh livery)
+            var fuxTrack = new GameObject("Track_CR400BF");
+            var fux = fuxTrack.AddComponent<Creatures.TrackTrain>();
+            fux.world = worldRoot;
+            fux.locomotiveName = "cr400bf";
+            fux.carNames = new string[] { };
+            fux.carGap = 0.15f;
+            fux.unitScale = 1.585f;
+            int fuxZ = 48;
+            for (int rx7 = 4; rx7 < 40; rx7++)
+            {
+                int ry7 = worldRoot.sim.SurfaceHeight(rx7, fuxZ, true) + 1;
+                var remeshed7 = new List<World.Chunk>();
+                worldRoot.sim.SetBlock(rx7, ry7, fuxZ, Core.BlockType.RailX, remeshed7);
+            }
+            fux.BuildConsist(new Vector2Int(20, fuxZ));
+
+
 
             // Fifth demo track (z=40): the HXD3D electric locomotive — real-world
             // CR HXD3D, ripped from a CC-BY Sketchfab model via Tools/sketchfab_rip.py
