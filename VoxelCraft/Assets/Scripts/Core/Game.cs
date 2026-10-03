@@ -270,7 +270,7 @@ namespace VoxelCraft.Core
             var bullet = bTrack.AddComponent<Creatures.TrackTrain>();
             bullet.world = worldRoot;
             bullet.locomotiveName = "bullettrain";
-            bullet.carNames = new string[] { };            // single-unit EMU, no trailers
+            bullet.carNames = new[] { "traincar" };        // jeremy CC-BY trailer (poly.pizza), same livery family
             bullet.carGap = 0.15f;
             int bulletZ = 36;
             for (int rx4 = 6; rx4 < 60; rx4++)
