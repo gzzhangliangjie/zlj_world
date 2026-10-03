@@ -94,3 +94,11 @@ mob_dog1/dog2 形状仅差 2 体素(urban 鼻尖多 2 格)→ 合并单物种 do
 - **细腿摆动断连**根因:腿柱 1×2 太短,pivot 埋入身体仅 0.5 格,摆 26° 脚尖扫出露背景缝。修法=官方结构:腿盒 y0..2 埋进身体底 1 格,任何摆幅保持单连通域
 - **直驱物种自定义 walk clip 必须带 anim_time_update=modified_distance_moved**:纯 query.anim_time 时间驱动在批量摄影棚不推进(引擎只推 dist 时钟);表达用 cos(anim_time*9.54) rad 风格
 - GIF motion 门禁阈值 0.5 过高会漏判真实腿摆(源帧 diff 0.02-0.2),用 0.1
+
+## 火车资产源盘点(2026-10-03,GitHub+社区,勿重查)
+- **GitHub 无可用免费 .vox 火车库**(api.github.com 全量搜索确认)
+- ImmersiveRailroading 模组生态两个模型包,均不可用:
+  - SebastianD334/Voxel-Trains-IR:39 机车+14 客车+13 货车(欧洲现代 SBB/DB/CP),OBJ 格式,无 LICENSE=默认版权保留
+  - trainman264/ImmersiveRailroadingPacks:38 件含美国经典蒸汽(baldwin_decapod/challenger/gwr_king/j1a_texas),OBJ 格式,CC BY-NC-ND 4.0(禁商用+禁改编,格式转换即违 ND)
+- 结论:火车新车型只能①官方 minecart 变体(chest/hopper/tnt/command_block,bedrock-samples v1.21.80.3,同 minecart 管线)②程序化变体(换漆/改窗带)③自建
+- mmmm 490 vox 已全扫尽:train/train2/train3/coach3 全在役,wagon1-4=轿车换皮,obj_tracks=纯轨道件
