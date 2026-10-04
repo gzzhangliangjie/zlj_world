@@ -21,7 +21,7 @@ namespace VoxelCraft.Editor
             lightGo.transform.rotation = Quaternion.Euler(50f, 30f, 0f);
 
             // fog globals the unlit shader needs (black-image guard, M48 lesson)
-            Shader.SetGlobalVector("_VoxelFogRange", new Vector4(400f, 900f, 0f, 0f));
+            Shader.SetGlobalVector("_VoxelFogRange", new Vector4(2000f, 6000f, 0f, 0f));
             Shader.SetGlobalColor("_VoxelFogColor", new Color(0.55f, 0.72f, 0.90f));
             Shader.SetGlobalFloat("_VoxelDayBrightness", 1f);
 
@@ -46,13 +46,13 @@ namespace VoxelCraft.Editor
             gnd.GetComponent<Renderer>().material.color = new Color(0.44f, 0.55f, 0.38f);
 
             // side view: camera on -Z looking at the body, train runs along X
-            float d = b.size.x * 0.62f;
+            float d = b.size.x * 0.85f;
             cam.transform.position = new Vector3(b.center.x, b.size.y * 0.75f + 1.2f, b.center.z - d);
             cam.transform.rotation = Quaternion.Euler(12f, 0f, 0f);
             Capture(cam, "_shots/m51_cr400bf_side.png");
 
             // 3/4 front
-            cam.transform.position = new Vector3(b.center.x + b.size.x * 0.28f, b.size.y * 0.9f + 1.2f, b.center.z - d * 0.62f);
+            cam.transform.position = new Vector3(b.center.x + b.size.x * 0.32f, b.size.y * 0.85f + 1.2f, b.center.z - d * 0.75f);
             cam.transform.rotation = Quaternion.Euler(8f, 38f, 0f);
             Capture(cam, "_shots/m51_cr400bf_q34.png");
 
