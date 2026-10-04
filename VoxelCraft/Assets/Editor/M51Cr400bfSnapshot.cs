@@ -52,8 +52,8 @@ namespace VoxelCraft.Editor
             Capture(cam, "_shots/m51_cr400bf_side.png");
 
             // 3/4 front
-            cam.transform.position = new Vector3(b.center.x + b.size.x * 0.38f, b.size.y * 0.9f + 1.4f, b.center.z - d * 0.72f);
-            cam.transform.rotation = Quaternion.Euler(10f, 32f, 0f);
+            cam.transform.position = new Vector3(b.center.x + b.size.x * 0.28f, b.size.y * 0.9f + 1.2f, b.center.z - d * 0.62f);
+            cam.transform.rotation = Quaternion.Euler(8f, 38f, 0f);
             Capture(cam, "_shots/m51_cr400bf_q34.png");
 
             // top
