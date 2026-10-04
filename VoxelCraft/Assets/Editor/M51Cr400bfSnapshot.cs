@@ -62,8 +62,8 @@ namespace VoxelCraft.Editor
             Capture(cam, "_shots/m51_cr400bf_top.png");
 
             // dead-on front view (user asked)
-            cam.transform.position = new Vector3(b.center.x + b.size.x * 0.52f + 1.5f, b.size.y * 0.55f + 1.2f, b.center.z);
-            cam.transform.rotation = Quaternion.Euler(2f, -90f, 0f);
+            cam.transform.position = new Vector3(b.center.x, b.size.y * 0.6f + 1.5f, b.center.z + b.size.x * 0.62f + 2f);
+            cam.transform.rotation = Quaternion.Euler(2f, 180f, 0f);
             Capture(cam, "_shots/m51_cr400bf_front.png");
         }
 
