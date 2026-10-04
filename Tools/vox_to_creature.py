@@ -238,8 +238,11 @@ def convert(name, src, geo_dir, tex_dir, scale=1.0, wheels=None, wheel_radius=2.
             # px,py in 0..face_w-1 / 0..face_h-1 net coords
             if face == 'up':    return col(x0+px, y1, z0+py)
             if face == 'down':  return col(x0+px, y0, z0+py)
-            if face == 'north': return col(x0+px, y1-py, z0)
-            if face == 'south': return col(x0+px, y1-py, z1)
+            # flipped frame: the +Z' cap sits at geo z0 - it must paint
+            # the z0 column (and -Z' cap paints z1). Swap north/south
+            # sampling or the nose cap shows the far end's colors (M51r).
+            if face == 'north': return col(x0+px, y1-py, z1)
+            if face == 'south': return col(x0+px, y1-py, z0)
             if face == 'west':  return col(x0, y1-py, z0+px)
             return               col(x1, y1-py, z0+px)   # east
         uv = {
