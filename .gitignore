@@ -18,3 +18,5 @@ _refs/vanilla/
 
 # Unity batch logs (scratch)
 unity-*.log
+Tools/TripoSR/model.ckpt
+Tools/TripoSR/
