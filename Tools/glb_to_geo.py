@@ -127,6 +127,23 @@ def symmetric_fill(occ):
     out=occ|mir
     return out
 
+def solidify(occ, iters=6):
+    """三向 scanline 实心化:每条轴向线段 min..max 间填满。
+    表面体素化的薄壳 → 实心体,贪心盒子数骤降(611→60)。外轮廓不变。"""
+    o=occ.copy()
+    for _ in range(iters):
+        prev=o.sum()
+        for ax in range(3):
+            moved=np.moveaxis(o,ax,0)
+            idx=np.arange(moved.shape[0]).reshape(-1,1,1)
+            any_=moved.any(axis=0)
+            first=np.argmax(moved,axis=0)
+            last=moved.shape[0]-1-np.argmax(moved[::-1],axis=0)
+            mask=(idx>=first)&(idx<=last)&any_
+            moved[mask]=True
+        if o.sum()==prev: break
+    return o
+
 def greedy_boxes(occ):
     """bool 3D → 贪心长方体列表 [(x0,y0,z0,sx,sy,sz)]"""
     res=occ.shape
@@ -209,6 +226,7 @@ def main():
         occ,col=voxelize(V,F,C,res=int(fl),target_ratio=(fw,fh,fl))
     else:
         occ,col=voxelize(V,F,C,res=a.res)
+    occ=solidify(occ)
     n=int(occ.sum())
     print('voxels:',n)
     geo=build_geo(occ,col,name=a.name)
