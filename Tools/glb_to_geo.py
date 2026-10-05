@@ -10,16 +10,23 @@ import json, sys, struct, argparse
 import numpy as np
 
 def load_glb_meshes(path):
-    """返回 (verts Nx3, faces Mx3, vcolors Nx3 or None)"""
+    """返回 (verts Nx3, faces Mx3, vcolors Nx3 or None)。应用场景图世界变换(dump→concatenate)"""
     import trimesh
     scene = trimesh.load(path, force='scene', process=False)
+    if not hasattr(scene, 'graph'):  # 单网格非场景 → 包装
+        scene = trimesh.scene.Scene(scene)
     verts=[]; faces=[]; vcols=[]
     has_col=False
-    for name, geom in scene.geometry.items():
-        g = geom.to_mesh() if hasattr(geom,'to_mesh') else geom
+    for node_name in scene.graph.nodes_geometry:
+        T_world = scene.graph.get(node_name)[0]
+        g = scene.geometry[scene.graph.get(node_name)[1]]
+        g = g.to_mesh() if hasattr(g,'to_mesh') else g
         if g is None or len(getattr(g,'vertices',[]))==0: continue
         v0=len(verts)
-        verts.append(np.asarray(g.vertices))
+        gv=np.asarray(g.vertices)
+        vh=np.c_[gv, np.ones(len(gv))]
+        gw=(T_world @ vh.T).T[:, :3]
+        verts.append(gw)
         faces.append(np.asarray(g.faces)+v0)
         c=None
         if g.visual is not None:
@@ -36,24 +43,46 @@ def load_glb_meshes(path):
     V=np.concatenate(verts); F=np.concatenate(faces); C=np.concatenate(vcols) if has_col else None
     return V,F,C
 
-def voxelize(V, F, C, res=32, axis_order='glb2vox'):
-    """三角形重心采样体素化。返回 occ(res,rez,res) bool + 颜色 dict"""
-    # 归一化到 [0,1]
+def voxelize(V, F, C, res=32, target_ratio=None):
+    """三角形重心采样体素化。occ(res,res,res) bool + 颜色 dict。
+    轴向:GLB Y-up → vox(x=宽, y=长, z=高);mesh 最长边自动作为"长"。
+    target_ratio: 可选 (W,H,L) 目标体素尺寸,如 M51 游戏= (32,32,64)。None=按 res 等比。"""
     lo=V.min(axis=0); hi=V.max(axis=0)
     span=hi-lo; span[span==0]=1
-    N=(V-lo)/span
-    # GLB Y-up → vox: x=x(宽), y(vox)=z_glb(长), z(vox)=y_glb(高)
-    nx, nlen, nh = N[:,0], N[:,2], N[:,1]
+    # 目标尺寸:等比(最长边=res)或用户指定 (W,H,L)
+    if target_ratio is None:
+        dims=np.rint(span*(res/span.max())).astype(int); dims[dims==0]=1
+    else:
+        tw,th,tl=target_ratio
+        # mesh 轴 → 游戏轴:长=最长 mesh 轴,高=mesh Y,宽=其余
+        order=np.argsort(-span)  # 降序
+        longest=order[0]
+        if longest==1:   mesh_l, mesh_w, mesh_h = span[1], span[0], span[2]   # Y 最长(躺姿 X/Y 混)
+        elif longest==0: mesh_l, mesh_w, mesh_h = span[0], span[2], span[1]   # X 最长(车横放)
+        else:            mesh_l, mesh_w, mesh_h = span[2], span[0], span[1]   # Z 最长
+        scale=min(tl/mesh_l, tw/mesh_w, th/mesh_h)
+        dims=np.rint(span*scale).astype(int); dims[dims==0]=1
+    # 轴映射 → vox/geo 统一约定(同 M51): x=宽, y=高, z=长
+    # mesh 最长边=长(z), mesh Y-up=高(y), 其余=宽(x)
+    span_idx=np.argsort(-span)
+    if span_idx[0]==0:   ax_long, ax_w, ax_h = 0, 2, 1   # X 最长
+    elif span_idx[0]==1: ax_long, ax_w, ax_h = 1, 0, 2   # Y 最长(躺姿)
+    else:                ax_long, ax_w, ax_h = 2, 0, 1   # Z 最长
+    N=(V-lo)
+    scale=dims[[ax_w,ax_h,ax_long]]/span[[ax_w,ax_h,ax_long]]
+    Nv=np.stack([N[:,ax_w], N[:,ax_h], N[:,ax_long]],axis=1)*scale
+    off=((res - np.floor(Nv.max(axis=0)).astype(int) - 1)//2).astype(int)
+    off[off<0]=0
     occ=np.zeros((res,res,res),dtype=bool)
     col={}
     def put(px,pl,ph,c):
-        ix,iy,iz=int(px*res-0.5), int(pl*res-0.5), int(ph*res-0.5)
+        ix=int(px)+off[0]; iy=int(pl)+off[1]; iz=int(ph)+off[2]
         ix=min(max(ix,0),res-1); iy=min(max(iy,0),res-1); iz=min(max(iz,0),res-1)
         if not occ[ix,iy,iz]:
             occ[ix,iy,iz]=True
             col[(ix,iy,iz)]=(int(c[0]),int(c[1]),int(c[2]))
     rng=np.random.default_rng(7)
-    tri=N[F]
+    tri=Nv[F]
     triC = C[F] if C is not None else None
     samples_per_tri=64
     for ti in range(len(F)):
@@ -68,19 +97,15 @@ def voxelize(V, F, C, res=32, axis_order='glb2vox'):
         for k in range(samples_per_tri):
             px,py,pz = pts[k]
             cvec = cc[k] if cc is not None else (240,240,240)
-            put(px, pz, py, cvec)   # px, pz(=glb z→vox 长), py(=glb y→vox 高)
-        # 三顶点也钉进去
-        for p,cvv in ((a,(240,240,240)),(b,(240,240,240)),(c_,(240,240,240))):
-            pass
-    # 顶点色钉点
+            put(px, py, pz, cvec)
     if C is not None:
-        for i in range(0,len(N), max(1,len(N)//4000)):
-            px,py,pz=N[i]
-            put(px, pz, py, C[i])
+        for i in range(0,len(Nv), max(1,len(Nv)//4000)):
+            px,py,pz=Nv[i]
+            put(px,py,pz,C[i])
     else:
-        for i in range(0,len(N), max(1,len(N)//4000)):
-            px,py,pz=N[i]
-            put(px, pz, py, (240,240,240))
+        for i in range(0,len(Nv), max(1,len(Nv)//4000)):
+            px,py,pz=Nv[i]
+            put(px,py,pz,(240,240,240))
     return occ, col
 
 def symmetric_fill(occ):
@@ -127,16 +152,12 @@ def dedup_boxes(boxes):
 def build_geo(occ, col, name='triposr', texture_w=128, texture_h=128):
     res=occ.shape
     boxes=dedup_boxes(greedy_boxes(occ))
-    # vox(x=宽, y=长, z=高) → bedrock geo(x=宽, y=高, z=长)
-    # pivot 中心:geo x 偏移 16-res/2? 直接用 bedrock 惯例:pivot=[16,0,res_long]
-    L=res[1]
+    # occ 轴约定(同 M51 cr400bf.geo.json):x=宽, y=高, z=长 → bedrock geo 同名直传
     cubes=[]
     for (x,y,z,sx,sy,sz) in boxes:
-        # vox→geo:x→x, y(长)→z, z(高)→y
-        gx=x; gy=z; gz=y
         cubes.append({
-            "origin":[gx,gy,gz],
-            "size":[sx,sz,sy],
+            "origin":[x,y,z],
+            "size":[sx,sy,sz],
             "uv":[0,0],
         })
     geo={
@@ -145,12 +166,12 @@ def build_geo(occ, col, name='triposr', texture_w=128, texture_h=128):
         "description":{
           "identifier":"geometry."+name,
           "texture_width":texture_w,"texture_height":texture_h,
-          "visible_bounds_width":float(max(res[0],res[1])/8),
-          "visible_bounds_height":float(res[2]/8),
+          "visible_bounds_width":float(max(res[0],res[2])/8),
+          "visible_bounds_height":float(res[1]/8),
           "visible_bounds_offset":[0,0,0]
         },
         "bones":[{
-          "name":"body","pivot":[res[0]/2.0,0,res[1]],
+          "name":"body","pivot":[res[0]/2.0,0,res[2]],
           "cubes":cubes
         }]
       }]
@@ -162,12 +183,21 @@ def main():
     ap.add_argument('glb')
     ap.add_argument('out')
     ap.add_argument('--res',type=int,default=32)
+    ap.add_argument('--fit',type=int,nargs=3,metavar=('W','H','L'),default=None,
+                    help='目标体素包络 (宽,高,长),如 M51 风格 --fit 32 32 64;默认按 --res 等比')
     ap.add_argument('--name',default='triposr')
     a=ap.parse_args()
     V,F,C=load_glb_meshes(a.glb)
     print('mesh: verts=%d faces=%d colors=%s'%(len(V),len(F),'yes' if C is not None else 'no'))
-    occ,col=voxelize(V,F,C,res=a.res)
-    occ=symmetric_fill(occ)
+    if a.fit:
+        fw,fh,fl=a.fit
+        # 先按 fit 的最小约束等比算 res(最长边=fl → res=fl),再在 voxelize 内按 fit 缩放
+        import numpy as _np
+        lo=V.min(axis=0); hi=V.max(axis=0); span=hi-lo; span[span==0]=1
+        scale=min(fl/span.max() if span.argmax()!=1 else fh/span.max(), fl/span.max())
+        occ,col=voxelize(V,F,C,res=int(fl),target_ratio=(fw,fh,fl))
+    else:
+        occ,col=voxelize(V,F,C,res=a.res)
     n=int(occ.sum())
     print('voxels:',n)
     geo=build_geo(occ,col,name=a.name)
