@@ -35,6 +35,14 @@ def load_glb_meshes(path):
             elif hasattr(g.visual,'face_colors') and g.visual.face_colors is not None:
                 fc=np.asarray(g.visual.face_colors)[:,:3].astype(np.float32)
                 c=fc[np.asarray(g.faces)].mean(axis=1)  # 面色均摊到顶点(粗略)
+        if c is None:
+            # 材质回退:baseColorFactor(低模常见,颜色在材质不在顶点)
+            m=getattr(g.visual,'material',None)
+            bcf=getattr(m,'baseColorFactor',None) if m is not None else None
+            if bcf is not None:
+                import numpy as _np
+                c=_np.full((len(g.vertices),3), float(bcf[0]),dtype=_np.float32)
+                c[:,1]=float(bcf[1]); c[:,2]=float(bcf[2])
         if c is not None:
             if len(c)==len(verts[-1]): vcols.append(c); has_col=True
             else: vcols.append(np.full((len(verts[-1]),3),255.0))
