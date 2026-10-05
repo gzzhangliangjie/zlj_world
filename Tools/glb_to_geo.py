@@ -83,12 +83,12 @@ def voxelize(V, F, C, res=32, target_ratio=None):
     off[off<0]=0
     occ=np.zeros((res,res,res),dtype=bool)
     col={}
+    samples={}
     def put(px,pl,ph,c):
         ix=int(px)+off[0]; iy=int(pl)+off[1]; iz=int(ph)+off[2]
         ix=min(max(ix,0),res-1); iy=min(max(iy,0),res-1); iz=min(max(iz,0),res-1)
-        if not occ[ix,iy,iz]:
-            occ[ix,iy,iz]=True
-            col[(ix,iy,iz)]=(int(c[0]),int(c[1]),int(c[2]))
+        occ[ix,iy,iz]=True
+        samples.setdefault((ix,iy,iz),[]).append((float(c[0]),float(c[1]),float(c[2])))
     rng=np.random.default_rng(7)
     tri=Nv[F]
     triC = C[F] if C is not None else None
@@ -114,6 +114,9 @@ def voxelize(V, F, C, res=32, target_ratio=None):
         for i in range(0,len(Nv), max(1,len(Nv)//4000)):
             px,py,pz=Nv[i]
             put(px,py,pz,(240,240,240))
+    for k,v in samples.items():
+        arr=np.median(np.asarray(v),axis=0)
+        col[k]=(int(arr[0]),int(arr[1]),int(arr[2]))
     return occ, col
 
 def symmetric_fill(occ):
