@@ -1,0 +1,127 @@
+{
+ "format_version": "1.12.0",
+ "minecraft:geometry": [
+  {
+   "description": {
+    "identifier": "geometry.train_track_2_black",
+    "texture_width": 128,
+    "texture_height": 128,
+    "visible_bounds_width": 4.0,
+    "visible_bounds_height": 4.0,
+    "visible_bounds_offset": [
+     0,
+     0,
+     0
+    ]
+   },
+   "bones": [
+    {
+     "name": "body",
+     "pivot": [
+      16.0,
+      0,
+      32
+     ],
+     "cubes": [
+      {
+       "origin": [
+        13,
+        15,
+        1
+       ],
+       "size": [
+        5,
+        1,
+        31
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      },
+      {
+       "origin": [
+        13,
+        15,
+        0
+       ],
+       "size": [
+        5,
+        1,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      },
+      {
+       "origin": [
+        13,
+        16,
+        0
+       ],
+       "size": [
+        1,
+        1,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      },
+      {
+       "origin": [
+        13,
+        16,
+        31
+       ],
+       "size": [
+        1,
+        1,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      },
+      {
+       "origin": [
+        16,
+        16,
+        0
+       ],
+       "size": [
+        1,
+        1,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      },
+      {
+       "origin": [
+        16,
+        16,
+        31
+       ],
+       "size": [
+        1,
+        1,
+        1
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
