@@ -235,7 +235,7 @@
  },
  "aPcqyAWv8u6": {
   "name": "Arthur's diesel locomotive",
-  "author": "Port\u0101ls VR Arcade",
+  "author": "Portāls VR Arcade",
   "license": "CC-BY 3.0",
   "glb": "https://static.poly.pizza/76550414-4629-44e4-9047-e3acc6ba2a3a.glb"
  },
@@ -310,5 +310,35 @@
   "author": "Zsky",
   "license": "CC-BY 3.0",
   "glb": "https://static.poly.pizza/5dbe44bf-68ff-4b2e-b62a-95156cfeeee9.glb"
+ },
+ "7HYR2s9JVi": {
+  "name": "Mountain",
+  "author": "Quaternius",
+  "license": "CC0 1.0",
+  "glb": "https://static.poly.pizza/5642bd4a-1742-4025-9700-511a7a55c0b2.glb"
+ },
+ "w9VBrh7Nz0": {
+  "name": "Mountains",
+  "author": "Quaternius",
+  "license": "CC0 1.0",
+  "glb": "https://static.poly.pizza/37567fee-ed12-4122-a1ae-ffe14b378739.glb"
+ },
+ "a52gSEEq8X": {
+  "name": "Mountain Group",
+  "author": "Quaternius",
+  "license": "CC0 1.0",
+  "glb": "https://static.poly.pizza/f01e8d13-d978-4d21-8980-d03b907fe362.glb"
+ },
+ "E1Rrk1NKt0": {
+  "name": "Tunnels (scifi, rejected)",
+  "author": "Kay Lousberg",
+  "license": "CC0 1.0",
+  "glb": "https://static.poly.pizza/71fa7525-7a7f-4f1c-9c36-d5c06eca5023.glb"
+ },
+ "3GQlwrbGZhL": {
+  "name": "Bridges",
+  "author": "Jair Trejo",
+  "license": "CC-BY 3.0",
+  "glb": ""
  }
 }
