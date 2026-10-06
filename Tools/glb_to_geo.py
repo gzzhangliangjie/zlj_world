@@ -41,8 +41,13 @@ def load_glb_meshes(path):
             bcf=getattr(m,'baseColorFactor',None) if m is not None else None
             if bcf is not None:
                 import numpy as _np
-                c=_np.full((len(g.vertices),3), float(bcf[0]),dtype=_np.float32)
-                c[:,1]=float(bcf[1]); c[:,2]=float(bcf[2])
+                b3=[float(bcf[i]) for i in range(3)]
+                # 颜色值范围规范:bcf 可能是 0-1 浮点也可能是 0-255 字节值,
+                # 判据 max>1.001 即字节值;统一归一到 0-255(见 docs/voxel-color-spec.md)
+                if max(b3) > 1.001: b3=[v for v in b3]
+                else: b3=[v*255.0 for v in b3]
+                c=_np.full((len(g.vertices),3), b3[0],dtype=_np.float32)
+                c[:,1]=b3[1]; c[:,2]=b3[2]
         if c is not None:
             if len(c)==len(verts[-1]): vcols.append(c); has_col=True
             else: vcols.append(np.full((len(verts[-1]),3),255.0))
@@ -116,7 +121,7 @@ def voxelize(V, F, C, res=32, target_ratio=None):
             put(px,py,pz,(240,240,240))
     for k,v in samples.items():
         arr=np.median(np.asarray(v),axis=0)
-        col[k]=(int(arr[0]),int(arr[1]),int(arr[2]))
+        col[k]=(int(np.clip(arr[0],0,255)),int(np.clip(arr[1],0,255)),int(np.clip(arr[2],0,255)))
     return occ, col
 
 def symmetric_fill(occ):
