@@ -33,9 +33,12 @@ def load_nodes(glb):
         w = (T @ np.c_[gv, np.ones(len(gv))].T).T[:, :3]
         m = getattr(g.visual, 'material', None); bcf = None
         if m is not None:
-            try: bcf = [float(v) for v in np.atleast_1d(m.baseColorFactor)[:3]]
+            try:
+                bcf = [float(v) for v in np.atleast_1d(m.baseColorFactor)[:3]]
+                if max(bcf) > 1.001:      # 已经是 0-255 字节值,别再乘
+                    bcf = [v / 255.0 for v in bcf]
             except Exception: pass
-        c0 = tuple(int(np.clip(v*255, 0, 255)) for v in (bcf or (0.59,0.59,0.61)))
+        c0 = tuple(int(np.clip(round(v*255), 0, 255)) for v in (bcf or (0.59,0.59,0.61)))
         if 'wheel' in gn.lower():
             c0 = (52, 58, 64)          # 轮子统一深灰,与车身分离
         nodes.append(dict(name=gn, V=w, F=np.asarray(g.faces), c=c0))
