@@ -28,6 +28,7 @@ def load_nodes(glb):
     sc = trimesh.load(glb, force='scene', process=False)
     nodes = []
     for n in sc.graph.nodes_geometry:
+        _b = None
         T, gn = sc.graph.get(n); g = sc.geometry[gn]
         gv = np.asarray(g.vertices)
         w = (T @ np.c_[gv, np.ones(len(gv))].T).T[:, :3]
@@ -41,6 +42,14 @@ def load_nodes(glb):
         c0 = tuple(int(np.clip(round(v*255), 0, 255)) for v in (bcf or (0.59,0.59,0.61)))
         if 'wheel' in gn.lower():
             c0 = (52, 58, 64)          # 轮子统一深灰,与车身分离
+        if __import__('os').environ.get('SKIP_SLATS') == '1':
+            # 车站格栅:深棕通高窄件(宽<0.15 高>0.5)是密百叶,量化后糊成墙,跳过
+            try:
+                bb = w.min(0), w.max(0)
+                if c0 == (48,23,15) and (bb[1][0]-bb[0][0]) < 0.15 and (bb[1][1]-bb[0][1]) > 0.5:
+                    continue
+            except Exception:
+                pass
         nodes.append(dict(name=gn, V=w, F=np.asarray(g.faces), c=c0))
     return nodes
 
