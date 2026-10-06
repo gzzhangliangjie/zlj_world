@@ -63,12 +63,19 @@ def voxelize(nodes, res=RES):
         o = np.zeros((X, Y, Z), bool)
         for tri in t[p['F']]:
             n_ = int((tri.max(0)-tri.min(0)).max())*2+2
+            if n_ > 96: n_ = 96   # 车站等大模型:三角形巨大时采样上限,防 O(n^2) 爆炸
             a = np.arange(n_+1)/n_
             A, B = np.meshgrid(a, a); msk = A+B <= 1
             A, B = A[msk], B[msk]
             P = (tri[0]*A[:,None]+tri[1]*B[:,None]+tri[2]*(1-A-B)[:,None]).astype(int)
             o[P[:,0], P[:,1], P[:,2]] = True
-        o = fill_enclosed(o)
+        # 性能:fill_enclosed 只在节点局部包围盒内跑(375 节点全网格 BFS = 300s;局部 <2s)
+        idx = np.argwhere(o)
+        if len(idx):
+            x0,x1 = idx[:,0].min(), idx[:,0].max()+1
+            y0,y1 = idx[:,1].min(), idx[:,1].max()+1
+            z0,z1 = idx[:,2].min(), idx[:,2].max()+1
+            o[x0:x1, y0:y1, z0:z1] = fill_enclosed(o[x0:x1, y0:y1, z0:z1])
         for (x, y, z) in np.argwhere(o):
             if not occ[x, y, z] or (x, y, z) not in col:
                 col[(int(x), int(y), int(z))] = p['c']
@@ -126,7 +133,11 @@ if __name__ == '__main__':
     glb = 'D:/zlj_world/_refs/poly_pizza/trains/%s.glb' % uid
     nodes = load_nodes(glb)
     occ, col, dims = voxelize(nodes)
-    rm = strip_rails(occ)
+    # 轨道剔除只对车类模型;山/车站等地形件跳过(山脚薄层会被误删)
+    if any(k in info['name'].lower() for k in ('train','locomotive','tram','wagon','car','carriage','railway')):
+        rm = strip_rails(occ)
+    else:
+        rm = np.zeros_like(occ, bool)
     occ2 = occ & ~rm
     nrm = int(rm.sum())
     out = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/batch_%s_r%d.vox' % (uid, RES)
