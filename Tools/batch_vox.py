@@ -2,7 +2,7 @@
 import numpy as np, struct, trimesh, sys, os, json
 from collections import deque
 
-RES = 32
+RES = int(__import__('os').environ.get('VOXRES', '32'))
 
 
 def fill_enclosed(occ):
@@ -35,13 +35,19 @@ def load_nodes(glb):
         if m is not None:
             try: bcf = [float(v) for v in np.atleast_1d(m.baseColorFactor)[:3]]
             except Exception: pass
-        nodes.append(dict(name=gn, V=w, F=np.asarray(g.faces),
-                          c=tuple(int(np.clip(v*255, 0, 255)) for v in (bcf or (0.59,0.59,0.61)))))
+        c0 = tuple(int(np.clip(v*255, 0, 255)) for v in (bcf or (0.59,0.59,0.61)))
+        if 'wheel' in gn.lower():
+            c0 = (52, 58, 64)          # 轮子统一深灰,与车身分离
+        nodes.append(dict(name=gn, V=w, F=np.asarray(g.faces), c=c0))
     return nodes
 
 
 def voxelize(nodes, res=RES):
-    allV = np.vstack([p['V'] for p in nodes]); lo, hi = allV.min(0), allV.max(0)
+    nodes = sorted(nodes, key=lambda p: 0 if 'wheel' in p['name'].lower() else 1)  # 轮子先画
+    body = [p for p in nodes if 'wheel' not in p['name'].lower()]
+    if not body:
+        body = nodes
+    allV = np.vstack([p['V'] for p in body]); lo, hi = allV.min(0), allV.max(0)
     sp = hi - lo; sp[sp==0] = 1
     s = res / sp.max()
     dims = np.rint(sp * s).astype(int); dims[dims==0] = 1
@@ -120,6 +126,6 @@ if __name__ == '__main__':
     rm = strip_rails(occ)
     occ2 = occ & ~rm
     nrm = int(rm.sum())
-    out = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/batch_%s.vox' % uid
+    out = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/batch_%s_r%d.vox' % (uid, RES)
     nv, ncol = write_vox(out, occ2, col)
     print('%s (%s): grid %s vox %d -rails %d -> %d, colors %d' % (uid, info['name'], dims, occ.sum(), nrm, nv, ncol))

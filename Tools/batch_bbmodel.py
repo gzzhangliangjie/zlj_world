@@ -61,7 +61,8 @@ def domains_of(mask):
 
 
 def process(uid):
-    vox_path = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/batch_%s.vox' % uid
+    import os as _os
+    vox_path = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/batch_%s_r%s.vox' % (uid, _os.environ.get('VOXRES','32'))
     size, voxels, pal = parse_vox(vox_path)
     X, Z, Y = size
     col = np.zeros((X, Y, Z), np.int16)
@@ -174,7 +175,7 @@ def process(uid):
                       'source': 'data:image/png;base64,' + img_to_b64(img),
                       'uuid': TEX_UUID, 'saved': False}],
     }
-    out = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/bb_%s.bbmodel' % uid
+    out = 'C:/Users/zlj10/AppData/Local/hermes/cache/scratch/bb_%s_r%s.bbmodel' % (uid, _os.environ.get('VOXRES','32'))
     json.dump(model, open(out, 'w'))
     n_smoke = int((smoke_mask & (col > 0)).sum())
     n_wheel = int(sum((v).sum() for k, v in bones.items() if k == 'wheels'))
